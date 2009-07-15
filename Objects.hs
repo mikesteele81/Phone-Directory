@@ -1,13 +1,26 @@
 module Objects
-    (
-    ) where
+    where
 
-
+import Text.JSON
+    
 data ContactInfo = ContactInfo
     { cName :: Name
     , cPhone    :: String
     , cPriority :: Int
     } deriving (Show)
+
+instance JSON ContactInfo where
+    readJSON v = undefined
+    showJSON ci =
+        let
+            name = case cName ci of
+                     FirstLast f l -> [ ("first", showJSON f)
+                                      , ("last" , showJSON l)]
+                     SingleName n  -> [ ("name" , showJSON n)]
+            phone = ("phone", showJSON $ cPhone ci)
+            priority = ("priority", showJSON $ cPriority ci)
+        in
+          showJSON $ toJSObject $ name ++ [phone, priority]
 
 data LineItem = LineItem
     { liLabel :: String
@@ -31,6 +44,19 @@ data Organization
       { oInfo :: ContactInfo
       , oContacts :: [ContactInfo]
       } deriving (Show)
+
+instance JSON Organization where
+    readJSON v = undefined
+    showJSON o =
+        let orgCi = unJSObject $ showJSON $ oInfo o
+        in showJSON $ toJSObject $
+               (fromJSObject orgCi) ++
+               [("contacts", showJSONs $ oContacts o)]
+
+-- convenience function for Organization's JSON instance definition.
+unJSObject :: JSValue -> JSObject JSValue
+unJSObject (JSObject o) = o
+unJSObject _ = undefined
 
 testOrg :: Organization
 testOrg = Organization
