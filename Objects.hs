@@ -76,13 +76,45 @@ instance JSON Organization where
         showJSON $ toJSObject $
                  [ ("info", showJSON $ oInfo o)
                  , ("contacts", showJSONs $ oContacts o)]
-
+                 
+data Document
+    = Document
+      { dRevised :: String
+      , dOrganizations :: [Organization] }
+      
+instance JSON Document where
+    readJSON (JSObject d) =
+        do revised <- valFromObj "revised" d
+           organizations <- valFromObj "organizations" d
+           return $ Document revised organizations
+    readJSON _ = Error "Could not parse Document JSON object."
+    showJSON d =
+        showJSON $ toJSObject $
+        [ ("revised", showJSON $ dRevised d)
+        , ("organizations", showJSONs $ dOrganizations d) ]
+        
+testDoc :: Document
+testDoc = Document
+          { dRevised = "07/01/09"
+          , dOrganizations =
+            [ testOrg
+            , Organization
+              { oInfo = ContactInfo
+                        { cName = SingleName "Beta Enterprises"
+                        , cPhone = "222-222-2222"
+                        , cPriority = 1 }
+              , oContacts =
+                [ ContactInfo
+                  { cName = FirstLast "Michael" "Steele"
+                  , cPhone = "222-222-2223"
+                  , cPriority = 1 } ] } ] }
+                    
 testOrg :: Organization
 testOrg = Organization
           { oInfo = ContactInfo
                     { cName = SingleName "Org A"
                     , cPhone = "111-111-1111"
-                    , cPriority = 0 }
+                    , cPriority = 1 }
           , oContacts =
               [ ContactInfo
                 { cName = FirstLast "Albert" "Anderson"
