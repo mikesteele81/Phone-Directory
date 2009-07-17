@@ -1,6 +1,7 @@
 module Objects
     where
 
+import Control.Applicative
 import Text.JSON
     
 data ContactInfo = ContactInfo
@@ -10,17 +11,18 @@ data ContactInfo = ContactInfo
     } deriving (Show)
 
 instance JSON ContactInfo where
-    readJSON v = undefined
-    showJSON ci =
-        let
-            name = case cName ci of
-                     FirstLast f l -> [ ("first", showJSON f)
-                                      , ("last" , showJSON l)]
-                     SingleName n  -> [ ("name" , showJSON n)]
-            phone = ("phone", showJSON $ cPhone ci)
-            priority = ("priority", showJSON $ cPriority ci)
-        in
-          showJSON $ toJSObject $ name ++ [phone, priority]
+    readJSON (JSObject o) =
+        do
+          name <- valFromObj "name" o
+          phone <- valFromObj "phone" o
+          priority <- valFromObj "priority" o
+          return $ ContactInfo name phone priority
+    readJSON _ = Error "boo!"
+    showJSON (ContactInfo n p pr) =
+        showJSON $ toJSObject $
+                     [ ("name", showJSON n )
+                     , ("phone", showJSON p)
+                     , ("priority", showJSON pr) ]
 
 data LineItem = LineItem
     { liLabel :: String
@@ -37,6 +39,24 @@ instance Show Name where
     show (FirstLast f l) = l ++ ", " ++ f
     show (SingleName n)  = n 
 
+instance JSON Name where
+    readJSON (JSObject o) =
+        let tryFL =
+                do
+                  first <- valFromObj "first" o
+                  sirname <- valFromObj "last" o
+                  return $ FirstLast first sirname
+            trySN =
+                do
+                  name <- valFromObj "name" o >>= readJSON
+                  return $ SingleName name
+        in do tryFL <|> trySN
+    readJSON _ = Error "boo!"
+    showJSON n = showJSON $ toJSObject $
+                 case n of
+                   FirstLast f l -> [ ("first", showJSON f)
+                                    , ("last" , showJSON l)]
+                   SingleName sn -> [ ("name" , showJSON sn)] 
 
 -- An organization persons are a part of
 data Organization
@@ -46,17 +66,16 @@ data Organization
       } deriving (Show)
 
 instance JSON Organization where
-    readJSON v = undefined
+    readJSON (JSObject o) =
+        do
+          info <- valFromObj "info" o
+          contacts <- valFromObj "contacts" o
+          return $ Organization info contacts
+    readJSON _ = Error "Could not parse Organization JSON object."
     showJSON o =
-        let orgCi = unJSObject $ showJSON $ oInfo o
-        in showJSON $ toJSObject $
-               (fromJSObject orgCi) ++
-               [("contacts", showJSONs $ oContacts o)]
-
--- convenience function for Organization's JSON instance definition.
-unJSObject :: JSValue -> JSObject JSValue
-unJSObject (JSObject o) = o
-unJSObject _ = undefined
+        showJSON $ toJSObject $
+                 [ ("info", showJSON $ oInfo o)
+                 , ("contacts", showJSONs $ oContacts o)]
 
 testOrg :: Organization
 testOrg = Organization
@@ -88,4 +107,3 @@ cIToLineItem ci =
     { liLabel = show $ cName ci
     , liPhone = cPhone ci
     , liDepth = 1 }
-
