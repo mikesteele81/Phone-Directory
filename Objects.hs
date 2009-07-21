@@ -50,17 +50,14 @@ data Name = FirstLast { nFirst :: String
 newtype FirstSortedName = FirstSortedName { unFirstSortedName :: Name }
     deriving (Eq)
 
-newtype LastSortedName = LastSortedName { unLastSortedName :: Name }
-    deriving (Eq)
-
 instance Show FirstSortedName where
     show (FirstSortedName n) =
         case n of
           FirstLast f l -> f ++ " " ++ l
           SingleName sn -> sn
     
-instance Show LastSortedName where
-    show (LastSortedName n) =
+instance Show Name where
+    show n =
         case n of
           FirstLast f l -> l ++ ", " ++ f
           SingleName sn -> sn
@@ -74,15 +71,16 @@ instance ShowForSorting FirstSortedName where
           FirstLast f l -> f ++ l
           SingleName sn -> sn
           
-instance ShowForSorting LastSortedName where
-    showForSorting (LastSortedName n) =
+instance ShowForSorting Name where
+    showForSorting n =
         case n of
-        FirstLast f l -> l ++ f
-        SingleName sn -> sn
+          FirstLast f l -> l ++ f
+          SingleName sn -> sn
+
+instance Ord Name where
+    compare l r = compare (showForSorting l) (showForSorting r)
 
 instance Ord FirstSortedName where
-    compare l r = compare (showForSorting l) (showForSorting r)
-instance Ord LastSortedName where
     compare l r = compare (showForSorting l) (showForSorting r)
     
 instance JSON Name where
@@ -108,11 +106,6 @@ instance JSON FirstSortedName where
     readJSON n = readJSON n >>= (return . FirstSortedName)
     showJSON (FirstSortedName n) = showJSON n
     
-instance JSON LastSortedName where
-    readJSON n = readJSON n >>= (return . LastSortedName)
-    showJSON (LastSortedName n) = showJSON n
-
-
 -- An organization persons are a part of
 data (Show name) => Organization name
     = Organization
@@ -162,45 +155,39 @@ sortDoc d =
     d { dOrganizations = map sortOrg $ 
                          sort (dOrganizations d) }
         
-testDoc :: Document LastSortedName
+testDoc :: Document Name
 testDoc = Document
           { dRevised = "07/01/09"
           , dOrganizations =
             [ testOrg
             , Organization
               { oInfo = ContactInfo
-                        { cName = LastSortedName $ 
-                                  SingleName "Beta Enterprises"
+                        { cName = SingleName "Beta Enterprises"
                         , cPhone = "222-222-2222"
                         , cPriority = 1 }
               , oContacts =
                 [ ContactInfo
-                  { cName = LastSortedName $
-                            FirstLast "Michael" "Steele"
+                  { cName =  FirstLast "Michael" "Steele"
                   , cPhone = "222-222-2223"
                   , cPriority = 1 } ] } ] }
                     
-testOrg :: Organization LastSortedName
+testOrg :: Organization Name
 testOrg = Organization
           { oInfo = ContactInfo
-                    { cName = LastSortedName $
-                              SingleName "Org A"
+                    { cName = SingleName "Org A"
                     , cPhone = "111-111-1111"
                     , cPriority = 1 }
           , oContacts =
               [ ContactInfo
-                { cName = LastSortedName $
-                          FirstLast "Brett" "Anderson"
+                { cName = FirstLast "Brett" "Anderson"
                 , cPhone = "111-111-1112"
                 , cPriority = 1 }
               , ContactInfo
-                { cName = LastSortedName $
-                          FirstLast "Alex" "Boontidy"
+                { cName = FirstLast "Alex" "Boontidy"
                 , cPhone = "111-111-1112"
                 , cPriority = 1 }
               , ContactInfo
-                { cName = LastSortedName $
-                          SingleName "FAX"
+                { cName = SingleName "FAX"
                 , cPhone = "111-111-1113"
                 , cPriority = 0 }
               ]
