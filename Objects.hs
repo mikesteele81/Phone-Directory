@@ -2,16 +2,16 @@ module Objects
     where
 
 import Control.Applicative
-import Data.List (sortBy)
+import Data.List (sort)
 import Text.JSON
     
-data ContactInfo = ContactInfo
-    { cName :: Name
+data (Show name, Ord name) => ContactInfo name = ContactInfo
+    { cName :: name
     , cPhone    :: String
     , cPriority :: Int
-    } deriving (Show)
+    } deriving (Eq, Show)
 
-instance JSON ContactInfo where
+instance (JSON a, Show a, Ord a) => JSON (ContactInfo a) where
     readJSON (JSObject o) =
         do
           name <- valFromObj "name" o
@@ -24,17 +24,17 @@ instance JSON ContactInfo where
                      [ ("name", showJSON n )
                      , ("phone", showJSON p)
                      , ("priority", showJSON pr) ]
-                     
-compareCIBy :: NamePreference -> ContactInfo -> ContactInfo -> Ordering
-compareCIBy p l r =
-    -- priority descending
-    case compare (cPriority r) (cPriority l) of
-      -- name ascending
-      EQ -> case compareNameBy p (cName l) (cName r) of
-              -- phone ascending
-              EQ -> compare (cPhone l) (cPhone r)
-              x  -> x
-      x  -> x
+
+instance (Ord a, Show a) => Ord (ContactInfo a) where
+    compare l r =                     
+        -- priority descending
+        case compare (cPriority r) (cPriority l) of
+          -- name ascending
+          EQ -> case compare (cName l) (cName r) of
+                  -- phone ascending
+                  EQ -> compare (cPhone l) (cPhone r)
+                  x  -> x
+          x  -> x
                      
 data LineItem = LineItem
     { liLabel :: String
@@ -42,39 +42,49 @@ data LineItem = LineItem
     , liDepth :: Int
     } deriving (Show)
     
--- Used as an argument for functions that depend differently depending on
--- whether the first or last name is more interesting.
-data NamePreference = FirstPreferred
-                    | LastPreferred
-                    -- just for debugging
-                    deriving (Show)
-
 data Name = FirstLast { nFirst :: String
                       , nLast :: String }
-          | SingleName { nSingleName :: String }
-
--- used for debugging.          
-instance Show Name where
-    show = showName LastPreferred
+          | SingleName { nSingleName :: String
+          } deriving (Eq)
           
-showName :: NamePreference -> Name -> String
-showName _ (SingleName n) = n
-showName p (FirstLast f l) =
-    case p of
-      FirstPreferred -> f ++ " " ++ l
-      LastPreferred  -> l ++ ", " ++ f
+newtype FirstSortedName = FirstSortedName { unFirstSortedName :: Name }
+    deriving (Eq)
 
+newtype LastSortedName = LastSortedName { unLastSortedName :: Name }
+    deriving (Eq)
+
+instance Show FirstSortedName where
+    show (FirstSortedName n) =
+        case n of
+          FirstLast f l -> f ++ " " ++ l
+          SingleName sn -> sn
+    
+instance Show LastSortedName where
+    show (LastSortedName n) =
+        case n of
+          FirstLast f l -> l ++ ", " ++ f
+          SingleName sn -> sn
           
-compareNameBy :: NamePreference -> Name -> Name -> Ordering
-compareNameBy p l r =
-    let concatName :: Name -> String
-        concatName (SingleName n) = n
-        concatName (FirstLast fn ln) =
-            case p of
-              FirstPreferred -> fn ++ ln
-              LastPreferred  -> ln ++ fn
-    in compare (concatName l) (concatName r)
+class ShowForSorting a where
+    showForSorting :: a -> String
+    
+instance ShowForSorting FirstSortedName where
+    showForSorting (FirstSortedName n) =
+        case n of
+          FirstLast f l -> f ++ l
+          SingleName sn -> sn
+          
+instance ShowForSorting LastSortedName where
+    showForSorting (LastSortedName n) =
+        case n of
+        FirstLast f l -> l ++ f
+        SingleName sn -> sn
 
+instance Ord FirstSortedName where
+    compare l r = compare (showForSorting l) (showForSorting r)
+instance Ord LastSortedName where
+    compare l r = compare (showForSorting l) (showForSorting r)
+    
 instance JSON Name where
     readJSON (JSObject o) =
         let tryFL =
@@ -92,16 +102,25 @@ instance JSON Name where
                  case n of
                    FirstLast f l -> [ ("first", showJSON f)
                                     , ("last" , showJSON l)]
-                   SingleName sn -> [ ("name" , showJSON sn)] 
+                   SingleName sn -> [ ("name" , showJSON sn)]
+                   
+instance JSON FirstSortedName where
+    readJSON n = readJSON n >>= (return . FirstSortedName)
+    showJSON (FirstSortedName n) = showJSON n
+    
+instance JSON LastSortedName where
+    readJSON n = readJSON n >>= (return . LastSortedName)
+    showJSON (LastSortedName n) = showJSON n
+
 
 -- An organization persons are a part of
-data Organization
+data (Show name) => Organization name
     = Organization
-      { oInfo :: ContactInfo
-      , oContacts :: [ContactInfo]
-      } deriving (Show)
+      { oInfo :: ContactInfo name
+      , oContacts :: [ContactInfo name]
+      } deriving (Eq, Show)
 
-instance JSON Organization where
+instance (JSON a, Ord a, Show a) => JSON (Organization a) where
     readJSON (JSObject o) =
         do
           info <- valFromObj "info" o
@@ -113,21 +132,21 @@ instance JSON Organization where
                  [ ("info", showJSON $ oInfo o)
                  , ("contacts", showJSONs $ oContacts o)]
                  
-compareOrgBy :: NamePreference -> Organization -> Organization -> Ordering
-compareOrgBy p l r = compareCIBy p (oInfo l) (oInfo r)
+instance (Ord a, Show a) => Ord (Organization a) where
+    compare l r = compare (oInfo l) (oInfo r)
 
-sortOrg :: NamePreference -> Organization -> Organization
-sortOrg p o =
-    o { oContacts = sortBy (compareCIBy p) (oContacts o) }
+sortOrg :: (Ord a, Show a) => Organization a -> Organization a
+sortOrg o =
+    o { oContacts = sort (oContacts o) }
 
                  
-data Document
+data (Show name) => Document name
     = Document
       { dRevised :: String
-      , dOrganizations :: [Organization]
+      , dOrganizations :: [Organization name]
       } deriving (Show)
       
-instance JSON Document where
+instance (JSON a, Ord a, Show a) => JSON (Document a) where
     readJSON (JSObject d) =
         do revised <- valFromObj "revised" d
            organizations <- valFromObj "organizations" d
@@ -138,56 +157,62 @@ instance JSON Document where
         [ ("revised", showJSON $ dRevised d)
         , ("organizations", showJSONs $ dOrganizations d) ]
         
-sortDoc :: NamePreference -> Document -> Document
-sortDoc p d =
-    d { dOrganizations = map (sortOrg p) $ 
-                         sortBy (compareOrgBy p) (dOrganizations d) }
+sortDoc :: (Ord a, Show a) => Document a -> Document a
+sortDoc d =
+    d { dOrganizations = map sortOrg $ 
+                         sort (dOrganizations d) }
         
-testDoc :: Document
+testDoc :: Document LastSortedName
 testDoc = Document
           { dRevised = "07/01/09"
           , dOrganizations =
             [ testOrg
             , Organization
               { oInfo = ContactInfo
-                        { cName = SingleName "Beta Enterprises"
+                        { cName = LastSortedName $ 
+                                  SingleName "Beta Enterprises"
                         , cPhone = "222-222-2222"
                         , cPriority = 1 }
               , oContacts =
                 [ ContactInfo
-                  { cName = FirstLast "Michael" "Steele"
+                  { cName = LastSortedName $
+                            FirstLast "Michael" "Steele"
                   , cPhone = "222-222-2223"
                   , cPriority = 1 } ] } ] }
                     
-testOrg :: Organization
+testOrg :: Organization LastSortedName
 testOrg = Organization
           { oInfo = ContactInfo
-                    { cName = SingleName "Org A"
+                    { cName = LastSortedName $
+                              SingleName "Org A"
                     , cPhone = "111-111-1111"
                     , cPriority = 1 }
           , oContacts =
               [ ContactInfo
-                { cName = FirstLast "Brett" "Anderson"
+                { cName = LastSortedName $
+                          FirstLast "Brett" "Anderson"
                 , cPhone = "111-111-1112"
                 , cPriority = 1 }
               , ContactInfo
-                { cName = FirstLast "Alex" "Boontidy"
+                { cName = LastSortedName $
+                          FirstLast "Alex" "Boontidy"
                 , cPhone = "111-111-1112"
                 , cPriority = 1 }
               , ContactInfo
-                { cName = SingleName "FAX"
+                { cName = LastSortedName $
+                          SingleName "FAX"
                 , cPhone = "111-111-1113"
                 , cPriority = 0 }
               ]
           }
 
-orgToLineItems :: Organization -> [LineItem]
+orgToLineItems :: (Ord a, Show a) => Organization a -> [LineItem]
 orgToLineItems o =
     let rest = map cIToLineItem $ oContacts o
         oi = oInfo o
     in LineItem { liLabel = show $ cName oi, liPhone = cPhone oi, liDepth = 0 } : rest
 
-cIToLineItem :: ContactInfo -> LineItem
+cIToLineItem :: (Ord a, Show a) => ContactInfo a -> LineItem
 cIToLineItem ci =
     LineItem
     { liLabel = show $ cName ci
