@@ -2,6 +2,7 @@ module Objects
     where
 
 import Control.Applicative
+import Data.List (sortBy)
 import Text.JSON
     
 data ContactInfo = ContactInfo
@@ -17,27 +18,62 @@ instance JSON ContactInfo where
           phone <- valFromObj "phone" o
           priority <- valFromObj "priority" o
           return $ ContactInfo name phone priority
-    readJSON _ = Error "boo!"
+    readJSON _ = Error "Could not parse ContactInfo JSON object."
     showJSON (ContactInfo n p pr) =
         showJSON $ toJSObject $
                      [ ("name", showJSON n )
                      , ("phone", showJSON p)
                      , ("priority", showJSON pr) ]
-
+                     
+compareCIBy :: NamePreference -> ContactInfo -> ContactInfo -> Ordering
+compareCIBy p l r =
+    -- priority descending
+    case compare (cPriority r) (cPriority l) of
+      -- name ascending
+      EQ -> case compareNameBy p (cName l) (cName r) of
+              -- phone ascending
+              EQ -> compare (cPhone l) (cPhone r)
+              x  -> x
+      x  -> x
+                     
 data LineItem = LineItem
     { liLabel :: String
     , liPhone :: String
     , liDepth :: Int
     } deriving (Show)
+    
+-- Used as an argument for functions that depend differently depending on
+-- whether the first or last name is more interesting.
+data NamePreference = FirstPreferred
+                    | LastPreferred
+                    -- just for debugging
+                    deriving (Show)
 
 data Name = FirstLast { nFirst :: String
                       , nLast :: String }
           | SingleName { nSingleName :: String }
 
--- Temporary definition
+-- used for debugging.          
 instance Show Name where
-    show (FirstLast f l) = l ++ ", " ++ f
-    show (SingleName n)  = n 
+    show = showName LastPreferred
+          
+showName :: NamePreference -> Name -> String
+showName _ (SingleName n) = n
+showName p (FirstLast f l) =
+    case p of
+      FirstPreferred -> f ++ " " ++ l
+      LastPreferred  -> l ++ ", " ++ f
+
+          
+compareNameBy :: NamePreference -> Name -> Name -> Ordering
+compareNameBy p l r =
+    let concatName :: Name -> String
+        concatName (SingleName n) = n
+        concatName (FirstLast fn ln) =
+            case p of
+              FirstPreferred -> fn ++ ln
+              LastPreferred  -> ln ++ fn
+    in compare (concatName l) (concatName r)
 
 instance JSON Name where
     readJSON (JSObject o) =
@@ -48,7 +84,7 @@ instance JSON Name where
                   return $ FirstLast first sirname
             trySN =
                 do
-                  name <- valFromObj "name" o >>= readJSON
+                  name <- valFromObj "name" o
                   return $ SingleName name
         in do tryFL <|> trySN
     readJSON _ = Error "boo!"
@@ -77,10 +113,19 @@ instance JSON Organization where
                  [ ("info", showJSON $ oInfo o)
                  , ("contacts", showJSONs $ oContacts o)]
                  
+compareOrgBy :: NamePreference -> Organization -> Organization -> Ordering
+compareOrgBy p l r = compareCIBy p (oInfo l) (oInfo r)
+
+sortOrg :: NamePreference -> Organization -> Organization
+sortOrg p o =
+    o { oContacts = sortBy (compareCIBy p) (oContacts o) }
+
+                 
 data Document
     = Document
       { dRevised :: String
-      , dOrganizations :: [Organization] }
+      , dOrganizations :: [Organization]
+      } deriving (Show)
       
 instance JSON Document where
     readJSON (JSObject d) =
@@ -92,6 +137,11 @@ instance JSON Document where
         showJSON $ toJSObject $
         [ ("revised", showJSON $ dRevised d)
         , ("organizations", showJSONs $ dOrganizations d) ]
+        
+sortDoc :: NamePreference -> Document -> Document
+sortDoc p d =
+    d { dOrganizations = map (sortOrg p) $ 
+                         sortBy (compareOrgBy p) (dOrganizations d) }
         
 testDoc :: Document
 testDoc = Document
@@ -117,7 +167,11 @@ testOrg = Organization
                     , cPriority = 1 }
           , oContacts =
               [ ContactInfo
-                { cName = FirstLast "Albert" "Anderson"
+                { cName = FirstLast "Brett" "Anderson"
+                , cPhone = "111-111-1112"
+                , cPriority = 1 }
+              , ContactInfo
+                { cName = FirstLast "Alex" "Boontidy"
                 , cPhone = "111-111-1112"
                 , cPriority = 1 }
               , ContactInfo
