@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 module Objects
     where
 
@@ -5,13 +6,13 @@ import Control.Applicative
 import Data.List (sort)
 import Text.JSON
     
-data (Show name, Ord name) => ContactInfo name = ContactInfo
+data ContactInfo name = ContactInfo
     { cName :: name
     , cPhone    :: String
     , cPriority :: Int
-    } deriving (Eq, Show)
+    } deriving (Eq)
 
-instance (JSON a, Show a, Ord a) => JSON (ContactInfo a) where
+instance (JSON a) => JSON (ContactInfo a) where
     readJSON (JSObject o) =
         do
           name <- valFromObj "name" o
@@ -25,7 +26,7 @@ instance (JSON a, Show a, Ord a) => JSON (ContactInfo a) where
                      , ("phone", showJSON p)
                      , ("priority", showJSON pr) ]
 
-instance (Ord a, Show a) => Ord (ContactInfo a) where
+instance forall a. (Ord a) => Ord (ContactInfo a) where
     compare l r =                     
         -- priority descending
         case compare (cPriority r) (cPriority l) of
@@ -35,7 +36,10 @@ instance (Ord a, Show a) => Ord (ContactInfo a) where
                   EQ -> compare (cPhone l) (cPhone r)
                   x  -> x
           x  -> x
-                     
+          
+instance Functor ContactInfo where
+    f `fmap` x = x { cName = (f . cName) x }
+
 data LineItem = LineItem
     { liLabel :: String
     , liPhone :: String
@@ -69,7 +73,7 @@ instance ShowForSorting FirstSortedName where
     showForSorting (FirstSortedName n) =
         case n of
           FirstLast f l -> f ++ l
-          SingleName sn -> sn
+          _             -> showForSorting n
           
 instance ShowForSorting Name where
     showForSorting n =
@@ -107,13 +111,13 @@ instance JSON FirstSortedName where
     showJSON (FirstSortedName n) = showJSON n
     
 -- An organization persons are a part of
-data (Show name) => Organization name
+data Organization name
     = Organization
       { oInfo :: ContactInfo name
       , oContacts :: [ContactInfo name]
-      } deriving (Eq, Show)
+      } deriving (Eq)
 
-instance (JSON a, Ord a, Show a) => JSON (Organization a) where
+instance (JSON a) => JSON (Organization a) where
     readJSON (JSObject o) =
         do
           info <- valFromObj "info" o
@@ -125,21 +129,20 @@ instance (JSON a, Ord a, Show a) => JSON (Organization a) where
                  [ ("info", showJSON $ oInfo o)
                  , ("contacts", showJSONs $ oContacts o)]
                  
-instance (Ord a, Show a) => Ord (Organization a) where
+instance (Ord a) => Ord (Organization a) where
     compare l r = compare (oInfo l) (oInfo r)
 
-sortOrg :: (Ord a, Show a) => Organization a -> Organization a
+sortOrg :: (Ord a) => Organization a -> Organization a
 sortOrg o =
     o { oContacts = sort (oContacts o) }
 
                  
-data (Show name) => Document name
-    = Document
-      { dRevised :: String
-      , dOrganizations :: [Organization name]
-      } deriving (Show)
+data Document name =
+    Document
+    { dRevised :: String
+    , dOrganizations :: [Organization name] }
       
-instance (JSON a, Ord a, Show a) => JSON (Document a) where
+instance (JSON a) => JSON (Document a) where
     readJSON (JSObject d) =
         do revised <- valFromObj "revised" d
            organizations <- valFromObj "organizations" d
@@ -150,7 +153,7 @@ instance (JSON a, Ord a, Show a) => JSON (Document a) where
         [ ("revised", showJSON $ dRevised d)
         , ("organizations", showJSONs $ dOrganizations d) ]
         
-sortDoc :: (Ord a, Show a) => Document a -> Document a
+sortDoc :: (Ord a) => Document a -> Document a
 sortDoc d =
     d { dOrganizations = map sortOrg $ 
                          sort (dOrganizations d) }
@@ -193,13 +196,13 @@ testOrg = Organization
               ]
           }
 
-orgToLineItems :: (Ord a, Show a) => Organization a -> [LineItem]
+orgToLineItems :: (Show a) => Organization a -> [LineItem]
 orgToLineItems o =
     let rest = map cIToLineItem $ oContacts o
         oi = oInfo o
     in LineItem { liLabel = show $ cName oi, liPhone = cPhone oi, liDepth = 0 } : rest
 
-cIToLineItem :: (Ord a, Show a) => ContactInfo a -> LineItem
+cIToLineItem :: (Show a) => ContactInfo a -> LineItem
 cIToLineItem ci =
     LineItem
     { liLabel = show $ cName ci
