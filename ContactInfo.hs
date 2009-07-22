@@ -21,10 +21,8 @@ instance (JSON a) => JSON (ContactInfo a) where
     readJSON _ =
         Error "Could not parse ContactInfo JSON object."
     showJSON (ContactInfo n p pr) =
-        showJSON $ toJSObject $
-                     [ ("name", showJSON n )
-                     , ("phone", showJSON p)
-                     , ("priority", showJSON pr) ]
+       makeObj [ ("name", showJSON n), ("phone", showJSON p)
+               , ("priority", showJSON pr) ]
 
 instance forall a. (Ord a) => Ord (ContactInfo a) where
     compare l r =                     
