@@ -6,10 +6,9 @@ module Name
 import Control.Applicative    
 import Text.JSON
     
-data Name = FirstLast { nFirst :: String
-                      , nLast :: String }
-          | SingleName { nSingleName :: String
-          } deriving (Eq)
+data Name = FirstLast String String
+          | SingleName String
+          deriving (Eq)
           
 newtype FirstSortedName = FirstSortedName { unFirstSortedName :: Name }
     deriving (Eq)
@@ -49,16 +48,8 @@ instance Ord FirstSortedName where
     
 instance JSON Name where
     readJSON (JSObject o) =
-        let tryFL =
-                do
-                  first <- valFromObj "first" o
-                  sirname <- valFromObj "last" o
-                  return $ FirstLast first sirname
-            trySN =
-                do
-                  name <- valFromObj "name" o
-                  return $ SingleName name
-        in do tryFL <|> trySN
+        FirstLast <$> valFromObj "first" o <*> valFromObj "last" o
+        <|> SingleName <$> valFromObj "name" o
     readJSON _ = Error "boo!"
     showJSON n = showJSON $ toJSObject $
                  case n of
@@ -67,6 +58,6 @@ instance JSON Name where
                    SingleName sn -> [ ("name" , showJSON sn)]
                    
 instance JSON FirstSortedName where
-    readJSON n = readJSON n >>= (return . FirstSortedName)
+    readJSON n = FirstSortedName <$> readJSON n
     showJSON (FirstSortedName n) = showJSON n
     
