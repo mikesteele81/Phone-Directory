@@ -10,6 +10,7 @@ import Name
 data ContactInfo name = ContactInfo
     { cName :: name
     , cPhone    :: String
+    -- for the purposes of sorting.  Higher numbers sort first.
     , cPriority :: Int
     } deriving (Eq)
 
@@ -41,12 +42,6 @@ instance forall a. (Ord a) => Ord (ContactInfo a) where
 instance Functor ContactInfo where
     f `fmap` x = x { cName = (f . cName) x }
 
-data LineItem = LineItem
-    { liLabel :: String
-    , liPhone :: String
-    , liDepth :: Int
-    } deriving (Show)
-    
 -- An organization persons are a part of
 data Organization name
     = Organization
@@ -112,36 +107,24 @@ testDoc = Document
                   , cPriority = 1 } ] } ] }
                     
 testOrg :: Organization Name
-testOrg = Organization
-          { oInfo = ContactInfo
-                    { cName = SingleName "Org A"
-                    , cPhone = "111-111-1111"
-                    , cPriority = 1 }
-          , oContacts =
-              [ ContactInfo
-                { cName = FirstLast "Brett" "Anderson"
-                , cPhone = "111-111-1112"
-                , cPriority = 1 }
-              , ContactInfo
-                { cName = FirstLast "Alex" "Boontidy"
-                , cPhone = "111-111-1112"
-                , cPriority = 1 }
-              , ContactInfo
-                { cName = SingleName "FAX"
-                , cPhone = "111-111-1113"
-                , cPriority = 0 }
-              ]
-          }
-
-orgToLineItems :: (Show a) => Organization a -> [LineItem]
-orgToLineItems o =
-    let rest = map cIToLineItem $ oContacts o
-        oi = oInfo o
-    in LineItem { liLabel = show $ cName oi, liPhone = cPhone oi, liDepth = 0 } : rest
-
-cIToLineItem :: (Show a) => ContactInfo a -> LineItem
-cIToLineItem ci =
-    LineItem
-    { liLabel = show $ cName ci
-    , liPhone = cPhone ci
-    , liDepth = 1 }
+testOrg =
+    Organization
+    { oInfo = ContactInfo
+              { cName = SingleName "Org A"
+              , cPhone = "111-111-1111"
+              , cPriority = 1 }
+    , oContacts =
+        [ ContactInfo
+          { cName = FirstLast "Brett" "Anderson"
+          , cPhone = "111-111-1112"
+          , cPriority = 1 }
+        , ContactInfo
+          { cName = FirstLast "Alex" "Boontidy"
+          , cPhone = "111-111-1112"
+          , cPriority = 1 }
+        , ContactInfo
+          { cName = SingleName "FAX"
+          , cPhone = "111-111-1113"
+          , cPriority = 0 }
+        ]
+    }
