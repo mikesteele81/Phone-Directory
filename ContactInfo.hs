@@ -1,11 +1,15 @@
 {-# LANGUAGE ExistentialQuantification #-}
 module ContactInfo
     ( ContactInfo (..)
+    , drawCI
     ) where
 
 import Control.Applicative
-import Data.Monoid    
+import Data.Monoid
+import Graphics.PDF
 import Text.JSON
+
+import Constants
     
 data ContactInfo name = ContactInfo
     { cName :: name
@@ -31,6 +35,11 @@ instance forall a. (Ord a) => Ord (ContactInfo a) where
         compare (cName l) (cName r) `mappend`
         compare (cPhone l) (cPhone r)
 
--- Perform an operation on the name.  Is this an abuse of Functors?          
+-- Perform an operation on the name.  Is this an abuse of Functors?
 instance Functor ContactInfo where
     f `fmap` x = x { cName = (f . cName) x }
+
+drawCI :: (Show a) => ContactInfo a -> PDFFloat -> PDFFloat -> Draw ()
+drawCI ci x y =
+    let name = (toPDFString . show . cName) ci
+    in drawText $ text font_normal x y name

@@ -3,9 +3,9 @@ module Name
     , FirstSortedName (FirstSortedName, unFirstSortedName)
     ) where
 
-import Control.Applicative    
+import Control.Applicative
 import Text.JSON
-    
+
 data Name = FirstLast String String
           | SingleName String
           deriving (Eq)
@@ -60,4 +60,3 @@ instance JSON Name where
 instance JSON FirstSortedName where
     readJSON n = FirstSortedName <$> readJSON n
     showJSON (FirstSortedName n) = showJSON n
-    
