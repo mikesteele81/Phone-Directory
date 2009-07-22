@@ -3,6 +3,7 @@ module ContactInfo
     ( ContactInfo (..)
     ) where
 
+import Control.Applicative
 import Data.Monoid    
 import Text.JSON
     
@@ -15,12 +16,10 @@ data ContactInfo name = ContactInfo
 
 instance (JSON a) => JSON (ContactInfo a) where
     readJSON (JSObject o) =
-        do
-          name <- valFromObj "name" o
-          phone <- valFromObj "phone" o
-          priority <- valFromObj "priority" o
-          return $ ContactInfo name phone priority
-    readJSON _ = Error "Could not parse ContactInfo JSON object."
+        ContactInfo <$> valFromObj "name" o <*> valFromObj "phone" o
+        <*> valFromObj "priority" o
+    readJSON _ =
+        Error "Could not parse ContactInfo JSON object."
     showJSON (ContactInfo n p pr) =
         showJSON $ toJSObject $
                      [ ("name", showJSON n )
