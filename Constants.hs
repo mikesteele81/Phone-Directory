@@ -33,3 +33,6 @@ font_title, font_normal :: PDFFont
 font_title     = PDFFont Helvetica 20
 font_normal    = PDFFont Helvetica 10
 
+line_item_width :: PDFFloat
+-- 1 7/8"
+line_item_width = fromIntegral (units_per_inch * 15) / 8.0

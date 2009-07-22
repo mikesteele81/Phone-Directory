@@ -42,4 +42,8 @@ instance Functor ContactInfo where
 drawCI :: (Show a) => ContactInfo a -> PDFFloat -> PDFFloat -> Draw ()
 drawCI ci x y =
     let name = (toPDFString . show . cName) ci
-    in drawText $ text font_normal x y name
+        phone = (toPDFString . show . cPhone) ci
+    in do drawText $ text font_normal x y name
+          drawText $ text font_normal
+                       (x + line_item_width - textWidth font_normal phone)
+                       y phone
