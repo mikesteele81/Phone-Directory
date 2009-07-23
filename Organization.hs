@@ -1,6 +1,5 @@
 module Organization where
 
-import Control.Monad (foldM)
 import Data.List (sort)
 import Graphics.PDF
 import Text.JSON
@@ -36,16 +35,11 @@ sortOrg o =
 
 -- | Draw an Organization.  Supply the x and y of the upper left corner.
 -- Returns (w, h)
-drawOrg :: (Show a) => Organization a -> PDFFloat -> PDFFloat
-        -> Draw (PDFFloat, PDFFloat)
-drawOrg o x y =
-    let go y' a = do
-          (_, h) <- drawCI a (x + line_item_indent) y'
-                    (line_item_width - line_item_indent)
-          return $ y' - h
-    in do
-      -- header starts flush with right edge
-      (_, y') <- drawCI (oInfo o) x y line_item_width
-      -- all others are indented a bit
-      y'' <- foldM go (y - y') $ oContacts o
-      return $ (line_item_width, y - y'')
+drawOrg :: (Show a) => Organization a -> PDFText ()
+drawOrg o = do
+  drawCI (oInfo o) line_item_width
+  startNewLine
+  textStart line_item_indent 0
+  mapM_ (\x -> do
+           drawCI x (line_item_width - line_item_indent)
+           startNewLine) $ oContacts o

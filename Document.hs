@@ -39,7 +39,10 @@ renderDoc d =
          drawText $ text font_title title_inset title_rise title_string
          drawText $ text font_normal date_inset date_rise revised
          drawText $ text font_normal mode_inset mode_rise mode_string
-         drawOrg (head $ dOrganizations d) 200.0 600.0
+         drawText $ do
+           leading 10.0
+           textStart 200.0 600.0
+           drawOrg (head $ dOrganizations d)
          beginPath (300 :+ 300)
          lineto (350 :+ 320)
          strokePath
