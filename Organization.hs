@@ -43,3 +43,4 @@ drawOrg o = do
   mapM_ (\x -> do
            drawCI x (line_item_width - line_item_indent)
            startNewLine) $ oContacts o
+  textStart (0 - line_item_indent) 0

@@ -42,7 +42,8 @@ renderDoc d =
          drawText $ do
            leading 10.0
            textStart 200.0 600.0
-           drawOrg (head $ dOrganizations d)
+           mapM_ drawOrg $ dOrganizations d
+--           drawOrg (head $ dOrganizations d)
          beginPath (300 :+ 300)
          lineto (350 :+ 320)
          strokePath
