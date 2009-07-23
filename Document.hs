@@ -6,6 +6,7 @@ import Text.JSON
 
 import Constants
 import ContactInfo
+import Name
 import Organization
 
 data Document name =
@@ -32,11 +33,11 @@ sortDoc d =
 -- | Draw a Document.  It renders at least 2 pages in the PDF monad.
 renderDoc :: (Show a) => Document a -> PDF()
 renderDoc d = 
-    let revised = (toPDFString . dRevised) d
+    let revised = toPDFString $ "Revised: " ++ dRevised d
         go x = do
-          drawOrg x
           leading org_leading
           startNewLine
+          drawOrg x
     in do
       p <- addPage Nothing
       drawWithPage p $ do
@@ -44,7 +45,7 @@ renderDoc d =
          drawText $ text font_normal date_inset date_rise revised
          drawText $ text font_normal mode_inset mode_rise mode_string
          drawText $ do
-           textStart 200.0 600.0
+           textStart page_margin grid_rise
            mapM_ go $ dOrganizations d
          beginPath (300 :+ 300)
          lineto (350 :+ 320)
