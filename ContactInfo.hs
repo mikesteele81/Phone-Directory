@@ -40,13 +40,13 @@ instance Functor ContactInfo where
     f `fmap` x = x { cName = (f . cName) x }
 
 -- | Draw a ContactInfo.  Return the width and height
-drawCI :: (Show a) => ContactInfo a -> PDFFloat -> PDFFloat
+drawCI :: (Show a) => ContactInfo a -> PDFFloat -> PDFFloat -> PDFFloat
        -> Draw (PDFFloat, PDFFloat)
-drawCI ci x y =
+drawCI ci x y w =
     let name = (toPDFString . show . cName) ci
         phone = (toPDFString . cPhone) ci
     in do drawText $ text font_normal x y name
           drawText $ text font_normal
-                       (x + line_item_width - textWidth font_normal phone)
+                       (x + w - textWidth font_normal phone)
                        y phone
-          return (line_item_width, getHeight font_normal)
+          return (w, getHeight font_normal)
