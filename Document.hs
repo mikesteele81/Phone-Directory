@@ -33,6 +33,10 @@ sortDoc d =
 renderDoc :: (Show a) => Document a -> PDF()
 renderDoc d = 
     let revised = (toPDFString . dRevised) d
+        go x = do
+          drawOrg x
+          leading org_leading
+          startNewLine
     in do
       p <- addPage Nothing
       drawWithPage p $ do
@@ -40,10 +44,8 @@ renderDoc d =
          drawText $ text font_normal date_inset date_rise revised
          drawText $ text font_normal mode_inset mode_rise mode_string
          drawText $ do
-           leading 10.0
            textStart 200.0 600.0
-           mapM_ drawOrg $ dOrganizations d
---           drawOrg (head $ dOrganizations d)
+           mapM_ go $ dOrganizations d
          beginPath (300 :+ 300)
          lineto (350 :+ 320)
          strokePath

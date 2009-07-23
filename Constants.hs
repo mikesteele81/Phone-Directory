@@ -33,8 +33,14 @@ font_title, font_normal :: PDFFont
 font_title     = PDFFont Helvetica 20
 font_normal    = PDFFont Helvetica 10
 
-line_item_width, line_item_indent :: PDFFloat
+line_item_width, line_item_indent, line_item_leading :: PDFFloat
+org_leading :: PDFFloat
+
 -- 1 7/8"
-line_item_width = fromIntegral (units_per_inch * 15) / 8.0
+line_item_width   = fromIntegral (units_per_inch * 15) / 8.0
 -- 1/8"
-line_item_indent = fromIntegral units_per_inch / 8.0
+line_item_indent  = fromIntegral units_per_inch / 8.0
+-- 1/8"
+line_item_leading = fromIntegral units_per_inch / 8.0
+-- 1/4"
+org_leading       = fromIntegral units_per_inch / 4.0

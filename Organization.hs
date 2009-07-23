@@ -37,6 +37,7 @@ sortOrg o =
 -- Returns (w, h)
 drawOrg :: (Show a) => Organization a -> PDFText ()
 drawOrg o = do
+  leading line_item_leading
   drawCI (oInfo o) line_item_width
   startNewLine
   textStart line_item_indent 0
