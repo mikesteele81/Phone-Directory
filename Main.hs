@@ -7,7 +7,6 @@ import Text.JSON
 
 import Constants
 import ContactInfo
-import Name
 import Objects
 import Organization
 
@@ -21,9 +20,6 @@ import Organization
 --        do
 --          putStrLn "Done!"
 --          putStrLn $ show $ JP.pp_value x
-
-testCI :: ContactInfo Name
-testCI = ContactInfo (FirstLast "Michael" "Steele") "911" 1
 
 main :: IO ()  
 main =
