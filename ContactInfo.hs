@@ -45,8 +45,11 @@ drawCI :: (Show a) => ContactInfo a -> PDFFloat -> PDFFloat -> PDFFloat
 drawCI ci x y w =
     let name = (toPDFString . show . cName) ci
         phone = (toPDFString . cPhone) ci
-    in do drawText $ text font_normal x y name
-          drawText $ text font_normal
-                       (x + w - textWidth font_normal phone)
-                       y phone
-          return (w, getHeight font_normal)
+    in do
+      drawText $ do
+         setFont font_normal
+         textStart x y
+         displayText name
+         textStart (w - textWidth font_normal phone) 0
+         displayText phone
+      return (w, getHeight font_normal)
