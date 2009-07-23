@@ -8,6 +8,8 @@ import Text.JSON
 import Constants
 import ContactInfo
 import Name
+import Objects
+import Organization
 
 --main1 :: IO ()
 --main1 = do
@@ -33,6 +35,7 @@ main =
         drawText $ text font_normal date_inset date_rise date_string
         drawText $ text font_normal mode_inset mode_rise mode_string
         drawCI testCI 300.0 400.0
+        drawOrg testOrg 200.0 600.0
         beginPath (300 :+ 300)
         lineto (350 :+ 320)
         strokePath

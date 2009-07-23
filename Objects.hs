@@ -6,34 +6,8 @@ import Text.JSON
 
 import ContactInfo
 import Name
+import Organization
     
--- An organization persons are a part of
-data Organization name
-    = Organization
-      { oInfo :: ContactInfo name
-      , oContacts :: [ContactInfo name]
-      } deriving (Eq)
-
-instance (JSON a) => JSON (Organization a) where
-    readJSON (JSObject o) =
-        do
-          info <- valFromObj "info" o
-          contacts <- valFromObj "contacts" o
-          return $ Organization info contacts
-    readJSON _ = Error "Could not parse Organization JSON object."
-    showJSON o =
-        showJSON $ toJSObject $
-                 [ ("info", showJSON $ oInfo o)
-                 , ("contacts", showJSONs $ oContacts o)]
-                 
-instance (Ord a) => Ord (Organization a) where
-    compare l r = compare (oInfo l) (oInfo r)
-
-sortOrg :: (Ord a) => Organization a -> Organization a
-sortOrg o =
-    o { oContacts = sort (oContacts o) }
-
-                 
 data Document name =
     Document
     { dRevised :: String

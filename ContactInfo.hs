@@ -39,7 +39,9 @@ instance forall a. (Ord a) => Ord (ContactInfo a) where
 instance Functor ContactInfo where
     f `fmap` x = x { cName = (f . cName) x }
 
-drawCI :: (Show a) => ContactInfo a -> PDFFloat -> PDFFloat -> Draw ()
+-- | Draw a ContactInfo.  Return the width and height
+drawCI :: (Show a) => ContactInfo a -> PDFFloat -> PDFFloat
+       -> Draw (PDFFloat, PDFFloat)
 drawCI ci x y =
     let name = (toPDFString . show . cName) ci
         phone = (toPDFString . show . cPhone) ci
@@ -47,3 +49,4 @@ drawCI ci x y =
           drawText $ text font_normal
                        (x + line_item_width - textWidth font_normal phone)
                        y phone
+          return (line_item_width, getHeight font_normal)
