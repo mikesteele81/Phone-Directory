@@ -17,7 +17,7 @@ data ContactInfo name = ContactInfo
     -- for the purposes of sorting.  Higher numbers sort first.
     , cPriority :: Int
     } deriving (Eq)
-
+    
 instance (JSON a) => JSON (ContactInfo a) where
     readJSON (JSObject o) =
         ContactInfo <$> valFromObj "name" o <*> valFromObj "phone" o
@@ -44,7 +44,7 @@ drawCI :: (Show a) => ContactInfo a -> PDFFloat -> PDFFloat
        -> Draw (PDFFloat, PDFFloat)
 drawCI ci x y =
     let name = (toPDFString . show . cName) ci
-        phone = (toPDFString . show . cPhone) ci
+        phone = (toPDFString . cPhone) ci
     in do drawText $ text font_normal x y name
           drawText $ text font_normal
                        (x + line_item_width - textWidth font_normal phone)
