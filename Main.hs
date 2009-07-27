@@ -5,7 +5,6 @@ import System.Console.GetOpt
 import System.Environment ( getArgs )
 import System.IO
 import Text.JSON
-import qualified Text.JSON.Pretty as JP
 
 import Constants
 import Document
@@ -44,21 +43,24 @@ main = do
   opts <- getArgs >>= parseOpts
   putStrLn $ show opts
   putStrLn $ "Opening " ++ optInput opts ++ "..."
-  res <- withFile (optInput opts) ReadMode grabJSON
-  case res of
-    Error s -> putStrLn $ "Error: " ++ s
-    Ok x    ->
-        do
-          putStrLn "Done!"
-          putStrLn $ show $ JP.pp_value x
-          case optMode opts of
-            Generate ->
-                case (readJSON x :: Result (Document Name)) of
-                  Error s -> putStrLn $ s
-                  Ok x' -> runPdf (optOutput opts) standardDocInfo
-                           (PDFRect 0 0 page_width page_height) $
-                           do renderDoc x'
-            Edit -> undefined
+  withFile (optInput opts) ReadMode $ \h -> do
+         input <- hGetContents h         
+         case decodeStrict input >>= readJSON of
+           Error s -> putStrLn $ "Error: " ++ s
+           Ok doc    ->
+               do
+                 putStrLn "Done!"
+                 case optMode opts of
+                   Generate -> generate doc opts
+                   Edit     -> edit doc opts
+
+generate :: Document Name -> Options -> IO ()
+generate doc opts = do
+  runPdf (optOutput opts) standardDocInfo (PDFRect 0 0 page_width page_height) $
+         do renderDoc doc
+
+edit :: Document Name -> Options -> IO ()
+edit _ _ = undefined
 
 parseOpts :: [String] -> IO Options
 parseOpts argv = 
@@ -67,9 +69,3 @@ parseOpts argv =
       case getOpt Permute options argv of
         (o,[],[]  ) -> return $ foldl (flip id) defaultOptions o
         (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
-
-grabJSON :: Handle -> IO (Result JSValue)
-grabJSON h = do
-  hStr <- hGetContents h
-  putStrLn $ hStr
-  return $ decodeStrict hStr
