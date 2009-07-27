@@ -6,9 +6,8 @@ import Constants
 
 data LineItem = LabelValue { left   :: PDFString
                            , right  :: PDFString
-                           , indent :: Bool }
-              | DividingLine
-              deriving (Show)
+                           , indent :: Bool
+                           } deriving (Show)
               
 class ShowLineItems a where
     showLineItems :: a -> [LineItem]
@@ -29,7 +28,13 @@ drawLineItem w (LabelValue l r i) =
       displayText r
       textStart (textWidth font_normal r - w) 0
       
-drawLineItem _ DividingLine = return ()
+drawLineItems :: PDFFloat -> [LineItem] -> PDFText ()
+drawLineItems w lx =
+    let op l = drawLineItem w l >> startNewLine
+    in do
+      leading line_item_leading
+      -- draw each contact
+      mapM_ op lx
 
 newtype Column = Column [LineItem]
                 

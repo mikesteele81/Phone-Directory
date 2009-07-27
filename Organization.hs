@@ -3,10 +3,8 @@ module Organization where
 
 import Control.Applicative
 import Data.List (sort)
-import Graphics.PDF
 import Text.JSON
 
-import Constants
 import ContactInfo
 import LineItem
 
@@ -40,16 +38,4 @@ instance forall a. (Show a) => ShowLineItems (Organization a) where
         in mkLabelValue False (show $ cName o) (cPhone o) : rest
 
 sortOrg :: (Ord a) => Organization a -> Organization a
-sortOrg o =
-    o { oContacts = sort (oContacts o) }
-
--- | Draw an Organization.  Supply the x and y of the upper left corner.
--- Returns (w, h)
-drawOrg :: (Show a) => Organization a -> PDFText ()
-drawOrg o =
-    let lx = showLineItems o
-        op l = drawLineItem line_item_width l >> startNewLine
-    in do
-      leading line_item_leading
-      -- draw each contact
-      mapM_ op lx
+sortOrg o = o { oContacts = sort (oContacts o) }

@@ -5,8 +5,7 @@ import Graphics.PDF
 import Text.JSON
 
 import Constants
-import ContactInfo
-import Name
+import LineItem
 import Organization
 
 data Document name =
@@ -37,7 +36,7 @@ renderDoc d =
         go x = do
           leading org_leading
           startNewLine
-          drawOrg x
+          drawLineItems line_item_width x
     in do
       p <- addPage Nothing
       drawWithPage p $ do
@@ -46,10 +45,9 @@ renderDoc d =
          drawText $ text font_normal mode_inset mode_rise mode_string
          drawText $ do
            textStart page_margin grid_rise
-           mapM_ go $ dOrganizations d
+           mapM_ go $ map showLineItems $ dOrganizations d
          beginPath (300 :+ 300)
          lineto (350 :+ 320)
          strokePath
          closePath
          drawText $ text font_normal 0.0 0.0 $ toPDFString "!"
-
