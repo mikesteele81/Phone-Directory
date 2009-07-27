@@ -1,18 +1,14 @@
 {-# LANGUAGE ExistentialQuantification #-}
 module ContactInfo
     ( ContactInfo (..)
-    , drawCI
     ) where
 
 import Control.Applicative
 import Data.Monoid
-import Graphics.PDF
 import Text.JSON
 
-import Constants
-    
-data ContactInfo name = ContactInfo
-    { cName :: name
+data ContactInfo a = ContactInfo
+    { cName :: a
     , cPhone    :: String
     -- for the purposes of sorting.  Higher numbers sort first.
     , cPriority :: Int
@@ -38,15 +34,3 @@ instance forall a. (Ord a) => Ord (ContactInfo a) where
 -- Perform an operation on the name.  Is this an abuse of Functors?
 instance Functor ContactInfo where
     f `fmap` x = x { cName = (f . cName) x }
-
--- | Draw a ContactInfo.
-drawCI :: (Show a) => ContactInfo a -> PDFFloat -> PDFText ()
-drawCI ci w =
-    let name = (toPDFString . show . cName) ci
-        phone = (toPDFString . cPhone) ci
-    in do
-      setFont font_normal
-      displayText name
-      textStart (w - textWidth font_normal phone) 0
-      displayText phone
-      textStart (textWidth font_normal phone - w) 0
