@@ -18,8 +18,8 @@ data Options = Options
 
 defaultOptions :: Options
 defaultOptions = Options
-                 { optInput = "stdin"
-                 , optOutput = "stdout"
+                 { optInput = "test.json"
+                 , optOutput = "test.pdf"
                  }
                  
 options :: [OptDescr (Options -> Options)]
