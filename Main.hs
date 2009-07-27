@@ -11,15 +11,20 @@ import Constants
 import Document
 import Name
 
+data Mode = Generate | Edit
+            deriving (Show)
+
 data Options = Options
     { optInput :: String
     , optOutput :: String
+    , optMode :: Mode
     } deriving Show
 
 defaultOptions :: Options
 defaultOptions = Options
                  { optInput = "test.json"
                  , optOutput = "test.pdf"
+                 , optMode = Generate
                  }
                  
 options :: [OptDescr (Options -> Options)]
@@ -28,6 +33,10 @@ options =
       (ReqArg (\f opts -> opts { optOutput = f }) "FILE") "output FILE"
     , Option ['c'] []
       (ReqArg (\f opts -> opts { optInput  = f }) "FILE") "input FILE"
+    , Option ['g'] ["generate"]
+      (NoArg (\ opts -> opts { optMode = Generate })) "generate"
+    , Option ['e'] ["edit"]
+      (NoArg (\ opts -> opts { optMode = Edit })) "edit"
     ]
     
 main :: IO ()
@@ -42,11 +51,14 @@ main = do
         do
           putStrLn "Done!"
           putStrLn $ show $ JP.pp_value x
-          case (readJSON x :: Result (Document Name)) of
-            Error s -> putStrLn $ s
-            Ok x' -> runPdf (optOutput opts) standardDocInfo
-                    (PDFRect 0 0 page_width page_height) $
-                    do renderDoc x'
+          case optMode opts of
+            Generate ->
+                case (readJSON x :: Result (Document Name)) of
+                  Error s -> putStrLn $ s
+                  Ok x' -> runPdf (optOutput opts) standardDocInfo
+                           (PDFRect 0 0 page_width page_height) $
+                           do renderDoc x'
+            Edit -> undefined
 
 parseOpts :: [String] -> IO Options
 parseOpts argv = 
