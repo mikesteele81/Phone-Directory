@@ -2,6 +2,7 @@ module Main where
 
 import Graphics.PDF
 import Graphics.UI.WX as WX
+import Graphics.UI.WXCore hiding (Document, fill)
 import System.Console.GetOpt
 import System.Environment ( getArgs )
 import System.IO
@@ -62,25 +63,48 @@ generate doc opts = do
 
 edit :: Document Name -> Options -> IO ()
 edit doc _ = do
-  f     <- frame    [ WX.text := "Phone Directory" ]
-  mFile <- menuPane [ WX.text := "&File"]
-  menuItem mFile [ WX.text := "&Open" ]
-  menuQuit mFile [ on command := close f ]
-  mHelp <- menuHelp []
-  menuAbout mHelp [ on command := infoDialog f "About Phone Directory" "test" ]
-  lblOrg <- staticText f [ WX.text := "Organizations"]
-  orgs <- singleListBox f [ items := map show (dOrganizations doc)
-                  , selection := 0
-                  ]
-  lblContacts <- staticText f [WX.text := "Contacts"]
-  contacts <- singleListBox f [ items := ["test01", "test02"] ]
-  set f [ menuBar := [mFile, mHelp]
-        , layout := margin 6 $ row 5
-                     [ column 5 [ widget lblOrg
-                                , vstretch $ widget orgs ]
-                     , column 5 [ widget lblContacts
-                                , vstretch $ widget contacts ]
-                     ]
+  f  <- frame            []
+  sw <- splitterWindow f []
+  
+  pLeft  <- panel sw []
+  pRight <- panel sw []
+  
+  mFile  <- menuPane        []
+  iNew   <- menuItem mFile  []
+  ()     <- menuLine mFile
+  iQuit  <- menuQuit mFile  []
+  mHelp  <- menuHelp        []
+  iAbout <- menuAbout mHelp []
+  
+  tc <- treeCtrl pLeft []
+  
+  set mFile  [ WX.text := "&File" ]
+  set iNew   [ WX.text := "&Open" ]
+  set iQuit  [ on command := close f ]
+  set iAbout [ on command := infoDialog f "About Phone Directory" "test" ]
+  
+  tFirst    <- staticText pRight [ WX.text := "First Name:"   ]
+  tLast     <- staticText pRight [ WX.text := "Last Name:"    ]
+  tPhone    <- staticText pRight [ WX.text := "Phone Number:" ]
+  tPriority <- staticText pRight [ WX.text := "Priority:"     ]
+  
+  set tc [ on treeEvent := onTreeEvent tc ]
+  
+  set pLeft [ layout := WX.fill $ widget tc ]
+  set pRight [ layout := margin 6 $ column 5
+                          [ widget tFirst, widget tLast
+                          , widget tPhone, widget tPriority
+                          ]
+             ]
+
+  root <- treeCtrlAddRoot tc "test root" 0 0 objectNull
+  mapM_ (\x -> treeCtrlAppendItem tc root (show x) 0 0 objectNull) $ dOrganizations doc
+  treeCtrlSelectItem tc root
+  
+  set f [ WX.text    := "Phone Directory"
+        , clientSize := sz 640 480
+        , menuBar    := [mFile, mHelp]
+        , layout     := WX.fill $ vsplit sw 5 200 (widget pLeft) (widget pRight)
         ]
 
 parseOpts :: [String] -> IO Options
@@ -90,3 +114,24 @@ parseOpts argv =
       case getOpt Permute options argv of
         (o,[],[]  ) -> return $ foldl (flip id) defaultOptions o
         (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
+
+onTreeEvent :: TreeCtrl () -> EventTree -> IO ()
+onTreeEvent tc (TreeItemExpanding itm veto) | treeItemIsOk itm = do
+  wxcBeginBusyCursor
+  children <- treeCtrlGetChildren tc itm
+--  mapM_ visualise children
+  wxcEndBusyCursor
+  propagateEvent
+onTreeEvent tc (TreeSelChanged itm olditem) | treeItemIsOk itm = do
+  wxcBeginBusyCursor
+--  selectRight item
+  wxcEndBusyCursor
+  propagateEvent
+onTreeEvent _ _ = propagateEvent
+
+--visualise :: TreeCtrl () -> TreeItem -> IO ()
+--visualise tc item = do
+--  c <- treeCtrlItemHasChildren tc item
+--  when (c == 0) $ giveBirth item
+--  updateThickness item
+--  updateImages item
