@@ -61,10 +61,15 @@ generate doc opts = do
          do renderDoc doc
 
 edit :: Document Name -> Options -> IO ()
-edit _ _ = do
-  f <- frame [WX.text := "Hello!"]
-  quit <- button f [WX.text := "Quit", on command := close f]
-  set f [layout := widget quit]
+edit doc _ = do
+  f     <- frame    [ WX.text := "Phone Directory" ]
+  mFile <- menuPane [ WX.text := "&File"]
+  menuItem mFile [ WX.text := "&Open" ]
+  menuQuit mFile [ on command := close f ]
+  mHelp <- menuHelp []
+  menuAbout mHelp [ on command := infoDialog f "About Phone Directory" "test" ]
+  listBox <- singleListBox f [ items := map show (dOrganizations doc), selection := 0]
+  set f [ menuBar := [mFile, mHelp] ]
 
 parseOpts :: [String] -> IO Options
 parseOpts argv = 

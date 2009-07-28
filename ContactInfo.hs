@@ -31,6 +31,9 @@ instance forall a. (Ord a) => Ord (ContactInfo a) where
         compare (cName l) (cName r) `mappend`
         compare (cPhone l) (cPhone r)
 
+instance forall a. (Show a) => Show (ContactInfo a) where
+    show = show . cName
+
 -- Perform an operation on the name.  Is this an abuse of Functors?
 instance Functor ContactInfo where
     f `fmap` x = x { cName = (f . cName) x }
