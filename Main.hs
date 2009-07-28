@@ -1,6 +1,7 @@
 module Main where
 
 import Graphics.PDF
+import Graphics.UI.WX as WX
 import System.Console.GetOpt
 import System.Environment ( getArgs )
 import System.IO
@@ -52,7 +53,7 @@ main = do
                  putStrLn "Done!"
                  case optMode opts of
                    Generate -> generate doc opts
-                   Edit     -> edit doc opts
+                   Edit     -> start $ edit doc opts
 
 generate :: Document Name -> Options -> IO ()
 generate doc opts = do
@@ -60,7 +61,10 @@ generate doc opts = do
          do renderDoc doc
 
 edit :: Document Name -> Options -> IO ()
-edit _ _ = undefined
+edit _ _ = do
+  f <- frame [WX.text := "Hello!"]
+  quit <- button f [WX.text := "Quit", on command := close f]
+  set f [layout := widget quit]
 
 parseOpts :: [String] -> IO Options
 parseOpts argv = 
