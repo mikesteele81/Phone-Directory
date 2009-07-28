@@ -68,8 +68,20 @@ edit doc _ = do
   menuQuit mFile [ on command := close f ]
   mHelp <- menuHelp []
   menuAbout mHelp [ on command := infoDialog f "About Phone Directory" "test" ]
-  listBox <- singleListBox f [ items := map show (dOrganizations doc), selection := 0]
-  set f [ menuBar := [mFile, mHelp] ]
+  lblOrg <- staticText f [ WX.text := "Organizations"]
+  orgs <- singleListBox f [ items := map show (dOrganizations doc)
+                  , selection := 0
+                  ]
+  lblContacts <- staticText f [WX.text := "Contacts"]
+  contacts <- singleListBox f [ items := ["test01", "test02"] ]
+  set f [ menuBar := [mFile, mHelp]
+        , layout := margin 6 $ row 5
+                     [ column 5 [ widget lblOrg
+                                , vstretch $ widget orgs ]
+                     , column 5 [ widget lblContacts
+                                , vstretch $ widget contacts ]
+                     ]
+        ]
 
 parseOpts :: [String] -> IO Options
 parseOpts argv = 
