@@ -163,24 +163,3 @@ parseOpts argv =
       case getOpt Permute options argv of
         (o,[],[]  ) -> return $ foldl (flip id) defaultOptions o
         (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
-
---onTreeEvent :: TreeCtrl () -> EventTree -> IO ()
---onTreeEvent tc (TreeItemExpanding itm veto) | treeItemIsOk itm = do
---  wxcBeginBusyCursor
---  children <- treeCtrlGetChildren tc itm
---  mapM_ visualise children
---  wxcEndBusyCursor
---  propagateEvent
---onTreeEvent tc (TreeSelChanged itm olditem) | treeItemIsOk itm = do
---  wxcBeginBusyCursor
---  selectRight item
---  wxcEndBusyCursor
---  propagateEvent
---onTreeEvent _ _ = propagateEvent
-
---visualise :: TreeCtrl () -> TreeItem -> IO ()
---visualise tc item = do
---  c <- treeCtrlItemHasChildren tc item
---  when (c == 0) $ giveBirth item
---  updateThickness item
---  updateImages item
