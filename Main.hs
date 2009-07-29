@@ -74,6 +74,7 @@ edit doc _ = do
   
   mFile  <- menuPane        []
   iNew   <- menuItem mFile  []
+  iSave  <- menuItem mFile  []
   ()     <- menuLine mFile
   iQuit  <- menuQuit mFile  []
   mHelp  <- menuHelp        []
@@ -145,6 +146,7 @@ edit doc _ = do
 
   set mFile  [ WX.text := "&File" ]
   set iNew   [ WX.text := "&Open" ]
+  set iSave  [ WX.text := "&Save" ]
   set iQuit  [ on command := close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" "test" ]
   
