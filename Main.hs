@@ -113,10 +113,10 @@ edit doc _ = do
             set ePhone    [ enabled := True, WX.text := cPhone ci' ]
             set ePriority [ enabled := True, WX.text := show $ cPriority ci' ]
           Nothing -> do
-            set eFirst    [ enabled := False ]
-            set eLast     [ enabled := False ]
-            set ePhone    [ enabled := False ]
-            set ePriority [ enabled := False ]
+            set eFirst    [ enabled := False, WX.text := "" ]
+            set eLast     [ enabled := False, WX.text := "" ]
+            set ePhone    [ enabled := False, WX.text := "" ]
+            set ePriority [ enabled := False, WX.text := "" ]
 
   set mFile  [ WX.text := "&File" ]
   set iNew   [ WX.text := "&Open" ]
