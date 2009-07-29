@@ -1,5 +1,6 @@
 module Main where
 
+import Data.Maybe (fromJust)
 import Graphics.PDF
 import Graphics.UI.WX as WX
 import Graphics.UI.WXCore hiding (Document, fill)
@@ -181,6 +182,22 @@ populateTree tc doc =
       treeCtrlSelectItem tc root
       treeCtrlExpand tc root
 
+-- | Create a Document object based on the tree.      
+tree2Doc :: TreeCtrl a -> IO (Document Name)
+tree2Doc tc = do
+  root <- treeCtrlGetRootItem tc
+  orgs <- treeCtrlWithChildren tc root $ \itm -> do
+    orgCI <- unsafeTreeCtrlGetItemClientData tc itm >>= fromJust
+    contacts <- treeCtrlWithChildren tc itm $ \itm' -> do
+      unsafeTreeCtrlGetItemClientData tc itm' >>= fromJust
+    return $ Organization
+               { oInfo = orgCI
+               , oContacts = contacts
+               }
+  return $ Document
+             { dRevised = "TODO - add date"
+             , dOrganizations = orgs
+             }
 parseOpts :: [String] -> IO Options
 parseOpts argv = 
     let header = "Usage: main [OPTION...]"
