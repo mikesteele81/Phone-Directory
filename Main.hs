@@ -88,7 +88,7 @@ edit doc _ = do
   tPhone    <- staticText pRight [ WX.text := "Phone Number:" ]
   tPriority <- staticText pRight [ WX.text := "Priority:"     ]
   
-  set tc [ on treeEvent := onTreeEvent tc ]
+  set tc [ ] --on treeEvent := onTreeEvent tc ]
   
   set pLeft [ layout := WX.fill $ widget tc ]
   set pRight [ layout := margin 6 $ column 5
@@ -97,15 +97,20 @@ edit doc _ = do
                           ]
              ]
 
-  root <- treeCtrlAddRoot tc "test root" 0 0 objectNull
-  mapM_ (\x -> treeCtrlAppendItem tc root (show x) 0 0 objectNull) $ dOrganizations doc
-  treeCtrlSelectItem tc root
-  
+  populateTree tc doc
+
   set f [ WX.text    := "Phone Directory"
-        , clientSize := sz 640 480
         , menuBar    := [mFile, mHelp]
         , layout     := WX.fill $ vsplit sw 5 200 (widget pLeft) (widget pRight)
+        , clientSize := sz 640 480
         ]
+
+populateTree :: TreeCtrl a -> Document Name -> IO ()
+populateTree tc doc = do
+  root <- treeCtrlAddRoot tc "Organizations" 0 0 objectNull
+  treeCtrlSetItemClientData tc root (return ()) doc
+  mapM_ (\x -> treeCtrlAppendItem tc root (show x) 0 0 objectNull) $ dOrganizations doc
+  treeCtrlSelectItem tc root
 
 parseOpts :: [String] -> IO Options
 parseOpts argv = 
@@ -115,19 +120,19 @@ parseOpts argv =
         (o,[],[]  ) -> return $ foldl (flip id) defaultOptions o
         (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
 
-onTreeEvent :: TreeCtrl () -> EventTree -> IO ()
-onTreeEvent tc (TreeItemExpanding itm veto) | treeItemIsOk itm = do
-  wxcBeginBusyCursor
-  children <- treeCtrlGetChildren tc itm
+--onTreeEvent :: TreeCtrl () -> EventTree -> IO ()
+--onTreeEvent tc (TreeItemExpanding itm veto) | treeItemIsOk itm = do
+--  wxcBeginBusyCursor
+--  children <- treeCtrlGetChildren tc itm
 --  mapM_ visualise children
-  wxcEndBusyCursor
-  propagateEvent
-onTreeEvent tc (TreeSelChanged itm olditem) | treeItemIsOk itm = do
-  wxcBeginBusyCursor
+--  wxcEndBusyCursor
+--  propagateEvent
+--onTreeEvent tc (TreeSelChanged itm olditem) | treeItemIsOk itm = do
+--  wxcBeginBusyCursor
 --  selectRight item
-  wxcEndBusyCursor
-  propagateEvent
-onTreeEvent _ _ = propagateEvent
+--  wxcEndBusyCursor
+--  propagateEvent
+--onTreeEvent _ _ = propagateEvent
 
 --visualise :: TreeCtrl () -> TreeItem -> IO ()
 --visualise tc item = do
