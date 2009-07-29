@@ -155,6 +155,7 @@ populateTree tc doc =
       root <- treeCtrlAddRoot tc "Organizations" 0 0 objectNull
       mapM_ (populateOrg root) $ dOrganizations doc
       treeCtrlSelectItem tc root
+      treeCtrlExpand tc root
 
 parseOpts :: [String] -> IO Options
 parseOpts argv = 
