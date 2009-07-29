@@ -30,9 +30,6 @@ instance (JSON a) => JSON (Organization a) where
 instance (Ord a) => Ord (Organization a) where
     compare l r = compare (oInfo l) (oInfo r)
     
-instance forall a. (Show a) => Show (Organization a) where
-    show = show . oInfo
-    
 instance forall a. (Show a) => ShowLineItems (Organization a) where
     showLineItems (Organization o cx) =
         let rest = getZipList $ mkLabelValue True 
