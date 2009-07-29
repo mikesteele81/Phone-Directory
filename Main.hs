@@ -1,5 +1,7 @@
 module Main where
 
+import Control.Applicative
+import Control.Monad
 import Data.Maybe (fromJust)
 import Graphics.PDF
 import Graphics.UI.WX as WX
@@ -147,7 +149,12 @@ edit doc opts = do
 
   set mFile  [ WX.text := "&File" ]
   set iNew   [ WX.text := "&Open" ]
-  set iSave  [ WX.text := "&Save", on command := tree2Doc tc >>= save (optInput opts) ]
+  set iSave  [ WX.text := "&Save", on command := do
+                 doc' <- tree2Doc tc
+                 case doc' of
+                   Just doc'' -> save (optInput opts) doc''
+                   Nothing -> putStrLn "bad doc" >> return ()
+             ]
   set iQuit  [ on command := close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" "test" ]
   
@@ -186,21 +193,16 @@ populateTree tc doc =
       treeCtrlExpand tc root
 
 -- | Create a Document object based on the tree.      
-tree2Doc :: TreeCtrl a -> IO (Document Name)
+tree2Doc :: TreeCtrl a -> IO (Maybe (Document Name))
 tree2Doc tc = do
   root <- treeCtrlGetRootItem tc
   orgs <- treeCtrlWithChildren tc root $ \itm -> do
-    orgCI <- unsafeTreeCtrlGetItemClientData tc itm >>= fromJust
+    orgCI <- unsafeTreeCtrlGetItemClientData tc itm
     contacts <- treeCtrlWithChildren tc itm $ \itm' -> do
-      unsafeTreeCtrlGetItemClientData tc itm' >>= fromJust
-    return $ Organization
-               { oInfo = orgCI
-               , oContacts = contacts
-               }
-  return $ sortDoc $ Document
-             { dRevised = "TODO - add date"
-             , dOrganizations = orgs
-             }
+      unsafeTreeCtrlGetItemClientData tc itm'
+    return $ Organization <$> orgCI <*> sequence contacts
+  return $ Document "TODO - add date" <$> sequence orgs
+
 parseOpts :: [String] -> IO Options
 parseOpts argv = 
     let header = "Usage: main [OPTION...]"
@@ -211,3 +213,11 @@ parseOpts argv =
 
 save :: FilePath -> Document Name -> IO ()
 save file = writeFile file . show . pp_value . showJSON
+
+load :: FilePath -> IO (Maybe (Document Name))
+load fp = do
+  withFile fp ReadMode $ \h -> do
+            input <- hGetContents h
+            case decodeStrict input >>= readJSON of
+              Error s -> putStrLn ("Error: " ++ s) >> return Nothing
+              Ok doc -> return $ Just doc
