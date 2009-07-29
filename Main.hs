@@ -92,11 +92,35 @@ edit doc _ = do
   
   let
       onTreeEvent :: EventTree -> IO ()
-      onTreeEvent (TreeSelChanged itm _) | treeItemIsOk itm = do
-        updateRight itm
+      onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' = do
+        updateLeft itm
+        updateRight itm'
         propagateEvent
       onTreeEvent _ = propagateEvent
       
+      right2CI :: IO (ContactInfo Name)
+      right2CI = do
+        firstName <- textCtrlGetValue eFirst
+        lastName <- textCtrlGetValue eLast
+        phone <- textCtrlGetValue ePhone
+        priority <- textCtrlGetValue ePriority
+        let name = case (firstName, lastName) of
+                     ("", n) -> SingleName n
+                     (n, "") -> SingleName n
+                     (f', l) -> FirstLast f' l
+        return $ ContactInfo
+                   { cName     = name
+                   , cPhone    = phone
+                   , cPriority = read priority
+                   }
+
+      -- | update left side to match what's entered on right
+      updateLeft itm = do
+        ci <- right2CI
+        treeCtrlSetItemClientData tc itm (return ()) ci
+        treeCtrlSetItemText tc itm $ show ci
+
+      -- | refresh right side to match left selection
       updateRight :: TreeItem -> IO ()
       updateRight itm = do
         -- a ContactInfo was placed in every node save the root
