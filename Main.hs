@@ -72,16 +72,17 @@ edit doc opts = do
   f  <- frame            []
   sw <- splitterWindow f []
   
-  pLeft  <- panel sw []
-  pRight <- panel sw []
+  pLeft   <- panel    sw     []
+  pRight  <- panel    sw     []
   
-  mFile  <- menuPane        []
-  iNew   <- menuItem mFile  []
-  iSave  <- menuItem mFile  []
-  ()     <- menuLine mFile
-  iQuit  <- menuQuit mFile  []
-  mHelp  <- menuHelp        []
-  iAbout <- menuAbout mHelp []
+  mFile   <- menuPane        []
+  iNew    <- menuItem mFile  []
+  iSave   <- menuItem mFile  []
+  iSaveAs <- menuItem mFile  []
+  ()      <- menuLine mFile
+  iQuit   <- menuQuit mFile  []
+  mHelp   <- menuHelp        []
+  iAbout  <- menuAbout mHelp []
   
   tFirst    <- staticText pRight [ WX.text := "First Name:"   ]
   tLast     <- staticText pRight [ WX.text := "Last Name:"    ]
@@ -155,6 +156,7 @@ edit doc opts = do
                    Just doc'' -> save (optInput opts) doc''
                    Nothing -> putStrLn "bad doc" >> return ()
              ]
+  set iSave  [ WX.text := "Save &As..." ]
   set iQuit  [ on command := close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" "test" ]
   
