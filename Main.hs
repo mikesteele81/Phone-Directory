@@ -9,6 +9,7 @@ import System.IO
 import Text.JSON
 
 import Constants
+import ContactInfo
 import Document
 import Name
 import Organization
@@ -81,37 +82,48 @@ edit doc _ = do
   tLast     <- staticText pRight [ WX.text := "Last Name:"    ]
   tPhone    <- staticText pRight [ WX.text := "Phone Number:" ]
   tPriority <- staticText pRight [ WX.text := "Priority:"     ]
-  
+
   eFirst    <- entry pRight []
   eLast     <- entry pRight []
   ePhone    <- entry pRight []
   ePriority <- entry pRight []
-  
+
   tc <- treeCtrl pLeft []
   
   let
       onTreeEvent :: EventTree -> IO ()
-      onTreeEvent (TreeSelChanged item _) | treeItemIsOk item = do
-        updateRight item
+      onTreeEvent (TreeSelChanged itm _) | treeItemIsOk itm = do
+        updateRight itm
         propagateEvent
       onTreeEvent _ = propagateEvent
       
       updateRight :: TreeItem -> IO ()
-      updateRight item = do
+      updateRight itm = do
         -- a ContactInfo was placed in every node save the root
-        ci <- unsafeTreeCtrlGetItemClientData tc item
+        ci <- unsafeTreeCtrlGetItemClientData tc itm
         case ci of
-          Just ci' -> undefined
-          Nothing -> undefined
-               
-               
-  
+          Just ci' -> do
+            case cName ci' of
+              FirstLast first l -> do
+                set eFirst [ enabled := True, WX.text := first ]
+                set eLast  [ enabled := True, WX.text := l     ]
+              SingleName n -> do
+                set eFirst [ enabled := True, WX.text := n  ]
+                set eLast  [ enabled := True, WX.text := "" ]
+            set ePhone    [ enabled := True, WX.text := cPhone ci' ]
+            set ePriority [ enabled := True, WX.text := show $ cPriority ci' ]
+          Nothing -> do
+            set eFirst    [ enabled := False ]
+            set eLast     [ enabled := False ]
+            set ePhone    [ enabled := False ]
+            set ePriority [ enabled := False ]
+
   set mFile  [ WX.text := "&File" ]
   set iNew   [ WX.text := "&Open" ]
   set iQuit  [ on command := close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" "test" ]
   
-  set tc [ ] --on treeEvent := onTreeEvent tc ]
+  set tc [ on treeEvent := onTreeEvent ]
   
   set pLeft [ layout := WX.fill $ widget tc ]
   set pRight [ layout := margin 6 $ column 5
@@ -134,7 +146,7 @@ populateTree :: TreeCtrl a -> Document Name -> IO ()
 populateTree tc doc =
     let addItem p itm = do
           tc' <- treeCtrlAppendItem tc p (show itm) 0 0 objectNull
-          treeCtrlSetItemClientData tc p (return ()) itm
+          treeCtrlSetItemClientData tc tc' (return ()) itm
           return tc'
         populateOrg p org = do
           orgTc <- addItem p $ oInfo org
