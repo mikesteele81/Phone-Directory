@@ -77,24 +77,48 @@ edit doc _ = do
   mHelp  <- menuHelp        []
   iAbout <- menuAbout mHelp []
   
+  tFirst    <- staticText pRight [ WX.text := "First Name:"   ]
+  tLast     <- staticText pRight [ WX.text := "Last Name:"    ]
+  tPhone    <- staticText pRight [ WX.text := "Phone Number:" ]
+  tPriority <- staticText pRight [ WX.text := "Priority:"     ]
+  
+  eFirst    <- entry pRight []
+  eLast     <- entry pRight []
+  ePhone    <- entry pRight []
+  ePriority <- entry pRight []
+  
   tc <- treeCtrl pLeft []
+  
+  let
+      onTreeEvent :: EventTree -> IO ()
+      onTreeEvent (TreeSelChanged item _) | treeItemIsOk item = do
+        updateRight item
+        propagateEvent
+      onTreeEvent _ = propagateEvent
+      
+      updateRight :: TreeItem -> IO ()
+      updateRight item = do
+        -- a ContactInfo was placed in every node save the root
+        ci <- unsafeTreeCtrlGetItemClientData tc item
+        case ci of
+          Just ci' -> undefined
+          Nothing -> undefined
+               
+               
   
   set mFile  [ WX.text := "&File" ]
   set iNew   [ WX.text := "&Open" ]
   set iQuit  [ on command := close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" "test" ]
   
-  tFirst    <- staticText pRight [ WX.text := "First Name:"   ]
-  tLast     <- staticText pRight [ WX.text := "Last Name:"    ]
-  tPhone    <- staticText pRight [ WX.text := "Phone Number:" ]
-  tPriority <- staticText pRight [ WX.text := "Priority:"     ]
-  
   set tc [ ] --on treeEvent := onTreeEvent tc ]
   
   set pLeft [ layout := WX.fill $ widget tc ]
   set pRight [ layout := margin 6 $ column 5
-                          [ widget tFirst, widget tLast
-                          , widget tPhone, widget tPriority
+                          [ widget tFirst, widget eFirst
+                          , widget tLast, widget eLast
+                          , widget tPhone, widget ePhone
+                          , widget tPriority, widget ePriority
                           ]
              ]
 
@@ -113,7 +137,7 @@ populateTree tc doc =
           treeCtrlSetItemClientData tc p (return ()) itm
           return tc'
         populateOrg p org = do
-          orgTc <- addItem p org
+          orgTc <- addItem p $ oInfo org
           mapM_ (addItem orgTc) $ oContacts org
     in do
       root <- treeCtrlAddRoot tc "Organizations" 0 0 objectNull
