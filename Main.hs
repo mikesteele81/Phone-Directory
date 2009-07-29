@@ -11,6 +11,7 @@ import Text.JSON
 import Constants
 import Document
 import Name
+import Organization
 
 data Mode = Generate | Edit
             deriving (Show)
@@ -106,11 +107,21 @@ edit doc _ = do
         ]
 
 populateTree :: TreeCtrl a -> Document Name -> IO ()
-populateTree tc doc = do
-  root <- treeCtrlAddRoot tc "Organizations" 0 0 objectNull
-  treeCtrlSetItemClientData tc root (return ()) doc
-  mapM_ (\x -> treeCtrlAppendItem tc root (show x) 0 0 objectNull) $ dOrganizations doc
-  treeCtrlSelectItem tc root
+populateTree tc doc =
+    let populateOrg p org = do
+          orgTc <- treeCtrlAppendItem tc p (show org) 0 0 objectNull
+          treeCtrlSetItemClientData tc p (return ()) org
+          mapM_ (populateContact orgTc) $ oContacts org
+        populateContact p contact = do
+          treeCtrlAppendItem tc p (show contact) 0 0 objectNull
+          treeCtrlSetItemClientData tc p (return ()) contact
+    in do
+      root <- treeCtrlAddRoot tc "Organizations" 0 0 objectNull
+      treeCtrlSetItemClientData tc root (return ()) doc
+
+      mapM_ (populateOrg root) $ dOrganizations doc
+      
+      treeCtrlSelectItem tc root
 
 parseOpts :: [String] -> IO Options
 parseOpts argv = 
