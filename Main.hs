@@ -8,6 +8,7 @@ import System.Console.GetOpt
 import System.Environment ( getArgs )
 import System.IO
 import Text.JSON
+import Text.JSON.Pretty
 
 import Constants
 import ContactInfo
@@ -15,13 +16,13 @@ import Document
 import Name
 import Organization
 
-data Mode = Generate | Edit
+data AppMode = Generate | Edit
             deriving (Show)
 
 data Options = Options
     { optInput :: String
     , optOutput :: String
-    , optMode :: Mode
+    , optMode :: AppMode
     } deriving Show
 
 defaultOptions :: Options
@@ -48,16 +49,16 @@ main = do
   opts <- getArgs >>= parseOpts
   putStrLn $ show opts
   putStrLn $ "Opening " ++ optInput opts ++ "..."
-  withFile (optInput opts) ReadMode $ \h -> do
-         input <- hGetContents h         
-         case decodeStrict input >>= readJSON of
-           Error s -> putStrLn $ "Error: " ++ s
-           Ok doc    ->
-               do
-                 putStrLn "Done!"
-                 case optMode opts of
-                   Generate -> generate doc opts
-                   Edit     -> start $ edit doc opts
+  doc <- withFile (optInput opts) ReadMode $ \h -> do
+    input <- hGetContents h
+    case decodeStrict input >>= readJSON of
+      Error s -> putStrLn ("Error: " ++ s) >> return Nothing
+      Ok doc -> return $ Just doc
+  case doc of
+    Nothing -> return ()
+    Just doc' -> case optMode opts of
+                   Generate -> generate doc' opts
+                   Edit     -> start $ edit doc' opts
 
 generate :: Document Name -> Options -> IO ()
 generate doc opts = do
@@ -65,7 +66,7 @@ generate doc opts = do
          do renderDoc doc
 
 edit :: Document Name -> Options -> IO ()
-edit doc _ = do
+edit doc opts = do
   f  <- frame            []
   sw <- splitterWindow f []
   
@@ -146,7 +147,7 @@ edit doc _ = do
 
   set mFile  [ WX.text := "&File" ]
   set iNew   [ WX.text := "&Open" ]
-  set iSave  [ WX.text := "&Save" ]
+  set iSave  [ WX.text := "&Save", on command := tree2Doc tc >>= save (optInput opts) ]
   set iQuit  [ on command := close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" "test" ]
   
@@ -196,7 +197,7 @@ tree2Doc tc = do
                { oInfo = orgCI
                , oContacts = contacts
                }
-  return $ Document
+  return $ sortDoc $ Document
              { dRevised = "TODO - add date"
              , dOrganizations = orgs
              }
@@ -207,3 +208,6 @@ parseOpts argv =
       case getOpt Permute options argv of
         (o,[],[]  ) -> return $ foldl (flip id) defaultOptions o
         (_,_,errs) -> ioError (userError (concat errs ++ usageInfo header options))
+
+save :: FilePath -> Document Name -> IO ()
+save file = writeFile file . show . pp_value . showJSON
