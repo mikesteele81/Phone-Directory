@@ -105,10 +105,10 @@ edit doc opts = do
       
       right2CI :: IO (ContactInfo Name)
       right2CI = do
-        firstName <- textCtrlGetValue eFirst
-        lastName <- textCtrlGetValue eLast
-        phone <- textCtrlGetValue ePhone
-        priority <- textCtrlGetValue ePriority
+        firstName <- get eFirst WX.text
+        lastName <- get eLast WX.text
+        phone <- get ePhone WX.text
+        priority <- get ePriority WX.text
         let name = case (firstName, lastName) of
                      ("", n) -> SingleName n
                      (n, "") -> SingleName n
