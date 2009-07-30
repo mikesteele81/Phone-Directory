@@ -15,6 +15,7 @@ import Text.JSON.Pretty
 import Constants
 import ContactInfo
 import Document
+import GUI
 import Name
 import Organization
 
@@ -158,7 +159,7 @@ edit doc opts = do
              ]
   set iSaveAs  [ WX.text := "Save &As...", on command := do
                    name <- fileSaveDialog f True True "Save directory"
-                           [("JSON", ["*.json"])] "" ""
+                           file_types_selection "" ""
                    case name of
                      Just name' -> do
                        doc' <- tree2Doc tc
