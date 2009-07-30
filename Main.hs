@@ -196,7 +196,7 @@ edit doc opts = do
                    Nothing -> putStrLn "bad doc" >> return ()
              ]
   set iSaveAs  [ WX.text := "Save &As...", on command := do
-                   name <- fileSaveDialog f True True "Save directory"
+                   name <- fileSaveDialog f True True "Save phone directory"
                            file_types_selection "" ""
                    case name of
                      Just name' -> do
