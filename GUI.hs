@@ -1,7 +1,6 @@
 module GUI where
 
 import Control.Applicative
-import Graphics.UI.WX
 import Graphics.UI.WXCore hiding ( Document )
 
 import Document
@@ -10,6 +9,22 @@ import Organization
 
 file_types_selection :: [(String, [String])]
 file_types_selection = [("JSON", ["*.json"])]
+
+populateTree :: TreeCtrl a -> Document Name -> IO ()
+populateTree tc doc =
+    let addItem p itm = do
+          tc' <- treeCtrlAppendItem tc p (show itm) 0 0 objectNull
+          treeCtrlSetItemClientData tc tc' (return ()) itm
+          return tc'
+        populateOrg p org = do
+          orgTc <- addItem p $ oInfo org
+          mapM_ (addItem orgTc) $ oContacts org
+    in do
+      treeCtrlDeleteAllItems tc
+      root <- treeCtrlAddRoot tc "Organizations" 0 0 objectNull
+      mapM_ (populateOrg root) $ dOrganizations doc
+      treeCtrlExpand tc root
+      treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
 
 -- | Create a Document object based on the tree.      
 tree2Doc :: TreeCtrl a -> IO (Maybe (Document Name))

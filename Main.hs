@@ -228,22 +228,6 @@ edit doc opts = do
         , clientSize := sz 640 480
         ]
 
-populateTree :: TreeCtrl a -> Document Name -> IO ()
-populateTree tc doc =
-    let addItem p itm = do
-          tc' <- treeCtrlAppendItem tc p (show itm) 0 0 objectNull
-          treeCtrlSetItemClientData tc tc' (return ()) itm
-          return tc'
-        populateOrg p org = do
-          orgTc <- addItem p $ oInfo org
-          mapM_ (addItem orgTc) $ oContacts org
-    in do
-      treeCtrlDeleteAllItems tc
-      root <- treeCtrlAddRoot tc "Organizations" 0 0 objectNull
-      mapM_ (populateOrg root) $ dOrganizations doc
-      treeCtrlExpand tc root
-      treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
-
 parseOpts :: [String] -> IO Options
 parseOpts argv = 
     let header = "Usage: main [OPTION...]"
