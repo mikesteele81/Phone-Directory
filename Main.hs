@@ -97,11 +97,6 @@ edit doc opts = do
   
   let
       onTreeEvent :: EventTree -> IO ()
-      onTreeEvent (TreeSelChanging itm' _ veto)
-          | treeItemIsOk itm' = do
-                  root <- treeCtrlGetRootItem tc
-                  Control.Monad.when (root == itm') veto
-          | otherwise = veto
       onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' = do
         -- The root should never be updated
         root <- treeCtrlGetRootItem tc
