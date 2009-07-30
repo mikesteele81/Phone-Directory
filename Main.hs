@@ -1,7 +1,6 @@
 module Main where
 
 import Control.Monad
-import Data.Maybe (fromJust)
 import Graphics.PDF
 import Graphics.UI.WX as WX
 import Graphics.UI.WXCore hiding (Document, fill)
@@ -98,8 +97,16 @@ edit doc opts = do
   
   let
       onTreeEvent :: EventTree -> IO ()
+      onTreeEvent (TreeSelChanging itm' _ veto)
+          | treeItemIsOk itm' = do
+                  root <- treeCtrlGetRootItem tc
+                  Control.Monad.when (root == itm') veto
+          | otherwise = veto
       onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' = do
-        updateLeft itm
+        -- The root should never be updated
+        root <- treeCtrlGetRootItem tc
+        unless (root == itm) $ updateLeft itm
+        
         updateRight itm'
         propagateEvent
       onTreeEvent (TreeKeyDown _ (EventKey k _ _)) = do
@@ -108,7 +115,8 @@ edit doc opts = do
         case k of
           KeyInsert -> do
             itm' <- treeCtrlAppendItem tc itm "<New Item>" 0 0 objectNull
-            treeCtrlSetItemClientData tc itm' (return ()) (ContactInfo (SingleName "") "" 1)
+            treeCtrlSetItemClientData tc itm' (return ())
+                (ContactInfo (SingleName "") "" 1)
             treeCtrlSelectItem tc itm'
           KeyDelete -> do
             treeCtrlDelete tc itm
@@ -213,8 +221,8 @@ populateTree tc doc =
     in do
       root <- treeCtrlAddRoot tc "Organizations" 0 0 objectNull
       mapM_ (populateOrg root) $ dOrganizations doc
-      treeCtrlSelectItem tc root
       treeCtrlExpand tc root
+      treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
 
 parseOpts :: [String] -> IO Options
 parseOpts argv = 
