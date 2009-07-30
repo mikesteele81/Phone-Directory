@@ -109,7 +109,12 @@ edit doc opts = do
         itm <- treeCtrlGetSelection tc
         case k of
           KeyInsert -> do
-            itm' <- treeCtrlAppendItem tc itm "<New Item>" 0 0 objectNull
+            itmP <- treeCtrlGetParent tc itm
+            root <- treeCtrlGetRootItem tc
+            -- We only want the heirarchy 2 deep
+            let p = if root == itmP then itm else itmP
+
+            itm' <- treeCtrlAppendItem tc p "<New Item>" 0 0 objectNull
             treeCtrlSetItemClientData tc itm' (return ())
                 (ContactInfo (SingleName "") "" 1)
             treeCtrlSelectItem tc itm'
