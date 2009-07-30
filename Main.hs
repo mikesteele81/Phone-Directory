@@ -171,7 +171,19 @@ edit doc opts = do
 
   set mFile  [ WX.text := "&File"    ]
   set iNew   [ WX.text := "&New"     ]
-  set iOpen  [ WX.text := "&Open..." ]
+  set iOpen  [ WX.text := "&Open...", on command := do
+                 name <- fileOpenDialog f True True "Open phone directory"
+                         [("JSON", ["*.json"])] "" ""
+                 case name of
+                   Just name' -> do
+                     doc' <- load name'
+                     case doc' of
+                       Just doc'' -> do
+                                   putStrLn $ "Opening " ++ name'
+                                   populateTree tc doc''
+                       Nothing -> return ()
+                   Nothing -> return ()
+             ]
   set iSave  [ WX.text := "&Save", on command := do
                  doc' <- tree2Doc tc
                  case doc' of
@@ -221,6 +233,7 @@ populateTree tc doc =
           orgTc <- addItem p $ oInfo org
           mapM_ (addItem orgTc) $ oContacts org
     in do
+      treeCtrlDeleteAllItems tc
       root <- treeCtrlAddRoot tc "Organizations" 0 0 objectNull
       mapM_ (populateOrg root) $ dOrganizations doc
       treeCtrlExpand tc root
