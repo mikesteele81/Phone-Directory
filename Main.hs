@@ -156,7 +156,17 @@ edit doc opts = do
                    Just doc'' -> save (optInput opts) doc''
                    Nothing -> putStrLn "bad doc" >> return ()
              ]
-  set iSave  [ WX.text := "Save &As..." ]
+  set iSaveAs  [ WX.text := "Save &As...", on command := do
+                   name <- fileSaveDialog f True True "Save directory"
+                           [("JSON", ["*.json"])] "" ""
+                   case name of
+                     Just name' -> do
+                       doc' <- tree2Doc tc
+                       case doc' of
+                         Just doc'' -> save name' doc''
+                         Nothing -> return ()
+                     Nothing -> return ()
+               ]
   set iQuit  [ on command := close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" "test" ]
   
