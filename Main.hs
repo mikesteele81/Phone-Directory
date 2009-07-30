@@ -76,6 +76,7 @@ edit doc opts = do
   
   mFile   <- menuPane        []
   iNew    <- menuItem mFile  []
+  iOpen   <- menuItem mFile  []
   iSave   <- menuItem mFile  []
   iSaveAs <- menuItem mFile  []
   ()      <- menuLine mFile
@@ -168,8 +169,9 @@ edit doc opts = do
             set ePhone    [ enabled := False, WX.text := "" ]
             set ePriority [ enabled := False, WX.text := "" ]
 
-  set mFile  [ WX.text := "&File" ]
-  set iNew   [ WX.text := "&Open" ]
+  set mFile  [ WX.text := "&File"    ]
+  set iNew   [ WX.text := "&New"     ]
+  set iOpen  [ WX.text := "&Open..." ]
   set iSave  [ WX.text := "&Save", on command := do
                  doc' <- tree2Doc tc
                  case doc' of
