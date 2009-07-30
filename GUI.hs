@@ -1,4 +1,6 @@
-module GUI where
+module GUI
+    ( edit
+    ) where
 
 import Control.Applicative
 import Control.Monad
