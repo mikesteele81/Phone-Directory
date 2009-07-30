@@ -107,19 +107,19 @@ edit doc opts = do
       onTreeEvent (TreeKeyDown _ (EventKey k _ _)) = do
         -- TreeKeyDown's item member doesn't hold anything.
         itm <- treeCtrlGetSelection tc
+        root <- treeCtrlGetRootItem tc
         case k of
           KeyInsert -> do
             itmP <- treeCtrlGetParent tc itm
-            root <- treeCtrlGetRootItem tc
             -- We only want the heirarchy 2 deep
-            let p = if root == itmP then itm else itmP
+            let p = if root == itmP || root == itm then itm else itmP
 
             itm' <- treeCtrlAppendItem tc p "<New Item>" 0 0 objectNull
             treeCtrlSetItemClientData tc itm' (return ())
                 (ContactInfo (SingleName "") "" 1)
             treeCtrlSelectItem tc itm'
           KeyDelete -> do
-            treeCtrlDelete tc itm
+            unless (root == itm) $ treeCtrlDelete tc itm
           _ -> return ()
         propagateEvent
       onTreeEvent _ = propagateEvent
