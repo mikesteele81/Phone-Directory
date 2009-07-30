@@ -102,6 +102,13 @@ edit doc opts = do
         updateLeft itm
         updateRight itm'
         propagateEvent
+      onTreeEvent (TreeKeyDown _ (EventKey KeyInsert _ _)) = do
+        -- TreeKeyDown's item member doesn't hold anything.
+        itm <- treeCtrlGetSelection tc
+        itm' <- treeCtrlAppendItem tc itm "<New Item>" 0 0 objectNull
+        treeCtrlSetItemClientData tc itm' (return ()) (ContactInfo (SingleName "") "" 1)
+        treeCtrlSelectItem tc itm'
+        propagateEvent
       onTreeEvent _ = propagateEvent
       
       right2CI :: IO (ContactInfo Name)
