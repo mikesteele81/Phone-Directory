@@ -178,7 +178,7 @@ edit doc opts = do
   set iNew   [ WX.text := "&New"     ]
   set iOpen  [ WX.text := "&Open...", on command := do
                  name <- fileOpenDialog f True True "Open phone directory"
-                         [("JSON", ["*.json"])] "" ""
+                         file_types_selection "" ""
                  case name of
                    Just name' -> do
                      doc' <- load name'
