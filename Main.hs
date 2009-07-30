@@ -243,20 +243,6 @@ populateTree tc doc =
       mapM_ (populateOrg root) $ dOrganizations doc
       treeCtrlExpand tc root
       treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
-<<<<<<< HEAD:Main.hs
-=======
-
--- | Create a Document object based on the tree.      
-tree2Doc :: TreeCtrl a -> IO (Maybe (Document Name))
-tree2Doc tc = do
-  root <- treeCtrlGetRootItem tc
-  orgs <- treeCtrlWithChildren tc root $ \itm -> do
-    orgCI <- unsafeTreeCtrlGetItemClientData tc itm
-    contacts <- treeCtrlWithChildren tc itm $ \itm' -> do
-      unsafeTreeCtrlGetItemClientData tc itm'
-    return $ Organization <$> orgCI <*> sequence contacts
-  return $ Document "TODO - add date" <$> sequence orgs
->>>>>>> Fix bug where root object would 'update' itself with the blank info on the right.  Also prevent the user from ever selecting the root.:Main.hs
 
 parseOpts :: [String] -> IO Options
 parseOpts argv = 
