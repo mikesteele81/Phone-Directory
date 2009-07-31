@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 module Document where
 
 import Data.List (sort)
@@ -30,7 +31,7 @@ sortDoc d =
                          sort (dOrganizations d) }
         
 -- | Draw a Document.  It renders at least 2 pages in the PDF monad.
-renderDoc :: (Show a) => Document a -> PDF()
+renderDoc :: forall a. (Show a) => Document a -> PDF()
 renderDoc d = 
     let revised = toPDFString $ "Revised: " ++ dRevised d
         go x = do

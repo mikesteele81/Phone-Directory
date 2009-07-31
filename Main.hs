@@ -28,7 +28,7 @@ defaultOptions = Options
                  , optOutput = "test.pdf"
                  , optMode = Generate
                  }
-                 
+
 options :: [OptDescr (Options -> Options)]
 options =
     [ Option ['o'] ["output"]
@@ -40,7 +40,7 @@ options =
     , Option ['e'] ["edit"]
       (NoArg (\ opts -> opts { optMode = Edit })) "edit"
     ]
-    
+
 main :: IO ()
 main = do
   opts <- getArgs >>= parseOpts
@@ -63,7 +63,7 @@ generate doc opts = do
          do renderDoc doc
 
 parseOpts :: [String] -> IO Options
-parseOpts argv = 
+parseOpts argv =
     let header = "Usage: main [OPTION...]"
     in
       case getOpt Permute options argv of

@@ -180,7 +180,7 @@ edit doc file = do
         , clientSize := sz 640 480
         ]
 
-populateTree :: TreeCtrl a -> Document Name -> IO ()
+populateTree :: (Show b) => TreeCtrl a -> Document b -> IO ()
 populateTree tc doc =
     let addItem p itm = do
           tc' <- treeCtrlAppendItem tc p (show itm) 0 0 objectNull
@@ -197,7 +197,7 @@ populateTree tc doc =
       treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
 
 -- | Create a Document object based on the tree.      
-tree2Doc :: TreeCtrl a -> IO (Maybe (Document Name))
+tree2Doc :: TreeCtrl a -> IO (Maybe (Document b))
 tree2Doc tc = do
   root <- treeCtrlGetRootItem tc
   orgs <- treeCtrlWithChildren tc root $ \itm -> do
