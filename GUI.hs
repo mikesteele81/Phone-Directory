@@ -76,6 +76,7 @@ edit doc file = do
             treeCtrlSetItemClientData tc itm' (return ())
                 (ContactInfo (SingleName "") "" 1)
             treeCtrlSelectItem tc itm'
+            windowSetFocus eFirst
           KeyDelete -> do
             unless (root == itm) $ treeCtrlDelete tc itm
           _ -> return ()
