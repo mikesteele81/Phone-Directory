@@ -49,12 +49,6 @@ edit doc file = do
   tc <- treeCtrl pLeft []
   
   let
-      onTreeEvent :: EventTree -> IO ()
-      onTreeEvent (TreeSelChanging itm' _ veto)
-          | treeItemIsOk itm' = do
-                  root <- treeCtrlGetRootItem tc
-                  Control.Monad.when (root == itm') veto
-          | otherwise = veto
       onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' = do
         -- The root should never be updated
         root <- treeCtrlGetRootItem tc
@@ -180,6 +174,8 @@ edit doc file = do
         , layout     := WX.fill $ vsplit sw 5 200 (widget pLeft) (widget pRight)
         , clientSize := sz 640 480
         ]
+
+  windowSetFocus tc
 
 populateTree :: (Show b) => TreeCtrl a -> Document b -> IO ()
 populateTree tc doc =
