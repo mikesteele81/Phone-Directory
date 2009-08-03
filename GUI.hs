@@ -100,27 +100,31 @@ edit doc file = do
         treeCtrlSetItemClientData tc itm (return ()) ci
         treeCtrlSetItemText tc itm $ show ci
 
+      updateDetails :: ContactInfo Name -> IO ()
+      updateDetails ci = do
+        case cName ci of
+          FirstLast first l -> do
+            set eFirst [ enabled := True, WX.text := first ]
+            set eLast  [ enabled := True, WX.text := l     ]
+          SingleName n -> do
+            set eFirst [ enabled := True, WX.text := n  ]
+            set eLast  [ enabled := True, WX.text := "" ]
+        set ePhone     [ enabled := True, WX.text := cPhone ci ]
+        set ePriority  [ enabled := True, WX.text := show $ cPriority ci ]
+
+      clearDisableDetails :: IO ()
+      clearDisableDetails = do
+        set eFirst    [ enabled := False, WX.text := "" ]
+        set eLast     [ enabled := False, WX.text := "" ]
+        set ePhone    [ enabled := False, WX.text := "" ]
+        set ePriority [ enabled := False, WX.text := "" ]
+
       -- | refresh right side to match left selection
       updateRight :: TreeItem -> IO ()
       updateRight itm = do
         -- a ContactInfo was placed in every node save the root
         ci <- unsafeTreeCtrlGetItemClientData tc itm
-        case ci of
-          Just ci' -> do
-            case cName ci' of
-              FirstLast first l -> do
-                set eFirst [ enabled := True, WX.text := first ]
-                set eLast  [ enabled := True, WX.text := l     ]
-              SingleName n -> do
-                set eFirst [ enabled := True, WX.text := n  ]
-                set eLast  [ enabled := True, WX.text := "" ]
-            set ePhone    [ enabled := True, WX.text := cPhone ci' ]
-            set ePriority [ enabled := True, WX.text := show $ cPriority ci' ]
-          Nothing -> do
-            set eFirst    [ enabled := False, WX.text := "" ]
-            set eLast     [ enabled := False, WX.text := "" ]
-            set ePhone    [ enabled := False, WX.text := "" ]
-            set ePriority [ enabled := False, WX.text := "" ]
+        maybe clearDisableDetails updateDetails ci
 
   set mFile  [ WX.text := "&File"    ]
   set iNew   [ WX.text := "&New"     ]
