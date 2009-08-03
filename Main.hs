@@ -1,7 +1,6 @@
 module Main where
 
 import Control.Monad
-import Graphics.PDF
 import Graphics.UI.WX (start)
 import System.Console.GetOpt
 import System.Environment ( getArgs )
@@ -12,6 +11,7 @@ import Constants
 import Document
 import GUI
 import Name
+import PDF
 
 data AppMode = Generate | Edit
             deriving (Show)
@@ -50,15 +50,10 @@ main = do
     Generate -> do
       withFile (optInput opts) ReadMode $ \h -> do
         input <- hGetContents h
-        case decodeStrict input >>= readJSON of
+        case decodeStrict input >>= readJSON :: Result (Document Name) of
           Error s -> putStrLn ("Error: " ++ s)
-          Ok doc -> generate doc opts
+          Ok doc -> generate doc $ optOutput opts
     Edit -> start edit
-
-generate :: Document Name -> Options -> IO ()
-generate doc opts = do
-  runPdf (optOutput opts) standardDocInfo (PDFRect 0 0 page_width page_height) $
-         do renderDoc doc
 
 parseOpts :: [String] -> IO Options
 parseOpts argv =

@@ -15,6 +15,10 @@ import ContactInfo
 import Document
 import Name
 import Organization
+import PDF
+
+export_types_selection :: [(String, [String])]
+export_types_selection = [("PDF", ["*.pdf"])]
 
 file_types_selection :: [(String, [String])]
 file_types_selection = [("JSON", ["*.json"])]
@@ -173,7 +177,17 @@ edit = do
                      Nothing -> return ()
                ]
 
-  set iExport [ WX.text := "Ex&port...", on command := undefined ]
+  set iExport [ WX.text := "Ex&port...", on command := do
+                  name <- fileSaveDialog f True True "Export phone directory"
+                          export_types_selection "" ""
+                  case name of
+                    Just name' -> do
+                      doc' <- tree2Doc tc
+                      case doc' of
+                        Just doc'' -> generate doc'' name'
+                        Nothing    -> return ()
+                    Nothing -> return ()
+              ]
 
   set iQuit  [ on command := close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" "test" ]
@@ -215,7 +229,7 @@ populateTree tc doc =
       treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
 
 -- | Create a Document object based on the tree.      
-tree2Doc :: TreeCtrl a -> IO (Maybe (Document b))
+tree2Doc :: TreeCtrl a -> IO (Maybe (Document Name))
 tree2Doc tc = do
   root <- treeCtrlGetRootItem tc
   orgs <- treeCtrlWithChildren tc root $ \itm -> do
