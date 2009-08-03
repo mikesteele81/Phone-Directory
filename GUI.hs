@@ -60,11 +60,14 @@ edit = do
   tc <- treeCtrl pLeft []
   
   let
-      onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' = do
-        -- The root should never be updated
+      onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' && treeItemIsOk itm = do
+        -- Delete non-root nodes without a name
         root <- treeCtrlGetRootItem tc
         Control.Monad.when (root /= itm) $ do
-          right2CI >>= updateTreeItem itm
+          ci <- right2CI
+          case show ci of
+            "" -> treeCtrlDelete tc itm
+            _  -> return ()
         
         ci <- getTreeItem itm'
         maybe clearDisableDetails updateDetails ci
