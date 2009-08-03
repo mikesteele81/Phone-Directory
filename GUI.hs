@@ -37,6 +37,7 @@ edit = do
   iOpen   <- menuItem mFile  []
   iSave   <- menuItem mFile  []
   iSaveAs <- menuItem mFile  []
+  iExport <- menuItem mFile  []
   ()      <- menuLine mFile
   iQuit   <- menuQuit mFile  []
   mHelp   <- menuHelp        []
@@ -171,6 +172,9 @@ edit = do
                          Nothing -> return ()
                      Nothing -> return ()
                ]
+
+  set iExport [ WX.text := "Ex&port...", on command := undefined ]
+
   set iQuit  [ on command := close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" "test" ]
   
