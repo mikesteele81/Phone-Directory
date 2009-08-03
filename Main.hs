@@ -46,16 +46,14 @@ main = do
   opts <- getArgs >>= parseOpts
   putStrLn $ show opts
   putStrLn $ "Opening " ++ optInput opts ++ "..."
-  doc <- withFile (optInput opts) ReadMode $ \h -> do
-    input <- hGetContents h
-    case decodeStrict input >>= readJSON of
-      Error s -> putStrLn ("Error: " ++ s) >> return Nothing
-      Ok doc -> return $ Just doc
-  case doc of
-    Nothing -> return ()
-    Just doc' -> case optMode opts of
-                   Generate -> generate doc' opts
-                   Edit     -> (start . edit) doc'
+  case optMode opts of
+    Generate -> do
+      withFile (optInput opts) ReadMode $ \h -> do
+        input <- hGetContents h
+        case decodeStrict input >>= readJSON of
+          Error s -> putStrLn ("Error: " ++ s)
+          Ok doc -> generate doc opts
+    Edit -> start edit
 
 generate :: Document Name -> Options -> IO ()
 generate doc opts = do

@@ -22,8 +22,8 @@ file_types_selection = [("JSON", ["*.json"])]
 default_file :: String
 default_file = "untitled.json"
 
-edit :: Document Name -> IO ()
-edit doc = do
+edit :: IO ()
+edit = do
   file <- varCreate default_file
 
   f  <- frame            []
@@ -184,7 +184,7 @@ edit doc = do
                           , widget tPriority, widget ePriority
                           ]
              ]
-  populateTree tc doc
+  populateTree tc (mkDocument :: Document Name)
   updateTitle
 
   set f [ menuBar    := [mFile, mHelp]

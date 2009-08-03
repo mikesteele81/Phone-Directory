@@ -25,6 +25,12 @@ instance (JSON a) => JSON (Document a) where
         [ ("revised", showJSON $ dRevised d)
         , ("organizations", showJSONs $ dOrganizations d) ]
         
+mkDocument :: Document a
+mkDocument = Document
+             { dRevised = "1/1/2009"
+             , dOrganizations = []
+             }
+
 sortDoc :: (Ord a) => Document a -> Document a
 sortDoc d =
     d { dOrganizations = map sortOrg $ 
