@@ -46,6 +46,6 @@ line_item_width   = col_width - 2.0 * col_padding
 -- 1/8"
 line_item_indent  = fromIntegral units_per_inch / 8.0
 -- 1/8"
-line_item_leading = fromIntegral units_per_inch / 8.0
+line_item_leading = fromIntegral units_per_inch / 7.0
 -- 1/4"
-org_leading       = fromIntegral units_per_inch / 4.0
+org_leading       = fromIntegral units_per_inch / 5.0
