@@ -18,8 +18,13 @@ import Organization
 file_types_selection :: [(String, [String])]
 file_types_selection = [("JSON", ["*.json"])]
 
-edit :: Document Name -> String -> IO ()
-edit doc file = do
+default_file :: String
+default_file = "untitled.json"
+
+edit :: Document Name -> IO ()
+edit doc = do
+  file <- varCreate default_file
+
   f  <- frame            []
   sw <- splitterWindow f []
   
@@ -137,12 +142,15 @@ edit doc file = do
                                    putStrLn $ "Opening " ++ name'
                                    populateTree tc doc''
                        Nothing -> return ()
+                     varSet file name'
                    Nothing -> return ()
              ]
   set iSave  [ WX.text := "&Save", on command := do
                  doc' <- tree2Doc tc
                  case doc' of
-                   Just doc'' -> save file doc''
+                   Just doc'' -> do
+                     file' <- varGet file
+                     save file' doc''
                    Nothing -> putStrLn "bad doc" >> return ()
              ]
   set iSaveAs  [ WX.text := "Save &As...", on command := do

@@ -55,7 +55,7 @@ main = do
     Nothing -> return ()
     Just doc' -> case optMode opts of
                    Generate -> generate doc' opts
-                   Edit     -> start $ edit doc' $ optInput opts
+                   Edit     -> (start . edit) doc'
 
 generate :: Document Name -> Options -> IO ()
 generate doc opts = do
