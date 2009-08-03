@@ -25,7 +25,7 @@ defaultOptions :: Options
 defaultOptions = Options
                  { optInput = "test.json"
                  , optOutput = "test.pdf"
-                 , optMode = Generate
+                 , optMode = Edit
                  }
 
 options :: [OptDescr (Options -> Options)]
