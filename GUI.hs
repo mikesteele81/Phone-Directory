@@ -52,7 +52,8 @@ edit doc file = do
       onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' = do
         -- The root should never be updated
         root <- treeCtrlGetRootItem tc
-        unless (root == itm) $ updateLeft itm
+        Control.Monad.when (root /= itm) $ do
+          right2CI >>= updateTreeItem itm
         
         updateRight itm'
         propagateEvent
@@ -94,8 +95,8 @@ edit doc file = do
                    }
 
       -- | update left side to match what's entered on right
-      updateLeft itm = do
-        ci <- right2CI
+      updateTreeItem :: (Show a) => TreeItem -> ContactInfo a -> IO ()
+      updateTreeItem itm ci = do
         treeCtrlSetItemClientData tc itm (return ()) ci
         treeCtrlSetItemText tc itm $ show ci
 
