@@ -140,6 +140,13 @@ edit = do
         fn <- varGet file
         set f [WX.text := takeBaseName fn ++ " - Phone Directory"]
 
+      handleInputFocusChanged :: Bool -> IO ()
+      handleInputFocusChanged False = do
+        ci <- right2CI
+        itm <- treeCtrlGetSelection tc
+        updateTreeItem itm ci
+      handleInputFocusChanged _ = return ()
+
   set mFile  [ WX.text := "&File"    ]
   set iNew   [ WX.text := "&New"     ]
   set iOpen  [ WX.text := "&Open...", on command := do
@@ -193,7 +200,12 @@ edit = do
 
   set iQuit  [ on command := close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" "test" ]
-  
+
+  set eFirst    [ on focus := handleInputFocusChanged ]
+  set eLast     [ on focus := handleInputFocusChanged ]
+  set ePhone    [ on focus := handleInputFocusChanged ]
+  set ePriority [ on focus := handleInputFocusChanged ]
+
   set tc [ on treeEvent := onTreeEvent ]
   
   set pLeft [ layout := WX.fill $ widget tc ]
