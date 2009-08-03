@@ -55,7 +55,9 @@ edit doc file = do
         Control.Monad.when (root /= itm) $ do
           right2CI >>= updateTreeItem itm
         
-        updateRight itm'
+        ci <- getTreeItem itm'
+        maybe clearDisableDetails updateDetails ci
+
         propagateEvent
       onTreeEvent (TreeKeyDown _ (EventKey k _ _)) = do
         -- TreeKeyDown's item member doesn't hold anything.
@@ -100,6 +102,9 @@ edit doc file = do
         treeCtrlSetItemClientData tc itm (return ()) ci
         treeCtrlSetItemText tc itm $ show ci
 
+      getTreeItem :: TreeItem -> IO (Maybe (ContactInfo Name))
+      getTreeItem = unsafeTreeCtrlGetItemClientData tc
+
       updateDetails :: ContactInfo Name -> IO ()
       updateDetails ci = do
         case cName ci of
@@ -118,13 +123,6 @@ edit doc file = do
         set eLast     [ enabled := False, WX.text := "" ]
         set ePhone    [ enabled := False, WX.text := "" ]
         set ePriority [ enabled := False, WX.text := "" ]
-
-      -- | refresh right side to match left selection
-      updateRight :: TreeItem -> IO ()
-      updateRight itm = do
-        -- a ContactInfo was placed in every node save the root
-        ci <- unsafeTreeCtrlGetItemClientData tc itm
-        maybe clearDisableDetails updateDetails ci
 
   set mFile  [ WX.text := "&File"    ]
   set iNew   [ WX.text := "&New"     ]
