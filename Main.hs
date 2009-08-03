@@ -7,7 +7,6 @@ import System.Environment ( getArgs )
 import System.IO
 import Text.JSON
 
-import Constants
 import Document
 import GUI
 import Name

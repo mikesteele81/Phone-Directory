@@ -172,8 +172,10 @@ edit = do
                      Just name' -> do
                        doc' <- tree2Doc tc
                        case doc' of
-                         Just doc'' -> save name' doc'' >> updateTitle
+                         Just doc'' -> save name' doc''
                          Nothing -> return ()
+                       varSet file name'
+                       updateTitle
                      Nothing -> return ()
                ]
 
