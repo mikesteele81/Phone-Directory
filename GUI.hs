@@ -6,6 +6,7 @@ import Control.Applicative
 import Control.Monad
 import Graphics.UI.WX as WX
 import Graphics.UI.WXCore hiding ( Document )
+import System.FilePath
 import System.IO
 import Text.JSON
 import Text.JSON.Pretty
@@ -129,6 +130,11 @@ edit doc = do
         set ePhone    [ enabled := False, WX.text := "" ]
         set ePriority [ enabled := False, WX.text := "" ]
 
+      updateTitle :: IO ()
+      updateTitle = do
+        fn <- varGet file
+        set f [WX.text := takeBaseName fn ++ " - Phone Directory"]
+
   set mFile  [ WX.text := "&File"    ]
   set iNew   [ WX.text := "&New"     ]
   set iOpen  [ WX.text := "&Open...", on command := do
@@ -143,6 +149,7 @@ edit doc = do
                                    populateTree tc doc''
                        Nothing -> return ()
                      varSet file name'
+                     updateTitle
                    Nothing -> return ()
              ]
   set iSave  [ WX.text := "&Save", on command := do
@@ -160,7 +167,7 @@ edit doc = do
                      Just name' -> do
                        doc' <- tree2Doc tc
                        case doc' of
-                         Just doc'' -> save name' doc''
+                         Just doc'' -> save name' doc'' >> updateTitle
                          Nothing -> return ()
                      Nothing -> return ()
                ]
@@ -177,11 +184,10 @@ edit doc = do
                           , widget tPriority, widget ePriority
                           ]
              ]
-
   populateTree tc doc
+  updateTitle
 
-  set f [ WX.text    := "Phone Directory"
-        , menuBar    := [mFile, mHelp]
+  set f [ menuBar    := [mFile, mHelp]
         , layout     := WX.fill $ vsplit sw 5 200 (widget pLeft) (widget pRight)
         , clientSize := sz 640 480
         ]
