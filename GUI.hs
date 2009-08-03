@@ -60,10 +60,10 @@ edit = do
   tc <- treeCtrl pLeft []
   
   let
-      onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' && treeItemIsOk itm = do
+      onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' = do
         -- Delete non-root nodes without a name
         root <- treeCtrlGetRootItem tc
-        Control.Monad.when (root /= itm) $ do
+        Control.Monad.when (root /= itm && treeItemIsOk itm) $ do
           ci <- right2CI
           case show ci of
             "" -> treeCtrlDelete tc itm
