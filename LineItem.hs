@@ -12,9 +12,9 @@ data LineItem = LabelValue { left   :: PDFString
 class ShowLineItems a where
     showLineItems :: a -> [LineItem]
 
-mkLabelValue :: (Show a, Show b) => Bool -> a -> b -> LineItem
-mkLabelValue i l r = LabelValue (toPDFString $ show l)
-                     (toPDFString $ show r) i
+mkLabelValue :: Bool -> String -> String -> LineItem
+mkLabelValue i l r = LabelValue (toPDFString l)
+                     (toPDFString r) i
                      
 -- | Draw a LineItem
 drawLineItem :: PDFFloat -> LineItem -> PDFText ()

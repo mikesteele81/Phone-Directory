@@ -33,7 +33,7 @@ instance (Ord a) => Ord (Organization a) where
 instance forall a. (Show a) => ShowLineItems (Organization a) where
     showLineItems (Organization o cx) =
         let rest = getZipList $ mkLabelValue True 
-                   <$> ZipList (map cName cx)
+                   <$> ZipList (map (show . cName) cx)
                    <*> ZipList (map cPhone cx)
         in mkLabelValue False (show $ cName o) (cPhone o) : rest
 
