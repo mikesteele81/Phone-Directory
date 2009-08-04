@@ -4,21 +4,20 @@ import Graphics.PDF
 
 import Constants
 
-data LineItem = LabelValue { left   :: PDFString
-                           , right  :: PDFString
-                           , indent :: Bool
-                           } deriving (Show)
+data LineItem = LineItem { left   :: PDFString
+                         , right  :: PDFString
+                         , indent :: Bool
+                         } deriving (Show)
               
 class ShowLineItems a where
     showLineItems :: a -> [LineItem]
 
 mkLabelValue :: Bool -> String -> String -> LineItem
-mkLabelValue i l r = LabelValue (toPDFString l)
-                     (toPDFString r) i
+mkLabelValue i l r = LineItem (toPDFString l) (toPDFString r) i
                      
 -- | Draw a LineItem
 drawLineItem :: PDFFloat -> LineItem -> PDFText ()
-drawLineItem w (LabelValue l r i) =
+drawLineItem w (LineItem l r i) =
     let offset = if i then line_item_indent else 0.0
     in do
       setFont font_normal
@@ -39,7 +38,7 @@ drawLineItems w lx =
 newtype Column = Column [LineItem]
                 
 columnHeading :: LineItem
-columnHeading = LabelValue
+columnHeading = LineItem
                 { left   = toPDFString "User Name"
                 , right  = toPDFString "Phone No."
                 , indent = True }
