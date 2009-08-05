@@ -41,7 +41,7 @@ renderDoc :: forall a. (Show a) => Document a -> PDF()
 renderDoc d = 
     let revised = toPDFString $ "Revised: " ++ dRevised d
         lineItems = map showLineItems $ dOrganizations d
-        columns = flowCols (Column lineItems) 4
+        columns = flowCols lineItems 4
     in do
       p <- addPage Nothing
       drawWithPage p $ do

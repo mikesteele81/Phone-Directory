@@ -10,7 +10,7 @@ data LineItem = LineItem { left   :: PDFString
                          , indent :: Bool
                          } deriving (Show)
 type Group = [LineItem]
-newtype Column = Column { unColumn :: [Group] }
+type Column = [Group]
 
 class ShowLineItems a where
     showLineItems :: a -> [LineItem]
@@ -39,7 +39,7 @@ drawLineItems w lx =
       mapM_ op lx
 
 drawColumn :: Column -> PDFText ()
-drawColumn (Column rx) =
+drawColumn rx =
   let
     op g = do
       leading org_leading
@@ -51,13 +51,10 @@ drawColumn (Column rx) =
 columnHeading :: Group
 columnHeading = [mkLabelValue True "User Name" "Phone No."]
 
-columnExtraRows :: Int
-columnExtraRows = 4
-
 -- | The height of all columns plus the column header and bottom line  in
 -- units of LineItems.
 colHeight :: Column -> Int
-colHeight (Column gx) = (sum . map length) gx + length gx - 1
+colHeight gx = (sum . map length) gx + length gx - 1
 
 -- | Works just like splitAt, but peers into Columns
 splitColAt :: Column -> Int -> (Column, Column)
@@ -65,14 +62,13 @@ splitColAt c n =
   let
     go :: Int -> (Column, Column) -> (Column, Column)
     go 0 x = x
-    go _ x@(_, Column []) = x
-    go n' (Column lx, Column (r:rx)) =
+    go _ x@(_, []) = x
+    go n' (lx, r:rx) =
       case n' >= 1 + length r of
-        True -> go (n' - length r - 1) (Column $ lx ++ [r], Column rx)
-        False -> go 0 ( Column $ lx ++ [take n' r]
-                      , Column $ (drop n' r):rx)
+        True -> go (n' - length r - 1) (lx ++ [r], rx)
+        False -> go 0 ( lx ++ [take n' r], (drop n' r):rx)
   in
-    go n (Column [], c)
+    go n ( [], c)
 
 -- | Flow a single column into multiple columns of equal height.  This
 -- certainly has bugs in it.
@@ -81,4 +77,4 @@ flowCols c n =
   let
     len = colHeight c `div` n
   in
-    map fst $ take n $ tail $ iterate (\(_, c') -> splitColAt c' len) (Column [], c)
+    map fst $ take n $ tail $ iterate (\(_, c') -> splitColAt c' len) ( [], c)
