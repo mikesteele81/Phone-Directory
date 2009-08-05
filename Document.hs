@@ -42,24 +42,17 @@ renderDoc d =
     let revised = toPDFString $ "Revised: " ++ dRevised d
         lineItems = map showLineItems $ dOrganizations d
         columns = flowCols lineItems 4
+        colXs = map (+ page_margin) $ take 4 $ iterate (+ line_item_width) 0
+        drawCol colX c = drawText $ do
+                           textStart colX grid_rise
+                           drawColumn c
     in do
       p <- addPage Nothing
       drawWithPage p $ do
          drawText $ text font_title title_inset title_rise title_string
          drawText $ text font_normal date_inset date_rise revised
          drawText $ text font_normal mode_inset mode_rise mode_string
-         drawText $ do
-           textStart (page_margin + 0 * line_item_width) grid_rise
-           mapM_ drawColumn [head $ columns]
-         drawText $ do
-           textStart (page_margin + 1 * line_item_width) grid_rise
-           mapM_ drawColumn [head $ tail columns]
-         drawText $ do
-           textStart (page_margin + 2 * line_item_width) grid_rise
-           mapM_ drawColumn [head $ tail $ tail columns]
-         drawText $ do
-           textStart (page_margin + 3 * line_item_width) grid_rise
-           mapM_ drawColumn [head $ tail $ tail $ tail columns]
+         sequence_ $ map (uncurry drawCol) $ zip colXs columns
          beginPath (300 :+ 300)
          lineto (350 :+ 320)
          strokePath
