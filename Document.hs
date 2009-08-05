@@ -42,7 +42,8 @@ renderDoc d =
     let revised = toPDFString $ "Revised: " ++ dRevised d
         lineItems = map showLineItems $ dOrganizations d
         columns = flowCols lineItems 4
-        colXs = map (+ page_margin) $ take 4 $ iterate (+ line_item_width) 0
+        colXs = map (+ page_margin) $ take 4
+                $ iterate (+ (line_item_width + line_item_leading)) 0
         drawCol colX c = drawText $ do
                            textStart colX grid_rise
                            drawColumn c
