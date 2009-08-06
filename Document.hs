@@ -62,7 +62,7 @@ renderCol :: Column -> Point -> Draw ()
 renderCol c p@(x :+ y) =
   let
     br = ( col_width
-           :+ (-1 * (fromIntegral . (+4) . colHeight) c * line_item_leading))
+           :+ (-1 * (fromIntegral . (+3) . colHeight) c * line_item_leading))
   in do
     drawText $ do
       textStart (x + col_padding) (y - line_item_leading)
