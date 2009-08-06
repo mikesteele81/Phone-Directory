@@ -10,7 +10,7 @@ page_width     = units_per_inch * 85 `div` 10
 page_height    = units_per_inch * 11
 
 page_margin, title_inset, title_rise :: PDFFloat
-page_margin    = fromIntegral (units_per_inch * 5) / 16.0
+page_margin    = fromIntegral units_per_inch / 4.0
 title_inset    = fromIntegral units_per_inch * 1.75
 title_rise     = fromIntegral units_per_inch * 10.5
 
@@ -31,21 +31,16 @@ date_rise      = fromIntegral units_per_inch * 10.0
 mode_inset, mode_rise :: PDFFloat
 mode_inset     = title_inset
 mode_rise      = date_rise
-mode_string :: PDFString
-mode_string    = toPDFString "(Sorted by Location and then First Name)"
 
 font_title, font_normal :: PDFFont
 font_title     = PDFFont Helvetica 20
 font_normal    = PDFFont Helvetica 8
 
 line_item_width, line_item_indent, line_item_leading :: PDFFloat
-org_leading :: PDFFloat
-
 -- 1 7/8"
 line_item_width   = col_width - 2.0 * col_padding
--- 1/8"
 line_item_indent  = fromIntegral units_per_inch / 8.0
--- 1/8"
 line_item_leading = fromIntegral units_per_inch / 7.0
--- 1/4"
-org_leading       = fromIntegral units_per_inch / 5.0
+
+org_leading :: PDFFloat
+org_leading = fromIntegral units_per_inch / 5.0
