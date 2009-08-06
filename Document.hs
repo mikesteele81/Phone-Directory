@@ -38,10 +38,11 @@ sortDoc d =
                          sort (dOrganizations d) }
         
 -- | Draw a Document.  It renders at least 2 pages in the PDF monad.
-renderDoc :: forall a. (Show a) => Document a -> PDF()
+renderDoc :: forall a. (Show a, Ord a) => Document a -> PDF()
 renderDoc d = 
-    let revised = toPDFString $ "Revised: " ++ dRevised d
-        lineItems = map showLineItems $ dOrganizations d
+    let page1 = sortDoc d
+        revised = toPDFString $ "Revised: " ++ dRevised page1
+        lineItems = map showLineItems $ dOrganizations page1
         columns = flowCols lineItems 4
         colXs = map (+ page_margin) $ take 4
                 $ iterate (+ (line_item_width + line_item_leading)) 0
