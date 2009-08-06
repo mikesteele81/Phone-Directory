@@ -30,29 +30,28 @@ defaultOptions = Options
 
 options :: [OptDescr (Options -> Options)]
 options =
-    [ Option ['o'] ["output"]
+    [ Option "o" ["output"]
       (ReqArg (\f opts -> opts { optOutput = f }) "FILE") "output FILE"
-    , Option ['c'] []
+    , Option "c" []
       (ReqArg (\f opts -> opts { optInput  = f }) "FILE") "input FILE"
-    , Option ['g'] ["generate"]
+    , Option "g" ["generate"]
       (NoArg (\ opts -> opts { optMode = Generate })) "generate"
-    , Option ['e'] ["edit"]
+    , Option "e" ["edit"]
       (NoArg (\ opts -> opts { optMode = Edit })) "edit"
     ]
 
 main :: IO ()
 main = do
   opts <- getArgs >>= parseOpts
-  putStrLn $ show opts
+  print opts
   putStrLn $ "Opening " ++ optInput opts ++ "..."
   case optMode opts of
-    Generate -> do
-      withFile (optInput opts) ReadMode $ \h -> do
-        input <- hGetContents h
-        case decodeStrict input >>= readJSON :: Result (Document Name) of
-          Error s -> putStrLn ("Error: " ++ s)
-          Ok doc -> generate doc $ optOutput opts
-    Edit -> start edit
+    Generate -> withFile (optInput opts) ReadMode $ \h -> do
+                  input <- hGetContents h
+                  case decodeStrict input >>= readJSON :: Result (Document Name) of
+                    Error s -> putStrLn ("Error: " ++ s)
+                    Ok doc -> generate doc $ optOutput opts
+    Edit     -> start edit
 
 parseOpts :: [String] -> IO Options
 parseOpts argv =
