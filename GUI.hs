@@ -16,18 +16,18 @@ import Name
 import Organization
 import PDF
 
-export_types_selection :: [(String, [String])]
-export_types_selection = [("PDF", ["*.pdf"])]
+exportTypesSelection :: [(String, [String])]
+exportTypesSelection = [("PDF", ["*.pdf"])]
 
-file_types_selection :: [(String, [String])]
-file_types_selection = [("JSON", ["*.json"])]
+fileTypesSelection :: [(String, [String])]
+fileTypesSelection = [("JSON", ["*.json"])]
 
-default_file :: String
-default_file = "untitled.json"
+defaultFile :: String
+defaultFile = "untitled.json"
 
 edit :: IO ()
 edit = do
-  file <- varCreate default_file
+  file <- varCreate defaultFile
 
   f  <- frame            []
   sw <- splitterWindow f []
@@ -87,9 +87,8 @@ edit = do
                 (ContactInfo (SingleName "") "" 1)
             treeCtrlSelectItem tc itm'
             windowSetFocus eFirst
-          KeyDelete -> do
-            unless (root == itm) $ treeCtrlDelete tc itm
-          _ -> return ()
+          KeyDelete -> unless (root == itm) $ treeCtrlDelete tc itm
+          _         -> return ()
         propagateEvent
       onTreeEvent _ = propagateEvent
       
@@ -103,11 +102,11 @@ edit = do
                      ("", n) -> SingleName n
                      (n, "") -> SingleName n
                      (f', l) -> FirstLast f' l
-        return $ ContactInfo
-                   { cName     = name
-                   , cPhone    = phone
-                   , cPriority = read priority
-                   }
+        return ContactInfo
+                 { cName     = name
+                 , cPhone    = phone
+                 , cPriority = read priority
+                 }
 
       -- | update left side to match what's entered on right
       updateTreeItem :: (Show a) => TreeItem -> ContactInfo a -> IO ()
@@ -153,7 +152,7 @@ edit = do
   set iNew   [ WX.text := "&New"     ]
   set iOpen  [ WX.text := "&Open...", on command := do
                  name <- fileOpenDialog f True True "Open phone directory"
-                         file_types_selection "" ""
+                         fileTypesSelection "" ""
                  case name of
                    Just name' -> do
                      doc' <- load name'
@@ -176,7 +175,7 @@ edit = do
              ]
   set iSaveAs  [ WX.text := "Save &As...", on command := do
                    name <- fileSaveDialog f True True "Save phone directory"
-                           file_types_selection "" ""
+                           fileTypesSelection "" ""
                    case name of
                      Just name' -> do
                        doc' <- tree2Doc tc
@@ -190,7 +189,7 @@ edit = do
 
   set iExport [ WX.text := "Ex&port...", on command := do
                   name <- fileSaveDialog f True True "Export phone directory"
-                          export_types_selection "" ""
+                          exportTypesSelection "" ""
                   case name of
                     Just name' -> do
                       doc' <- tree2Doc tc
@@ -250,8 +249,8 @@ tree2Doc tc = do
   root <- treeCtrlGetRootItem tc
   orgs <- treeCtrlWithChildren tc root $ \itm -> do
     orgCI <- unsafeTreeCtrlGetItemClientData tc itm
-    contacts <- treeCtrlWithChildren tc itm $ \itm' -> do
-      unsafeTreeCtrlGetItemClientData tc itm'
+    contacts <- treeCtrlWithChildren tc itm
+      $ unsafeTreeCtrlGetItemClientData tc
     return $ Organization <$> orgCI <*> sequence contacts
   return $ Document "TODO - add date" <$> sequence orgs
 
@@ -259,7 +258,7 @@ save :: FilePath -> Document Name -> IO ()
 save file = writeFile file . show . pp_value . showJSON
 
 load :: FilePath -> IO (Maybe (Document Name))
-load fp = do
+load fp =
   withFile fp ReadMode $ \h -> do
             input <- hGetContents h
             case decodeStrict input >>= readJSON of
