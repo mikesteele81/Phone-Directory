@@ -1,6 +1,7 @@
 {-# LANGUAGE ExistentialQuantification #-}
 module Document where
 
+import Control.Monad (zipWithM_)
 import Data.List (sort)
 import Graphics.PDF
 import Text.JSON
@@ -21,7 +22,7 @@ instance (JSON a) => JSON (Document a) where
            return $ Document revised organizations
     readJSON _ = Error "Could not parse Document JSON object."
     showJSON d =
-        showJSON $ toJSObject $
+        showJSON $ toJSObject
         [ ("revised", showJSON $ dRevised d)
         , ("organizations", showJSONs $ dOrganizations d) ]
         
@@ -53,7 +54,7 @@ renderDoc d =
          drawText $ text font_title title_inset title_rise title_string
          drawText $ text font_normal date_inset date_rise revised
          drawText $ text font_normal mode_inset mode_rise mode_string
-         sequence_ $ map (uncurry drawCol) $ zip colXs columns
+         zipWithM_ drawCol colXs columns
          beginPath (300 :+ 300)
          lineto (350 :+ 320)
          strokePath
