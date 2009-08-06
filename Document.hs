@@ -47,20 +47,24 @@ renderDoc d lbl=
     let revised = toPDFString $ "Revised: " ++ dRevised d
         lineItems = map showLineItems $ dOrganizations d
         columns = flowCols lineItems 4
-        colXs = map (+ page_margin) $ take 4
-                $ iterate (+ (line_item_width + line_item_leading)) 0
-        drawCol colX c = drawText $ do
-                           textStart colX grid_rise
-                           drawColumn c
+        colCoords = zipWith (:+) colXs $ repeat grid_rise
+        colXs = map (+ page_margin) $ iterate (+ col_width) 0
     in do
       p <- addPage Nothing
       drawWithPage p $ do
          drawText $ text font_title title_inset title_rise title_string
          drawText $ text font_normal date_inset date_rise revised
          drawText $ text font_normal mode_inset mode_rise $ toPDFString lbl
-         zipWithM_ drawCol colXs columns
-         beginPath (300 :+ 300)
-         lineto (350 :+ 320)
-         strokePath
-         closePath
-         drawText $ text font_normal 0.0 0.0 $ toPDFString "!"
+         zipWithM_ renderCol columns colCoords
+
+-- |Draw a column
+renderCol :: Column -> Point -> Draw ()
+renderCol c p@(x :+ y) =
+  let
+    br = ( col_width
+           :+ (-1 * (fromIntegral . (+4) . colHeight) c * line_item_leading))
+  in do
+    drawText $ do
+      textStart (x + col_padding) (y - line_item_leading)
+      drawColumn c
+    stroke (Rectangle p (p + br))
