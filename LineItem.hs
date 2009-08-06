@@ -64,9 +64,10 @@ splitColAt c n =
     go 0 x = x
     go _ x@(_, []) = x
     go n' (lx, r:rx) =
-      case n' >= 1 + length r of
-        True -> go (n' - length r - 1) (lx ++ [r], rx)
-        False -> go 0 ( lx ++ [take n' r], (drop n' r):rx)
+      if n' >= 1 + length r then
+        go (n' - length r - 1) (lx ++ [r], rx)
+      else
+        go 0 ( lx ++ [take n' r], drop n' r : rx)
   in
     go n ( [], c)
 
