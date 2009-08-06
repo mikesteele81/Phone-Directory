@@ -4,9 +4,15 @@ import Graphics.PDF
 
 import Constants
 import Document
+import Name
 
-generate :: (Show a, Ord a) => Document a -> FilePath -> IO ()
+generate :: Document Name -> FilePath -> IO ()
 generate doc file =
-  runPdf file standardDocInfo (PDFRect 0 0 page_width page_height)
-  $ renderDoc doc
+  let
+    page1 = sortDoc doc
+    page2 = sortDoc $ fmap FirstSortedName doc
+  in
+    runPdf file standardDocInfo (PDFRect 0 0 page_width page_height) $ do
+      renderDoc page1
+      renderDoc page2
 

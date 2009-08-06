@@ -39,3 +39,9 @@ instance forall a. (Show a) => ShowLineItems (Organization a) where
 
 sortOrg :: (Ord a) => Organization a -> Organization a
 sortOrg o = o { oContacts = sort (oContacts o) }
+
+-- Perform an operation on the name.  Is this an abuse of Functors?
+instance Functor Organization where
+    f `fmap` o = o { oInfo = fmap f $ oInfo o
+                   , oContacts = map (fmap f) $ oContacts o
+                   } 

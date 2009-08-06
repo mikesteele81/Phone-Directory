@@ -25,7 +25,11 @@ instance (JSON a) => JSON (Document a) where
         showJSON $ toJSObject
         [ ("revised", showJSON $ dRevised d)
         , ("organizations", showJSONs $ dOrganizations d) ]
-        
+
+-- Perform an operation on the name.  Is this an abuse of Functors?
+instance Functor Document where
+    f `fmap` d = d { dOrganizations = map (fmap f) $ dOrganizations d }
+
 mkDocument :: Document a
 mkDocument = Document
              { dRevised = "1/1/2009"
@@ -40,9 +44,8 @@ sortDoc d =
 -- | Draw a Document.  It renders at least 2 pages in the PDF monad.
 renderDoc :: forall a. (Show a, Ord a) => Document a -> PDF()
 renderDoc d = 
-    let page1 = sortDoc d
-        revised = toPDFString $ "Revised: " ++ dRevised page1
-        lineItems = map showLineItems $ dOrganizations page1
+    let revised = toPDFString $ "Revised: " ++ dRevised d
+        lineItems = map showLineItems $ dOrganizations d
         columns = flowCols lineItems 4
         colXs = map (+ page_margin) $ take 4
                 $ iterate (+ (line_item_width + line_item_leading)) 0
