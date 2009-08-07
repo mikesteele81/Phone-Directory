@@ -2,6 +2,7 @@
 module Document where
 
 import Control.Monad (zipWithM_)
+import Control.Monad.Reader
 import Data.List (intercalate, sort)
 import Graphics.PDF
 import Text.JSON
@@ -59,12 +60,10 @@ renderDoc d lbl=
 
 -- |Draw a column
 renderCol :: Column -> Point -> Draw ()
-renderCol c p@(x :+ y) =
+renderCol c p =
   let
     br = ( col_width
            :+ (-1 * (fromIntegral . (+3) . length) c * line_item_leading))
   in do
-    drawText $ do
-      textStart (x + col_padding) (y - line_item_leading)
-      drawColumn c
-    stroke (Rectangle p (p + br))
+      runReaderT (drawColumn c) p
+      stroke (Rectangle p (p + br))
