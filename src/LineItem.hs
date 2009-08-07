@@ -39,7 +39,7 @@ class ShowLineItems a where
 mkLabelValue :: Bool -> String -> String -> LineItem
 mkLabelValue i l r = LineItem (toPDFString l) (toPDFString r) i
 
-drawLineItem :: LineItem -> ReaderT Point Draw ()
+drawLineItem :: LineItem -> ReaderT Point Draw (Point)
 drawLineItem (LineItem l r i) =  
     let offset = if i then line_item_indent else 0.0
     in do
@@ -52,24 +52,24 @@ drawLineItem (LineItem l r i) =
          textStart (line_item_width - textWidth font_normal r - offset) 0
          displayText r
          textStart (textWidth font_normal r - line_item_width) 0
+      return (x :+ (y - line_item_leading))
 drawLineItem Divider = do
   (x :+ y) <- ask
   let x' = x + col_width
       y' = y - line_item_leading
   lift $ stroke (Line x y' x' y')
-drawLineItem Blank = return ()
+  return (x :+ (y - line_item_leading))
+drawLineItem Blank = asks (+(0 :+ (-line_item_leading)))
 
 drawColumn :: Column -> ReaderT Point Draw ()
 drawColumn lx =
   let
-    op d = local (+d) . drawLineItem
-    ds = iterate (+ (0 :+ (-line_item_leading))) (0 :+ 0)
-    br = ( col_width
-           :+ (-1 * (fromIntegral . (+3) . length) lx * line_item_leading))
+    br = ( col_width :+ (-((fromIntegral . length) lx' * line_item_leading)))
+    lx' = columnHeading ++ lx ++ [Blank]
   in do
     p <- ask
     lift $ stroke (Rectangle p (p + br))
-    zipWithM_ op ds $ columnHeading ++ lx
+    foldM_ (\a -> local (const a) . drawLineItem) p lx'
 
 columnHeading :: Column
 columnHeading = [mkLabelValue True "User Name" "Phone No.", Divider]
