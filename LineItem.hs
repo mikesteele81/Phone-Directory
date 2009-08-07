@@ -36,7 +36,9 @@ drawLineItem (LineItem l r i) =
          textStart (textWidth font_normal r - line_item_width) 0
 drawLineItem Spacer = do
   (x :+ y) <- ask
-  lift $ stroke (Line x y (x + col_width) y)
+  let x' = x + col_width
+      y' = y - line_item_leading
+  lift $ stroke (Line x y' x' y')
 
 drawColumn :: Column -> ReaderT Point Draw ()
 drawColumn lx =
