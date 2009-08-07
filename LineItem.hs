@@ -11,6 +11,7 @@ data LineItem = LineItem { left   :: PDFString
                          , indent :: Bool
                          }
               | Divider
+              | Blank
               deriving (Show)
               
 type Column = [LineItem]
@@ -39,6 +40,7 @@ drawLineItem Divider = do
   let x' = x + col_width
       y' = y - line_item_leading
   lift $ stroke (Line x y' x' y')
+drawLineItem Blank = return ()
 
 drawColumn :: Column -> ReaderT Point Draw ()
 drawColumn lx =
@@ -60,6 +62,8 @@ columnHeading = [mkLabelValue True "User Name" "Phone No.", Divider]
 flowCols :: Column -> Int -> [Column]
 flowCols c n =
   let
-    len = (length c `div` n)
+    -- Add a few blanks so the column will divide evenly
+    c' = c ++ take (length c `mod` n) (repeat Blank)
+    len = length c' `div` n
   in
-    map fst $ take n $ tail $ iterate (\(_, c') -> splitAt len c') ( [], c)
+    map fst $ take n $ tail $ iterate (\(_, rest) -> splitAt len rest) ( [], c')
