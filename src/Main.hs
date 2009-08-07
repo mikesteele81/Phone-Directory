@@ -22,4 +22,4 @@ import Graphics.UI.WX (start)
 import GUI
 
 main :: IO ()
-main = start edit
+main = start mainWindow

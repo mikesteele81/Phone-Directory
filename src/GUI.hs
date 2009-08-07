@@ -16,7 +16,8 @@
 -}
 
 module GUI
-    where
+    ( mainWindow
+    ) where
 
 import Control.Applicative
 import Control.Monad
@@ -53,8 +54,8 @@ aboutTxt =
     \included license file for details."
 
 
-edit :: IO ()
-edit = do
+mainWindow :: IO ()
+mainWindow = do
   file <- varCreate defaultFile
 
   f  <- frame            []
