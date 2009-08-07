@@ -1,0 +1,15 @@
+Name:           PhoneDirectory
+Version:        0.1
+Description:    Create a nicely formatted .pdf of a sorted list of contacts.
+License:        GPL
+License-file:   LICENSE.txt
+Author:			Michael Steele <mikesteele81@gmail.com>
+Maintainer:		Michael Steele <mikesteele81@gmail.com>
+Build-Type:     Simple
+Cabal-Version:  >=1.2
+Executable:     phoneDirectory
+Build-Depends:  base, filepath, HPDF >= 1.4, json >= 0.4, mtl, time,
+                wx, wxcore
+Main-Is:        Main.hs
+hs-source-dirs: src
+ghc-options:    -Wall -O2
