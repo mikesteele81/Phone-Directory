@@ -43,6 +43,16 @@ fileTypesSelection = [("JSON", ["*.json"])]
 defaultFile :: String
 defaultFile = "untitled.json"
 
+aboutTxt :: String
+aboutTxt =
+    "PhoneDirectory Copyright (C) 2009 Michael Steele\n\n\
+    \This program comes with ABSOLUTELY NO WARRANTY; for\n\
+    \details go to http://www.michaelsteele.us/phonedirectory/.\n\n\
+    \This is free software, and you are welcome to\n\
+    \redistribute it under certain conditions; read the\n\
+    \included license file for details."
+
+
 edit :: IO ()
 edit = do
   file <- varCreate defaultFile
@@ -218,7 +228,7 @@ edit = do
               ]
 
   set iQuit  [ on command := close f ]
-  set iAbout [ on command := infoDialog f "About Phone Directory" "test" ]
+  set iAbout [ on command := infoDialog f "About Phone Directory" aboutTxt ]
 
   set eFirst    [ on focus := handleInputFocusChanged ]
   set eLast     [ on focus := handleInputFocusChanged ]
