@@ -10,7 +10,7 @@ data LineItem = LineItem { left   :: PDFString
                          , right  :: PDFString
                          , indent :: Bool
                          }
-              | Spacer
+              | Divider
               deriving (Show)
               
 type Column = [LineItem]
@@ -34,7 +34,7 @@ drawLineItem (LineItem l r i) =
          textStart (line_item_width - textWidth font_normal r - offset) 0
          displayText r
          textStart (textWidth font_normal r - line_item_width) 0
-drawLineItem Spacer = do
+drawLineItem Divider = do
   (x :+ y) <- ask
   let x' = x + col_width
       y' = y - line_item_leading
@@ -53,13 +53,13 @@ drawColumn lx =
     zipWithM_ op ds $ columnHeading ++ lx
 
 columnHeading :: Column
-columnHeading = [mkLabelValue True "User Name" "Phone No.", Spacer]
+columnHeading = [mkLabelValue True "User Name" "Phone No.", Divider]
 
 -- | Flow a single column into multiple columns of equal height.  This
 -- certainly has bugs in it.
 flowCols :: Column -> Int -> [Column]
 flowCols c n =
   let
-    len = length c `div` n
+    len = (length c `div` n)
   in
     map fst $ take n $ tail $ iterate (\(_, c') -> splitAt len c') ( [], c)
