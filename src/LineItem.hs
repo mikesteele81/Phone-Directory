@@ -61,15 +61,15 @@ drawLineItem Divider = do
   return (x :+ (y - line_item_leading))
 drawLineItem Blank = asks (+(0 :+ (-line_item_leading)))
 
-drawColumn :: Column -> ReaderT Point Draw ()
+drawColumn :: Column -> ReaderT Point Draw (Point)
 drawColumn lx =
-  let
-    br = ( col_width :+ (-((fromIntegral . length) lx' * line_item_leading)))
-    lx' = columnHeading ++ lx ++ [Blank]
+  let op a = local (const a) . drawLineItem
   in do
-    p <- ask
-    lift $ stroke (Rectangle p (p + br))
-    foldM_ (\a -> local (const a) . drawLineItem) p lx'
+    p@(x :+ y) <- ask
+    (_ :+ y') <- foldM op p $ columnHeading ++ lx ++ [Blank]
+    let x' = x + col_width
+    lift $ stroke $ Rectangle p (x' :+ y')
+    return (x' :+ y)
 
 columnHeading :: Column
 columnHeading = [mkLabelValue True "User Name" "Phone No.", Divider]
