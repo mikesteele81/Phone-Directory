@@ -92,4 +92,4 @@ renderDoc d lbl=
          drawText $ text fontTitle titleInset titleRise titleString
          drawText $ text fontSubtitle dateInset dateRise revised
          drawText $ text fontSubtitle modeInset modeRise $ toPDFString lbl
-         zipWithM_ (\col coord -> runReaderT (drawColumn col) coord) columns colCoords
+         zipWithM_ (runReaderT . drawColumn) columns colCoords

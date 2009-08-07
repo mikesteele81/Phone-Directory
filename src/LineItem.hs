@@ -80,7 +80,7 @@ flowCols :: Column -> Int -> [Column]
 flowCols c n =
   let
     -- Add a few blanks so the column will divide evenly
-    c' = c ++ take (length c `mod` n) (repeat Blank)
+    c' = c ++ replicate (length c `mod` n) Blank
     len = length c' `div` n
   in
     map fst $ take n $ tail $ iterate (\(_, rest) -> splitAt len rest) ( [], c')
