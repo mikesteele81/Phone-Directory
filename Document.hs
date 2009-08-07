@@ -2,7 +2,7 @@
 module Document where
 
 import Control.Monad (zipWithM_)
-import Data.List (sort)
+import Data.List (intercalate, sort)
 import Graphics.PDF
 import Text.JSON
 
@@ -45,7 +45,7 @@ sortDoc d =
 renderDoc :: forall a. (Show a, Ord a) => Document a -> String -> PDF()
 renderDoc d lbl= 
     let revised = toPDFString $ "Revised: " ++ dRevised d
-        lineItems = map showLineItems $ dOrganizations d
+        lineItems = intercalate [Spacer] $ map showLineItems $ dOrganizations d
         columns = flowCols lineItems 4
         colCoords = zipWith (:+) colXs $ repeat grid_rise
         colXs = map (+ page_margin) $ iterate (+ col_width) 0
@@ -62,7 +62,7 @@ renderCol :: Column -> Point -> Draw ()
 renderCol c p@(x :+ y) =
   let
     br = ( col_width
-           :+ (-1 * (fromIntegral . (+3) . colHeight) c * line_item_leading))
+           :+ (-1 * (fromIntegral . (+3) . length) c * line_item_leading))
   in do
     drawText $ do
       textStart (x + col_padding) (y - line_item_leading)

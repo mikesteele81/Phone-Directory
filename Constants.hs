@@ -41,6 +41,3 @@ line_item_width, line_item_indent, line_item_leading :: PDFFloat
 line_item_width   = col_width - 2.0 * col_padding
 line_item_indent  = fromIntegral units_per_inch / 8.0
 line_item_leading = fromIntegral units_per_inch / 7.0
-
-org_leading :: PDFFloat
-org_leading = fromIntegral units_per_inch / 5.0
