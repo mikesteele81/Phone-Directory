@@ -41,11 +41,10 @@ drawLineItem Spacer = do
 drawColumn :: Column -> ReaderT Point Draw ()
 drawColumn lx =
   let
-    op d l = local (const d) $ drawLineItem l
-    ps = iterate (+ (0 :+ (-line_item_leading)))
+    op d = local (+d) . drawLineItem
+    ds = iterate (+ (0 :+ (-line_item_leading))) (0 :+ 0)
   in do
-    p <- ask
-    zipWithM_ op (ps p) $ columnHeading ++ lx
+    zipWithM_ op ds $ columnHeading ++ lx
 
 columnHeading :: Column
 columnHeading = [mkLabelValue True "User Name" "Phone No.", Spacer]
