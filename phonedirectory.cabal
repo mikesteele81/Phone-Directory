@@ -1,5 +1,6 @@
 Name:           PhoneDirectory
 Version:        0.1
+Category:       Utils
 Description:    Create a nicely formatted .pdf of a sorted list of contacts.
 License:        GPL
 License-file:   LICENSE.txt
