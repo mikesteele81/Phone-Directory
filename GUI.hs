@@ -3,6 +3,7 @@ module GUI
 
 import Control.Applicative
 import Control.Monad
+import Data.Time
 import Graphics.UI.WX as WX
 import Graphics.UI.WXCore hiding ( Document )
 import System.FilePath
@@ -252,7 +253,10 @@ tree2Doc tc = do
     contacts <- treeCtrlWithChildren tc itm
       $ unsafeTreeCtrlGetItemClientData tc
     return $ Organization <$> orgCI <*> sequence contacts
-  return $ Document "TODO - add date" <$> sequence orgs
+  time <- getCurrentTime
+  let (year, month, day) = toGregorian $ utctDay time
+  return $ Document (show month ++ "/" ++ show day ++ "/" ++ show year)
+        <$> sequence orgs
 
 save :: FilePath -> Document Name -> IO ()
 save file = writeFile file . show . pp_value . showJSON
