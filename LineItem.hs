@@ -43,7 +43,11 @@ drawColumn lx =
   let
     op d = local (+d) . drawLineItem
     ds = iterate (+ (0 :+ (-line_item_leading))) (0 :+ 0)
+    br = ( col_width
+           :+ (-1 * (fromIntegral . (+3) . length) lx * line_item_leading))
   in do
+    p <- ask
+    lift $ stroke (Rectangle p (p + br))
     zipWithM_ op ds $ columnHeading ++ lx
 
 columnHeading :: Column

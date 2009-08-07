@@ -56,14 +56,4 @@ renderDoc d lbl=
          drawText $ text font_title title_inset title_rise title_string
          drawText $ text font_normal date_inset date_rise revised
          drawText $ text font_normal mode_inset mode_rise $ toPDFString lbl
-         zipWithM_ renderCol columns colCoords
-
--- |Draw a column
-renderCol :: Column -> Point -> Draw ()
-renderCol c p =
-  let
-    br = ( col_width
-           :+ (-1 * (fromIntegral . (+3) . length) c * line_item_leading))
-  in do
-      runReaderT (drawColumn c) p
-      stroke (Rectangle p (p + br))
+         zipWithM_ (\col coord -> runReaderT (drawColumn col) coord) columns colCoords
