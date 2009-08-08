@@ -27,9 +27,14 @@ import Constants
 import LineItem
 import Organization
 
-data Document name =
-    Document
-    { dRevised :: String
+-- |A Document contains a revision date and organizations to display.
+data Document name
+  = Document
+    { -- |This gets set whenever the document is ready to be
+      -- printed. Because of this, it's not really necessary at this
+      -- point.
+      dRevised :: String
+      -- |Organizations to print.
     , dOrganizations :: [Organization name] }
       
 instance (JSON a) => JSON (Document a) where
@@ -47,39 +52,65 @@ instance (JSON a) => JSON (Document a) where
 instance Functor Document where
     f `fmap` d = d { dOrganizations = map (fmap f) $ dOrganizations d }
 
-fontTitle, fontSubtitle :: PDFFont
+-- |Font used only for the title.
+fontTitle :: PDFFont
 fontTitle    = PDFFont Times_Bold 18
+
+-- |Font used for all header information besides the title.
+fontSubtitle :: PDFFont
 fontSubtitle = PDFFont Helvetica 10
 
-pageMargin, titleInset, titleRise :: PDFFloat
-pageMargin    = fromIntegral units_per_inch / 4.0
-titleInset    = fromIntegral units_per_inch * 1.75
-titleRise     = fromIntegral units_per_inch * 10.5
+-- |Margin used for entire page.
+pageMargin :: PDFFloat
+pageMargin = fromIntegral units_per_inch / 4.0
+
+-- |Distance from left edge to draw the title.
+titleInset :: PDFFloat
+titleInset = fromIntegral units_per_inch * 1.75
+
+-- |Distance from bottom edge to draw the title.
+titleRise :: PDFFloat
+titleRise = fromIntegral units_per_inch * 10.5
 
 titleString :: PDFString
-titleString   = toPDFString "PHONE DIRECTORY"
+titleString = toPDFString "PHONE DIRECTORY"
 
-dateInset, dateRise :: PDFFloat
-dateInset     = pageMargin + col_padding
-dateRise      = fromIntegral units_per_inch * 10.0
+-- |Distance from left edge to draw the date string.
+dateInset :: PDFFloat
+dateInset = pageMargin + col_padding
 
-modeInset, modeRise :: PDFFloat
-modeInset     = titleInset
-modeRise      = dateRise
+-- |Distance from bottom edge to draw the date string.
+dateRise :: PDFFloat
+dateRise = fromIntegral units_per_inch * 10.0
 
+-- |Distance from left edge to draw the sort specifier.
+modeInset :: PDFFloat
+modeInset = titleInset
+
+-- |Distance from bottom edge to draw the sort specifier.
+modeRise :: PDFFloat
+modeRise = dateRise
+
+-- |Convenient way to make a Document.
 mkDocument :: Document a
 mkDocument = Document
              { dRevised = "1/1/2009"
              , dOrganizations = []
              }
 
-sortDoc :: (Ord a) => Document a -> Document a
+-- |Deep sort the document and all organizations that are a part of it.
+sortDoc :: (Ord a)
+  => Document a -- ^Document to deep sort
+  -> Document a -- ^An identical Document that has possibly been
+                -- rearranged.
 sortDoc d =
     d { dOrganizations = map sortOrg $ 
                          sort (dOrganizations d) }
         
--- | Draw a Document.
-renderDoc :: forall a. (Show a, Ord a) => Document a -> String -> PDF()
+-- | Draw a Document on its own page.
+renderDoc :: forall a. (Show a, Ord a)
+  => Document a      -- ^Document to append a page for.
+  -> String -> PDF()
 renderDoc d lbl= 
     let revised = toPDFString $ "Revised: " ++ dRevised d
         lineItems = intercalate [Divider] $ map showLineItems $ dOrganizations d
