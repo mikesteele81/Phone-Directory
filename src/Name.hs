@@ -23,10 +23,17 @@ module Name
 import Control.Applicative
 import Text.JSON
 
-data Name = FirstLast String String
-          | SingleName String
-          deriving (Eq)
-          
+-- |A contact's name. This sorts by last name and prints out as 'Last,
+-- First'.
+data Name
+  -- |FirstLast first last
+  = FirstLast String String
+  -- |Use this whenever you want a contact to always sort and print the
+  -- same way.
+  | SingleName String
+  deriving (Eq)
+
+-- |This prints out 'First Last' and sorts by first name.
 newtype FirstSortedName = FirstSortedName { unFirstSortedName :: Name }
     deriving (Eq)
 
@@ -41,7 +48,8 @@ instance Show Name where
         case n of
           FirstLast f l -> l ++ ", " ++ f
           SingleName sn -> sn
-          
+
+-- |This class is a hack to simplify the sorting of names.
 class ShowForSorting a where
     showForSorting :: a -> String
     
