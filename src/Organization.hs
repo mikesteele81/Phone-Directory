@@ -25,12 +25,16 @@ import Text.JSON
 import ContactInfo
 import LineItem
 
--- An organization persons are a part of
-data Organization name
-    = Organization
-      { oInfo :: ContactInfo name
-      , oContacts :: [ContactInfo name]
-      } deriving (Eq)
+-- |An organization has its own contact information and 0 or more
+-- contacts that are a part of it.
+data Organization name = Organization
+  { -- |Contact information for the organization itself.  This gets
+    -- turned into a non-indented line item.
+    oInfo :: ContactInfo name
+    -- |Contacts that make up the organization.  These all get turned
+    -- into indented line items on the contact sheet.
+  , oContacts :: [ContactInfo name]
+  } deriving (Eq)
 
 instance (JSON a) => JSON (Organization a) where
     readJSON (JSObject o) =
@@ -54,6 +58,7 @@ instance forall a. (Show a) => ShowLineItems (Organization a) where
                    <*> ZipList (map cPhone cx)
         in mkLabelValue False (show $ cName o) (cPhone o) : rest
 
+-- |Sort all the contacts.
 sortOrg :: (Ord a) => Organization a -> Organization a
 sortOrg o = o { oContacts = sort (oContacts o) }
 
