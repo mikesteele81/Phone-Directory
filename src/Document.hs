@@ -84,12 +84,12 @@ renderDoc d lbl=
     let revised = toPDFString $ "Revised: " ++ dRevised d
         lineItems = intercalate [Divider] $ map showLineItems $ dOrganizations d
         columns = flowCols lineItems 4
-        colCoords = zipWith (:+) colXs $ repeat grid_rise
-        colXs = map (+ pageMargin) $ iterate (+ col_width) 0
+        op coord col = runReaderT (drawColumn col) coord
     in do
       p <- addPage Nothing
       drawWithPage p $ do
          drawText $ text fontTitle titleInset titleRise titleString
          drawText $ text fontSubtitle dateInset dateRise revised
          drawText $ text fontSubtitle modeInset modeRise $ toPDFString lbl
-         zipWithM_ (runReaderT . drawColumn) columns colCoords
+         foldM_ op (pageMargin :+ grid_rise) columns
+         return ()
