@@ -23,23 +23,48 @@ import Graphics.PDF
 
 import Constants
 
-data LineItem = LineItem { left   :: PDFString
-                         , right  :: PDFString
-                         , indent :: Bool
-                         }
-              | Divider
-              | Blank
-              deriving (Show)
-              
+-- | A single line making up part of a column.
+data LineItem 
+  -- | Contact or column heading.
+  = LineItem { -- |Left-justified text.
+               left   :: PDFString
+               -- |Right-justified text.
+             , right  :: PDFString
+               -- |Should 'left' be indented a little?
+               -- This is so group membership can be made obvious.
+             , indent :: Bool
+             }
+  -- | Horizontal line
+  | Divider
+  -- | Empty area.  This is used at the end to force columns to be of
+  -- equal length.
+  | Blank
+  deriving (Show)
+
+-- |Each page contains 4 columns of equal length.              
 type Column = [LineItem]
 
+-- |Things which can be converted to lists of LineItems.  This
+-- includes ContactInfo and Organization.
 class ShowLineItems a where
     showLineItems :: a -> [LineItem]
 
-mkLabelValue :: Bool -> String -> String -> LineItem
+-- |Use this to conveniently create LineItems without having to import
+-- Graphics.PDF.
+mkLabelValue :: Bool     -- ^Indent?
+             -> String   -- ^Left
+             -> String   -- ^Right
+             -> LineItem
 mkLabelValue i l r = LineItem (toPDFString l) (toPDFString r) i
 
-drawLineItem :: LineItem -> ReaderT Point Draw (Point)
+-- |Draw a LineItem so that whatever Point is in the monad sits on the
+-- upper-left corner of the bounding box of what's drawn.
+drawLineItem :: LineItem                   -- ^Thing to draw
+             -> ReaderT Point Draw (Point) -- ^Suggested location to
+                                           -- draw the next
+                                           -- LineItem. This will be
+                                           -- the lowel-left corner of
+                                           -- the current column. 
 drawLineItem (LineItem l r i) =  
     let offset = if i then line_item_indent else 0.0
     in do
@@ -61,7 +86,13 @@ drawLineItem Divider = do
   return (x :+ (y - line_item_leading))
 drawLineItem Blank = asks (+(0 :+ (-line_item_leading)))
 
-drawColumn :: Column -> ReaderT Point Draw (Point)
+-- |Draw a collection of LineItem objects with a box around it.
+drawColumn :: Column                     -- ^Thing to draw
+           -> ReaderT Point Draw (Point) -- ^Suggested location to
+                                         -- draw the next Column.
+                                         -- This will be the
+                                         -- upper-right corner of the
+                                         -- current Column.
 drawColumn lx =
   let op a = local (const a) . drawLineItem
   in do
@@ -71,12 +102,16 @@ drawColumn lx =
     lift $ stroke $ Rectangle p (x' :+ y')
     return (x' :+ y)
 
+-- |This gets prepended to every Column before being drawn.
 columnHeading :: Column
 columnHeading = [mkLabelValue True "User Name" "Phone No.", Divider]
 
 -- | Flow a single column into multiple columns of equal height.  This
 -- certainly has bugs in it.
-flowCols :: Column -> Int -> [Column]
+flowCols :: Column   -- ^Column to divide up
+         -> Int      -- ^Number of resultant columns
+         -> [Column] -- ^Equal length columns.  The last one may have
+                     -- a few Blanks added to it.
 flowCols c n =
   let
     -- Add a few blanks so the column will divide evenly
