@@ -23,7 +23,13 @@ import Constants
 import Document
 import Name
 
-generate :: Document Name -> FilePath -> IO ()
+-- |Create a 2-page .pdf file.  The first page sorts by last name and
+-- the second sorts by first name.
+generate
+  :: Document Name -- ^Document to print.  It will be automatically
+                   -- resorted.
+  -> FilePath      -- ^Filename to save to.
+  -> IO ()
 generate doc file =
   let
     page1 = sortDoc doc
