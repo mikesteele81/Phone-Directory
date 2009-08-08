@@ -24,13 +24,17 @@ import Control.Applicative
 import Data.Monoid
 import Text.JSON
 
+-- |Contact information for an individual or group.
 data ContactInfo a = ContactInfo
-    { cName :: a
-    , cPhone    :: String
-    -- for the purposes of sorting.  Higher numbers sort first.
-    , cPriority :: Int
-    } deriving (Eq)
-    
+  { -- |Either a Name or FirstSortedName.  This ends up on the left
+    -- side of each line item.
+    cName :: a
+    -- |A phone number.  This ends up on the right of each line item.
+  , cPhone    :: String
+    -- |for the purposes of sorting.  Higher numbers sort first.
+  , cPriority :: Int
+  } deriving (Eq)
+
 instance (JSON a) => JSON (ContactInfo a) where
     readJSON (JSObject o) =
         ContactInfo <$> valFromObj "name" o <*> valFromObj "phone" o
@@ -42,7 +46,7 @@ instance (JSON a) => JSON (ContactInfo a) where
                , ("priority", showJSON pr) ]
 
 instance forall a. (Ord a) => Ord (ContactInfo a) where
-    compare l r =                     
+    compare l r =
         -- priority descending
         compare (cPriority r) (cPriority l) `mappend`
         compare (cName l) (cName r) `mappend`
