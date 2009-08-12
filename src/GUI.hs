@@ -209,7 +209,9 @@ mainWindow = do
                  case doc' of
                    Just doc'' -> do
                      file' <- varGet file
-                     save file' doc''
+                     let doc''' = sortDoc doc''
+                     save file' $ sortDoc doc'''
+                     Control.Monad.when (doc'' /= doc''') $ populateTree tc doc'''
                    Nothing -> putStrLn "bad doc" >> return ()
              ]
   set iSaveAs  [ WX.text := "Save &As...", on command := do
@@ -219,7 +221,10 @@ mainWindow = do
                      Just name' -> do
                        doc' <- tree2Doc tc
                        case doc' of
-                         Just doc'' -> save name' doc''
+                         Just doc'' -> do
+                           let doc''' = sortDoc doc''
+                           save name' doc''
+                           Control.Monad.when (doc'' /= doc''') $ populateTree tc doc'''
                          Nothing -> return ()
                        varSet file name'
                        updateTitle f name'

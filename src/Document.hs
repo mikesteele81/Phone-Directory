@@ -35,7 +35,8 @@ data Document name
       -- point.
       dRevised :: String
       -- |Organizations to print.
-    , dOrganizations :: [Organization name] }
+    , dOrganizations :: [Organization name]
+    } deriving (Eq)
       
 instance (JSON a) => JSON (Document a) where
     readJSON (JSObject d) =

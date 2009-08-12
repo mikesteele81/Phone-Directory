@@ -34,7 +34,7 @@ data Organization name = Organization
     -- |Contacts that make up the organization.  These all get turned
     -- into indented line items on the contact sheet.
   , oContacts :: [ContactInfo name]
-  } deriving (Eq)
+  } deriving (Eq, Ord)
 
 instance (JSON a) => JSON (Organization a) where
     readJSON (JSObject o) =
@@ -48,9 +48,6 @@ instance (JSON a) => JSON (Organization a) where
                  [ ("info", showJSON $ oInfo o)
                  , ("contacts", showJSONs $ oContacts o)]
                  
-instance (Ord a) => Ord (Organization a) where
-    compare l r = compare (oInfo l) (oInfo r)
-    
 instance forall a. (Show a) => ShowLineItems (Organization a) where
     showLineItems (Organization o cx) =
         let rest = getZipList $ mkLabelValue True 
