@@ -177,6 +177,7 @@ mainWindow = do
         set f [WX.text := takeBaseName fn ++ " - Phone Directory"]
 
       handleInputFocusChanged :: Bool -> IO ()
+      -- lost focus
       handleInputFocusChanged False = do
         itm <- treeCtrlGetSelection tc
         -- Never update the root node.
@@ -249,13 +250,13 @@ mainWindow = do
   set tc [ on treeEvent := onTreeEvent ]
   
   set pLeft [ layout := WX.fill $ widget tc ]
-  set pRight [ layout := margin 6 $ column 5
-                          [ widget tFirst, widget eFirst
-                          , widget tLast, widget eLast
-                          , widget tPhone, widget ePhone
-                          , widget tPriority, widget ePriority
-                          ]
-             ]
+  set pRight
+      [ layout := margin 6 $ column 5
+          [ widget tFirst, widget eFirst, widget tLast, widget eLast
+          , widget tPhone, widget ePhone, widget tPriority, widget ePriority
+          ]
+      ]
+
   populateTree tc (mkDocument :: Document Name)
   updateTitle
 
