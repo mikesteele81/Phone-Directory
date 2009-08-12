@@ -184,7 +184,11 @@ mainWindow = do
       handleInputFocusChanged _ = return ()
 
   set mFile  [ WX.text := "&File"    ]
-  set iNew   [ WX.text := "&New"     ]
+  set iNew   [ WX.text := "&New", on command := do
+                 -- TODO: What about an unsaved file?
+                 varSet file defaultFile
+                 new f tc defaultFile
+             ]
   set iOpen  [ WX.text := "&Open...", on command := do
                  name <- fileOpenDialog f True True "Open phone directory"
                          fileTypesSelection "" ""
@@ -251,9 +255,8 @@ mainWindow = do
           , widget tPhone, widget ePhone, widget tPriority, widget ePriority
           ]
       ]
-
-  populateTree tc (mkDocument :: Document Name)
-  varGet file >>= updateTitle f
+  -- the filename has already been set
+  varGet file >>= new f tc
 
   set f [ menuBar    := [mFile, mHelp]
         , layout     := WX.fill $ vsplit sw 5 200 (widget pLeft) (widget pRight)
@@ -297,6 +300,16 @@ tree2Doc tc = do
   let (year, month, day) = toGregorian $ utctDay time
   return $ Document (show month ++ "/" ++ show day ++ "/" ++ show year)
         <$> sequence orgs
+
+-- |Reset the GUI to a new file.
+new
+    :: Frame a     -- ^ Window with a title needing to be
+    -> TreeCtrl a  -- ^ Main window's tree control.  This will be cleared.
+    -> String      -- ^ Filename
+    -> IO ()
+new f tc fn = do
+    populateTree tc (mkDocument :: Document Name)
+    updateTitle f fn
 
 -- |Save the supplied document to a file.
 save :: FilePath -> Document Name -> IO ()
