@@ -178,9 +178,13 @@ mainWindow = do
 
       handleInputFocusChanged :: Bool -> IO ()
       handleInputFocusChanged False = do
-        ci <- right2CI
         itm <- treeCtrlGetSelection tc
-        updateTreeItem itm ci
+        -- Never update the root node.
+        root <- treeCtrlGetRootItem tc
+        Control.Monad.when (root /= itm && treeItemIsOk itm) $ do
+          ci <- right2CI
+          updateTreeItem itm ci
+
       handleInputFocusChanged _ = return ()
 
   set mFile  [ WX.text := "&File"    ]
