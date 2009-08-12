@@ -35,12 +35,18 @@ import Name
 import Organization
 import PDF
 
+-- |The application only exports to .pdf.  I could see other formats like
+-- .html being useful to.
 exportTypesSelection :: [(String, [String])]
 exportTypesSelection = [("PDF", ["*.pdf"])]
 
+-- |This is the format to be saved in.  It's a Shame that the Haskell YAML
+-- library was made available a week after I settled on this.
 fileTypesSelection :: [(String, [String])]
 fileTypesSelection = [("JSON", ["*.json"])]
 
+-- |When you first start the application this is the filename chosen to save
+-- to.
 defaultFile :: String
 defaultFile = "untitled.json"
 
@@ -53,7 +59,7 @@ aboutTxt =
     \redistribute it under certain conditions; read the\n\
     \included license file for details."
 
-
+-- |Build the main window and start the event loop.
 mainWindow :: IO ()
 mainWindow = do
   file <- varCreate defaultFile
@@ -256,6 +262,8 @@ mainWindow = do
 
   windowSetFocus tc
 
+-- |Scrap and rebuild the heirarchical tree.  Once this is done, expand it and
+-- select the first non-root node.
 populateTree :: (Show b) => TreeCtrl a -> Document b -> IO ()
 populateTree tc doc =
     let addItem p itm = do
@@ -272,7 +280,7 @@ populateTree tc doc =
       treeCtrlExpand tc root
       treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
 
--- | Create a Document object based on the tree.      
+-- |Create a Document object based on the tree heirarchy.
 tree2Doc :: TreeCtrl a -> IO (Maybe (Document Name))
 tree2Doc tc = do
   root <- treeCtrlGetRootItem tc
@@ -286,9 +294,11 @@ tree2Doc tc = do
   return $ Document (show month ++ "/" ++ show day ++ "/" ++ show year)
         <$> sequence orgs
 
+-- |Save the supplied document to a file.
 save :: FilePath -> Document Name -> IO ()
 save file = writeFile file . show . pp_value . showJSON
 
+-- |Attempt to load a document from the supplied file.  Returns 'Nothing' on error.
 load :: FilePath -> IO (Maybe (Document Name))
 load fp =
   withFile fp ReadMode $ \h -> do
