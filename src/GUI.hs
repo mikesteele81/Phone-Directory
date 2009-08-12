@@ -171,11 +171,6 @@ mainWindow = do
         set ePhone    [ enabled := False, WX.text := "" ]
         set ePriority [ enabled := False, WX.text := "" ]
 
-      updateTitle :: IO ()
-      updateTitle = do
-        fn <- varGet file
-        set f [WX.text := takeBaseName fn ++ " - Phone Directory"]
-
       handleInputFocusChanged :: Bool -> IO ()
       -- lost focus
       handleInputFocusChanged False = do
@@ -202,7 +197,7 @@ mainWindow = do
                                    populateTree tc doc''
                        Nothing -> return ()
                      varSet file name'
-                     updateTitle
+                     updateTitle f name'
                    Nothing -> return ()
              ]
   set iSave  [ WX.text := "&Save", on command := do
@@ -223,7 +218,7 @@ mainWindow = do
                          Just doc'' -> save name' doc''
                          Nothing -> return ()
                        varSet file name'
-                       updateTitle
+                       updateTitle f name'
                      Nothing -> return ()
                ]
 
@@ -258,7 +253,7 @@ mainWindow = do
       ]
 
   populateTree tc (mkDocument :: Document Name)
-  updateTitle
+  varGet file >>= updateTitle f
 
   set f [ menuBar    := [mFile, mHelp]
         , layout     := WX.fill $ vsplit sw 5 200 (widget pLeft) (widget pRight)
@@ -284,6 +279,10 @@ populateTree tc doc =
       mapM_ (populateOrg root) $ dOrganizations doc
       treeCtrlExpand tc root
       treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
+
+-- |Set the supplied frame's title bar based on the supplied file.
+updateTitle :: Frame a -> FilePath -> IO ()
+updateTitle f fn = set f [WX.text := takeBaseName fn ++ " - Phone Directory"]
 
 -- |Create a Document object based on the tree heirarchy.
 tree2Doc :: TreeCtrl a -> IO (Maybe (Document Name))
