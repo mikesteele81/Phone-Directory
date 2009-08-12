@@ -119,7 +119,7 @@ mainWindow = do
 
             itm' <- treeCtrlAppendItem tc p "<New Item>" 0 0 objectNull
             treeCtrlSetItemClientData tc itm' (return ())
-                (ContactInfo (SingleName "") "" 1)
+                (ContactInfo 1 (SingleName "") "")
             treeCtrlSelectItem tc itm'
             windowSetFocus eFirst
           KeyDelete -> unless (root == itm) $ treeCtrlDelete tc itm
