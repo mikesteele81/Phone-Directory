@@ -43,9 +43,9 @@ instance (JSON a) => JSON (ContactInfo a) where
             ++ (show . pp_value) v ++ ".")
     readJSON v = Error $ "Expected JSObject, but " ++ (show . pp_value) v
         ++ " found while parsing a contact information."
-    showJSON (ContactInfo n p pr) =
-       makeObj [ ("name", showJSON n), ("phone", showJSON p)
-               , ("priority", showJSON pr) ]
+    showJSON ci = makeObj
+        [ ("name", showJSON . cName $ ci), ("phone", showJSON . cPhone $ ci)
+        , ("priority", showJSON . cPriority $ ci) ]
 
 instance forall a. (Show a) => Show (ContactInfo a) where
     show = show . cName
