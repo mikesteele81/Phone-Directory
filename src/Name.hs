@@ -21,6 +21,7 @@ module Name
     ) where
 
 import Control.Applicative
+import Data.Char (toLower)
 import Text.JSON
 import Text.JSON.Pretty
 
@@ -49,14 +50,14 @@ class ShowForSorting a where
 instance ShowForSorting FirstSortedName where
     showForSorting (FirstSortedName n) =
         case n of
-          FirstLast f l -> f ++ l
+          FirstLast f l -> map toLower $ f ++ l
           _             -> showForSorting n
           
 instance ShowForSorting Name where
     showForSorting n =
         case n of
-          FirstLast f l -> l ++ f
-          SingleName sn -> sn
+          FirstLast f l -> map toLower $ l ++ f
+          SingleName sn -> map toLower sn
 
 instance Ord Name where
     compare l r = compare (showForSorting l) (showForSorting r)
