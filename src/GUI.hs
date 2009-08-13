@@ -38,17 +38,17 @@ import PDF
 -- |The application only exports to .pdf.  I could see other formats like
 -- .html being useful to.
 exportTypesSelection :: [(String, [String])]
-exportTypesSelection = [("PDF", ["*.pdf"])]
+exportTypesSelection = [("PDF (*.pdf)", ["*.pdf"])]
 
 -- |This is the format to be saved in.  It's a Shame that the Haskell YAML
 -- library was made available a week after I settled on this.
 fileTypesSelection :: [(String, [String])]
-fileTypesSelection = [("JSON", ["*.json"])]
+fileTypesSelection = [("Phone Directory (*.pdir)", ["*.pdir"])]
 
 -- |When you first start the application this is the filename chosen to save
 -- to.
 defaultFile :: String
-defaultFile = "untitled.json"
+defaultFile = "untitled.pdir"
 
 aboutTxt :: String
 aboutTxt =
