@@ -22,6 +22,7 @@ module ContactInfo
 
 import Control.Applicative
 import Text.JSON
+import Text.JSON.Pretty
 
 -- |Contact information for an individual or group.
 data ContactInfo a = ContactInfo
@@ -35,11 +36,13 @@ data ContactInfo a = ContactInfo
   } deriving (Eq, Ord)
 
 instance (JSON a) => JSON (ContactInfo a) where
-    readJSON (JSObject o) =
-        ContactInfo <$> valFromObj "priority" o <*> valFromObj "name" o
+    readJSON v@(JSObject o)
+        =   ContactInfo <$> valFromObj "priority" o <*> valFromObj "name" o
         <*> valFromObj "phone" o
-    readJSON _ =
-        Error "Could not parse ContactInfo JSON object."
+        <|> Error ("Failed to parse contact information from "
+            ++ (show . pp_value) v ++ ".")
+    readJSON v = Error $ "Expected JSObject, but " ++ (show . pp_value) v
+        ++ " found while parsing a contact information."
     showJSON (ContactInfo n p pr) =
        makeObj [ ("name", showJSON n), ("phone", showJSON p)
                , ("priority", showJSON pr) ]

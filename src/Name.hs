@@ -22,6 +22,7 @@ module Name
 
 import Control.Applicative
 import Text.JSON
+import Text.JSON.Pretty
 
 data Name = FirstLast String String
           | SingleName String
@@ -67,7 +68,8 @@ instance JSON Name where
     readJSON (JSObject o) =
         FirstLast <$> valFromObj "first" o <*> valFromObj "last" o
         <|> SingleName <$> valFromObj "name" o
-    readJSON _ = Error "boo!"
+    readJSON v = Error $ "Expected JSObject, but " ++ (show . pp_value) v
+        ++ " found while parsing a name."
     showJSON n = showJSON $ toJSObject $
                  case n of
                    FirstLast f l -> [ ("first", showJSON f)
