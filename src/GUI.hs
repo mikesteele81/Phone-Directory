@@ -21,11 +21,13 @@ module GUI
 
 import Control.Applicative
 import Control.Monad
+--import Control.Monad.Error
 import Data.Time
 import Graphics.UI.WX as WX
 import Graphics.UI.WXCore hiding ( Document )
 import System.FilePath
 import System.IO
+import System.IO.Error
 import Text.JSON
 import Text.JSON.Pretty
 
@@ -322,9 +324,12 @@ save file = writeFile file . show . pp_value . showJSON
 
 -- |Attempt to load a document from the supplied file.  Returns 'Nothing' on error.
 load :: FilePath -> IO (Maybe (Document Name))
-load fp =
-  withFile fp ReadMode $ \h -> do
-            input <- hGetContents h
-            case decodeStrict input >>= readJSON of
-              Error s -> putStrLn ("Error: " ++ s) >> return Nothing
-              Ok doc -> return $ Just doc
+load fp = do
+    r <- try $ withFile fp ReadMode $ \h -> do
+        input <- hGetContents h
+        case decodeStrict input >>= readJSON of
+            Error s -> putStrLn ("Error: " ++ s) >> return Nothing
+            Ok doc -> return $ Just doc
+    case (r :: Either IOError (Maybe (Document Name))) of
+        Left _ -> return Nothing
+        Right d -> return d
