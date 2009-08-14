@@ -192,19 +192,19 @@ mainWindow = do
                  new f tc defaultFile
              ]
   set iOpen  [ WX.text := "&Open...", on command := do
-                 name <- fileOpenDialog f True True "Open phone directory"
-                         fileTypesSelection "" ""
-                 case name of
-                   Just name' -> do
-                     doc' <- load name'
-                     case doc' of
-                       Just doc'' -> do
-                                   putStrLn $ "Opening " ++ name'
-                                   populateTree tc doc''
-                       Nothing -> return ()
-                     varSet file name'
-                     updateTitle f name'
-                   Nothing -> return ()
+      name <- fileOpenDialog f True True "Open phone directory"
+          fileTypesSelection "" ""
+      case name of
+          Just name' -> do
+              doc' <- load name'
+              case doc' of
+                  Right doc'' -> do
+                      putStrLn $ "Opening " ++ name'
+                      populateTree tc doc''
+                      varSet file name'
+                      updateTitle f name'
+                  Left e -> errorDialog f "error" e
+          Nothing -> return ()
              ]
   set iSave  [ WX.text := "&Save", on command := do
                  doc' <- tree2Doc tc
@@ -323,13 +323,13 @@ save :: FilePath -> Document Name -> IO ()
 save file = writeFile file . show . pp_value . showJSON
 
 -- |Attempt to load a document from the supplied file.  Returns 'Nothing' on error.
-load :: FilePath -> IO (Maybe (Document Name))
+load :: FilePath -> IO (Either String (Document Name))
 load fp = do
     r <- try $ withFile fp ReadMode $ \h -> do
         input <- hGetContents h
         case decodeStrict input >>= readJSON of
-            Error s -> putStrLn ("Error: " ++ s) >> return Nothing
-            Ok doc -> return $ Just doc
-    case (r :: Either IOError (Maybe (Document Name))) of
-        Left _ -> return Nothing
+            Error s -> return . Left $ "Error: " ++ s
+            Ok doc -> return $ Right doc
+    case (r :: Either IOError (Either String (Document Name))) of
+        Left _  -> return . Left $ "Something went wrong while loading " ++ fp ++ "."
         Right d -> return d
