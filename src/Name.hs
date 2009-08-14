@@ -16,14 +16,14 @@
 -}
 
 module Name
-    ( Name (FirstLast, SingleName)
-    , FirstSortedName (FirstSortedName, unFirstSortedName)
+    ( Name            ( FirstLast, SingleName)
+    , FirstSortedName ( FirstSortedName )
     ) where
 
 import Control.Applicative
-import Data.Char (toLower)
+import Data.Char           ( toLower )
 import Text.JSON
-import Text.JSON.Pretty
+import Text.JSON.Pretty    ( pp_value )
 
 data Name = FirstLast String String
           | SingleName String
