@@ -24,7 +24,7 @@ import Control.Monad
 --import Control.Monad.Error
 import Data.Time
 import Graphics.UI.WX as WX
-import Graphics.UI.WXCore hiding ( Document )
+import Graphics.UI.WXCore hiding (Document)
 import System.FilePath
 import System.IO
 import System.IO.Error
@@ -327,9 +327,7 @@ load :: FilePath -> IO (Either String (Document Name))
 load fp = do
     r <- try $ withFile fp ReadMode $ \h -> do
         input <- hGetContents h
-        case decodeStrict input >>= readJSON of
-            Error s -> return . Left $ "Error: " ++ s
-            Ok doc -> return $ Right doc
+        return . resultToEither $ decodeStrict input >>= readJSON
     case (r :: Either IOError (Either String (Document Name))) of
         Left _  -> return . Left $ "Something went wrong while loading " ++ fp ++ "."
         Right d -> return d
