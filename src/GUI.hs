@@ -212,7 +212,7 @@ mainWindow = do
                    Just doc'' -> do
                      file' <- varGet file
                      let doc''' = sortDoc doc''
-                     save file' $ sortDoc doc'''
+                     runErrorT $ save file' $ sortDoc doc'''
                      M.when (doc'' /= doc''') $ populateTree tc doc'''
                    Nothing -> putStrLn "bad doc" >> return ()
              ]
@@ -225,7 +225,7 @@ mainWindow = do
                        case doc' of
                          Just doc'' -> do
                            let doc''' = sortDoc doc''
-                           save name' doc''
+                           runErrorT $ save name' doc''
                            M.when (doc'' /= doc''') $ populateTree tc doc'''
                          Nothing -> return ()
                        varSet file name'
@@ -319,8 +319,12 @@ new f tc fn = do
     updateTitle f fn
 
 -- |Save the supplied document to a file.
-save :: FilePath -> Document Name -> IO ()
-save file = writeFile file . show . pp_value . showJSON
+save :: FilePath -> Document Name -> ErrorT String IO ()
+save fp =
+  let
+    msg = "Something went wrong while saving " ++ fp ++ "."
+  in
+    fromIO msg . writeFile fp . show . pp_value . showJSON
 
 -- |Attempt to load a document from the supplied file.
 load :: FilePath -> ErrorT String IO (Document Name)
