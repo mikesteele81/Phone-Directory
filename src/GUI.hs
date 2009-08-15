@@ -20,8 +20,8 @@ module GUI
     ) where
 
 import Control.Applicative
-import Control.Monad
---import Control.Monad.Error
+import qualified Control.Monad as M
+import Control.Monad.Error
 import Data.Time
 import Graphics.UI.WX as WX
 import Graphics.UI.WXCore hiding (Document)
@@ -99,7 +99,7 @@ mainWindow = do
       onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' = do
         -- Delete non-root nodes without a name
         root <- treeCtrlGetRootItem tc
-        Control.Monad.when (root /= itm && treeItemIsOk itm) $ do
+        M.when (root /= itm && treeItemIsOk itm) $ do
           ci <- right2CI
           case show ci of
             "" -> treeCtrlDelete tc itm
@@ -179,7 +179,7 @@ mainWindow = do
         itm <- treeCtrlGetSelection tc
         -- Never update the root node.
         root <- treeCtrlGetRootItem tc
-        Control.Monad.when (root /= itm && treeItemIsOk itm) $ do
+        M.when (root /= itm && treeItemIsOk itm) $ do
           ci <- right2CI
           updateTreeItem itm ci
 
@@ -196,7 +196,7 @@ mainWindow = do
           fileTypesSelection "" ""
       case name of
           Just name' -> do
-              doc' <- load name'
+              doc' <- runErrorT $ load name'
               case doc' of
                   Right doc'' -> do
                       putStrLn $ "Opening " ++ name'
@@ -213,7 +213,7 @@ mainWindow = do
                      file' <- varGet file
                      let doc''' = sortDoc doc''
                      save file' $ sortDoc doc'''
-                     Control.Monad.when (doc'' /= doc''') $ populateTree tc doc'''
+                     M.when (doc'' /= doc''') $ populateTree tc doc'''
                    Nothing -> putStrLn "bad doc" >> return ()
              ]
   set iSaveAs  [ WX.text := "Save &As...", on command := do
@@ -226,7 +226,7 @@ mainWindow = do
                          Just doc'' -> do
                            let doc''' = sortDoc doc''
                            save name' doc''
-                           Control.Monad.when (doc'' /= doc''') $ populateTree tc doc'''
+                           M.when (doc'' /= doc''') $ populateTree tc doc'''
                          Nothing -> return ()
                        varSet file name'
                        updateTitle f name'
@@ -322,12 +322,32 @@ new f tc fn = do
 save :: FilePath -> Document Name -> IO ()
 save file = writeFile file . show . pp_value . showJSON
 
--- |Attempt to load a document from the supplied file.  Returns 'Nothing' on error.
-load :: FilePath -> IO (Either String (Document Name))
+-- |Attempt to load a document from the supplied file.
+--load :: FilePath -> ErrorT String IO (Document Name)
+--load fp =
+--  let
+--    msg = "Something went wrong while loading " ++ fp ++ "."
+--    shim :: Either IOError a -> Either String a
+--    shim = either (const $ Left msg) Right
+--  in do
+--    contents <- liftIO . try . readFile $ fp
+--    case contents  of
+--        Left _ -> throwError msg
+--        Right s -> case resultToEither $ decodeStrict s >>= readJSON of
+--            Left err -> throwError err
+--            Right doc    -> return doc
+
+-- |Attempt to load a document from the supplied file.
+load :: FilePath -> ErrorT String IO (Document Name)
 load fp = do
-    r <- try $ withFile fp ReadMode $ \h -> do
-        input <- hGetContents h
-        return . resultToEither $ decodeStrict input >>= readJSON
-    case (r :: Either IOError (Either String (Document Name))) of
-        Left _  -> return . Left $ "Something went wrong while loading " ++ fp ++ "."
-        Right d -> return d
+    res <- liftIO . try . readFile $ fp
+    s <- fromIOError msg res
+    fromJSONResult $ decodeStrict s >>= readJSON
+  where
+    msg = "Something went wrong while loading " ++ fp ++ "."
+
+fromJSONResult :: Result a -> ErrorT String IO a
+fromJSONResult = either throwError return . resultToEither
+
+fromIOError :: String -> Either IOError a -> ErrorT String IO a
+fromIOError msg = either (const $ throwError msg) return
