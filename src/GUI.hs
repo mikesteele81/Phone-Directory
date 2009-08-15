@@ -325,8 +325,7 @@ save file = writeFile file . show . pp_value . showJSON
 -- |Attempt to load a document from the supplied file.
 load :: FilePath -> ErrorT String IO (Document Name)
 load fp = do
-    res <- liftIO . try . readFile $ fp
-    s <- fromIOError msg res
+    s <- fromIO msg $ readFile fp
     fromJSONResult $ decodeStrict s >>= readJSON
   where
     msg = "Something went wrong while loading " ++ fp ++ "."
@@ -334,5 +333,13 @@ load fp = do
 fromJSONResult :: Result a -> ErrorT String IO a
 fromJSONResult = either throwError return . resultToEither
 
-fromIOError :: String -> Either IOError a -> ErrorT String IO a
-fromIOError msg = either (const $ throwError msg) return
+-- |Execute an IO computation, trapping any IOError exceptions in the
+-- ErrorT String monad.
+fromIO 
+    :: String -- ^Error message to display.
+              -- TODO: provide a hook to use a different error message
+              -- depending on which IOError gets thrown.
+    -> IO a   -- ^Computation to execute
+    -> ErrorT String IO a -- ^Result wrapped into the ErrorT String monad.
+fromIO msg = liftIO . try >=> either (const $ throwError msg) return
+
