@@ -21,36 +21,31 @@ module ContactInfo
     ) where
 
 import Control.Applicative
-import Data.Monoid
 import Text.JSON
+import Text.JSON.Pretty
 
 -- |Contact information for an individual or group.
 data ContactInfo a = ContactInfo
-  { -- |Either a Name or FirstSortedName.  This ends up on the left
+  { -- |for the purposes of sorting.  Higher numbers sort first.
+    cPriority :: Int
+  , -- |Either a Name or FirstSortedName.  This ends up on the left
     -- side of each line item.
     cName :: a
     -- |A phone number.  This ends up on the right of each line item.
   , cPhone    :: String
-    -- |for the purposes of sorting.  Higher numbers sort first.
-  , cPriority :: Int
-  } deriving (Eq)
+  } deriving (Eq, Ord)
 
 instance (JSON a) => JSON (ContactInfo a) where
-    readJSON (JSObject o) =
-        ContactInfo <$> valFromObj "name" o <*> valFromObj "phone" o
-        <*> valFromObj "priority" o
-    readJSON _ =
-        Error "Could not parse ContactInfo JSON object."
-    showJSON (ContactInfo n p pr) =
-       makeObj [ ("name", showJSON n), ("phone", showJSON p)
-               , ("priority", showJSON pr) ]
-
-instance forall a. (Ord a) => Ord (ContactInfo a) where
-    compare l r =
-        -- priority descending
-        compare (cPriority r) (cPriority l) `mappend`
-        compare (cName l) (cName r) `mappend`
-        compare (cPhone l) (cPhone r)
+    readJSON v@(JSObject o)
+        =   ContactInfo <$> valFromObj "priority" o <*> valFromObj "name" o
+        <*> valFromObj "phone" o
+        <|> Error ("Failed to parse contact information from "
+            ++ (show . pp_value) v ++ ".")
+    readJSON v = Error $ "Expected JSObject, but " ++ (show . pp_value) v
+        ++ " found while parsing a contact information."
+    showJSON ci = makeObj
+        [ ("name", showJSON . cName $ ci), ("phone", showJSON . cPhone $ ci)
+        , ("priority", showJSON . cPriority $ ci) ]
 
 instance forall a. (Show a) => Show (ContactInfo a) where
     show = show . cName

@@ -20,12 +20,14 @@ module GUI
     ) where
 
 import Control.Applicative
-import Control.Monad
+import qualified Control.Monad as M
+import Control.Monad.Error
 import Data.Time
 import Graphics.UI.WX as WX
-import Graphics.UI.WXCore hiding ( Document )
+import Graphics.UI.WXCore hiding (Document)
 import System.FilePath
 import System.IO
+import System.IO.Error
 import Text.JSON
 import Text.JSON.Pretty
 
@@ -35,14 +37,20 @@ import Name
 import Organization
 import PDF
 
+-- |The application only exports to .pdf.  I could see other formats like
+-- .html being useful to.
 exportTypesSelection :: [(String, [String])]
-exportTypesSelection = [("PDF", ["*.pdf"])]
+exportTypesSelection = [("PDF (*.pdf)", ["*.pdf"])]
 
+-- |This is the format to be saved in.  It's a Shame that the Haskell YAML
+-- library was made available a week after I settled on this.
 fileTypesSelection :: [(String, [String])]
-fileTypesSelection = [("JSON", ["*.json"])]
+fileTypesSelection = [("Phone Directory (*.pdir)", ["*.pdir"])]
 
+-- |When you first start the application this is the filename chosen to save
+-- to.
 defaultFile :: String
-defaultFile = "untitled.json"
+defaultFile = "untitled.pdir"
 
 aboutTxt :: String
 aboutTxt =
@@ -53,7 +61,7 @@ aboutTxt =
     \redistribute it under certain conditions; read the\n\
     \included license file for details."
 
-
+-- |Build the main window and start the event loop.
 mainWindow :: IO ()
 mainWindow = do
   file <- varCreate defaultFile
@@ -91,7 +99,7 @@ mainWindow = do
       onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' = do
         -- Delete non-root nodes without a name
         root <- treeCtrlGetRootItem tc
-        Control.Monad.when (root /= itm && treeItemIsOk itm) $ do
+        M.when (root /= itm && treeItemIsOk itm) $ do
           ci <- right2CI
           case show ci of
             "" -> treeCtrlDelete tc itm
@@ -113,7 +121,7 @@ mainWindow = do
 
             itm' <- treeCtrlAppendItem tc p "<New Item>" 0 0 objectNull
             treeCtrlSetItemClientData tc itm' (return ())
-                (ContactInfo (SingleName "") "" 1)
+                (ContactInfo 1 (SingleName "") "")
             treeCtrlSelectItem tc itm'
             windowSetFocus eFirst
           KeyDelete -> unless (root == itm) $ treeCtrlDelete tc itm
@@ -165,41 +173,47 @@ mainWindow = do
         set ePhone    [ enabled := False, WX.text := "" ]
         set ePriority [ enabled := False, WX.text := "" ]
 
-      updateTitle :: IO ()
-      updateTitle = do
-        fn <- varGet file
-        set f [WX.text := takeBaseName fn ++ " - Phone Directory"]
-
       handleInputFocusChanged :: Bool -> IO ()
+      -- lost focus
       handleInputFocusChanged False = do
-        ci <- right2CI
         itm <- treeCtrlGetSelection tc
-        updateTreeItem itm ci
+        -- Never update the root node.
+        root <- treeCtrlGetRootItem tc
+        M.when (root /= itm && treeItemIsOk itm) $ do
+          ci <- right2CI
+          updateTreeItem itm ci
+
       handleInputFocusChanged _ = return ()
 
   set mFile  [ WX.text := "&File"    ]
-  set iNew   [ WX.text := "&New"     ]
+  set iNew   [ WX.text := "&New", on command := do
+                 -- TODO: What about an unsaved file?
+                 varSet file defaultFile
+                 new f tc defaultFile
+             ]
   set iOpen  [ WX.text := "&Open...", on command := do
-                 name <- fileOpenDialog f True True "Open phone directory"
-                         fileTypesSelection "" ""
-                 case name of
-                   Just name' -> do
-                     doc' <- load name'
-                     case doc' of
-                       Just doc'' -> do
-                                   putStrLn $ "Opening " ++ name'
-                                   populateTree tc doc''
-                       Nothing -> return ()
-                     varSet file name'
-                     updateTitle
-                   Nothing -> return ()
+      name <- fileOpenDialog f True True "Open phone directory"
+          fileTypesSelection "" ""
+      case name of
+          Just name' -> do
+              doc' <- runErrorT $ load name'
+              case doc' of
+                  Right doc'' -> do
+                      putStrLn $ "Opening " ++ name'
+                      populateTree tc doc''
+                      varSet file name'
+                      updateTitle f name'
+                  Left e -> errorDialog f "error" e
+          Nothing -> return ()
              ]
   set iSave  [ WX.text := "&Save", on command := do
                  doc' <- tree2Doc tc
                  case doc' of
                    Just doc'' -> do
                      file' <- varGet file
-                     save file' doc''
+                     let doc''' = sortDoc doc''
+                     save file' $ sortDoc doc'''
+                     M.when (doc'' /= doc''') $ populateTree tc doc'''
                    Nothing -> putStrLn "bad doc" >> return ()
              ]
   set iSaveAs  [ WX.text := "Save &As...", on command := do
@@ -209,10 +223,13 @@ mainWindow = do
                      Just name' -> do
                        doc' <- tree2Doc tc
                        case doc' of
-                         Just doc'' -> save name' doc''
+                         Just doc'' -> do
+                           let doc''' = sortDoc doc''
+                           save name' doc''
+                           M.when (doc'' /= doc''') $ populateTree tc doc'''
                          Nothing -> return ()
                        varSet file name'
-                       updateTitle
+                       updateTitle f name'
                      Nothing -> return ()
                ]
 
@@ -239,15 +256,14 @@ mainWindow = do
   set tc [ on treeEvent := onTreeEvent ]
   
   set pLeft [ layout := WX.fill $ widget tc ]
-  set pRight [ layout := margin 6 $ column 5
-                          [ widget tFirst, widget eFirst
-                          , widget tLast, widget eLast
-                          , widget tPhone, widget ePhone
-                          , widget tPriority, widget ePriority
-                          ]
-             ]
-  populateTree tc (mkDocument :: Document Name)
-  updateTitle
+  set pRight
+      [ layout := margin 6 $ column 5
+          [ widget tFirst, widget eFirst, widget tLast, widget eLast
+          , widget tPhone, widget ePhone, widget tPriority, widget ePriority
+          ]
+      ]
+  -- the filename has already been set
+  varGet file >>= new f tc
 
   set f [ menuBar    := [mFile, mHelp]
         , layout     := WX.fill $ vsplit sw 5 200 (widget pLeft) (widget pRight)
@@ -256,6 +272,8 @@ mainWindow = do
 
   windowSetFocus tc
 
+-- |Scrap and rebuild the heirarchical tree.  Once this is done, expand it and
+-- select the first non-root node.
 populateTree :: (Show b) => TreeCtrl a -> Document b -> IO ()
 populateTree tc doc =
     let addItem p itm = do
@@ -272,7 +290,11 @@ populateTree tc doc =
       treeCtrlExpand tc root
       treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
 
--- | Create a Document object based on the tree.      
+-- |Set the supplied frame's title bar based on the supplied file.
+updateTitle :: Frame a -> FilePath -> IO ()
+updateTitle f fn = set f [WX.text := takeBaseName fn ++ " - Phone Directory"]
+
+-- |Create a Document object based on the tree heirarchy.
 tree2Doc :: TreeCtrl a -> IO (Maybe (Document Name))
 tree2Doc tc = do
   root <- treeCtrlGetRootItem tc
@@ -286,13 +308,46 @@ tree2Doc tc = do
   return $ Document (show month ++ "/" ++ show day ++ "/" ++ show year)
         <$> sequence orgs
 
+-- |Reset the GUI to a new file.
+new
+    :: Frame a     -- ^ Window with a title needing to be
+    -> TreeCtrl a  -- ^ Main window's tree control.  This will be cleared.
+    -> String      -- ^ Filename
+    -> IO ()
+new f tc fn = do
+    populateTree tc (mkDocument :: Document Name)
+    updateTitle f fn
+
+-- |Save the supplied document to a file.
 save :: FilePath -> Document Name -> IO ()
 save file = writeFile file . show . pp_value . showJSON
 
-load :: FilePath -> IO (Maybe (Document Name))
-load fp =
-  withFile fp ReadMode $ \h -> do
-            input <- hGetContents h
-            case decodeStrict input >>= readJSON of
-              Error s -> putStrLn ("Error: " ++ s) >> return Nothing
-              Ok doc -> return $ Just doc
+-- |Attempt to load a document from the supplied file.
+--load :: FilePath -> ErrorT String IO (Document Name)
+--load fp =
+--  let
+--    msg = "Something went wrong while loading " ++ fp ++ "."
+--    shim :: Either IOError a -> Either String a
+--    shim = either (const $ Left msg) Right
+--  in do
+--    contents <- liftIO . try . readFile $ fp
+--    case contents  of
+--        Left _ -> throwError msg
+--        Right s -> case resultToEither $ decodeStrict s >>= readJSON of
+--            Left err -> throwError err
+--            Right doc    -> return doc
+
+-- |Attempt to load a document from the supplied file.
+load :: FilePath -> ErrorT String IO (Document Name)
+load fp = do
+    res <- liftIO . try . readFile $ fp
+    s <- fromIOError msg res
+    fromJSONResult $ decodeStrict s >>= readJSON
+  where
+    msg = "Something went wrong while loading " ++ fp ++ "."
+
+fromJSONResult :: Result a -> ErrorT String IO a
+fromJSONResult = either throwError return . resultToEither
+
+fromIOError :: String -> Either IOError a -> ErrorT String IO a
+fromIOError msg = either (const $ throwError msg) return

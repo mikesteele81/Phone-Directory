@@ -16,12 +16,14 @@
 -}
 
 module Name
-    ( Name (FirstLast, SingleName)
-    , FirstSortedName (FirstSortedName, unFirstSortedName)
+    ( Name            ( FirstLast, SingleName)
+    , FirstSortedName ( FirstSortedName )
     ) where
 
 import Control.Applicative
+import Data.Char           ( toLower )
 import Text.JSON
+import Text.JSON.Pretty    ( pp_value )
 
 -- |A contact's name. This sorts by last name and prints out as 'Last,
 -- First'.
@@ -56,14 +58,14 @@ class ShowForSorting a where
 instance ShowForSorting FirstSortedName where
     showForSorting (FirstSortedName n) =
         case n of
-          FirstLast f l -> f ++ l
+          FirstLast f l -> map toLower $ f ++ l
           _             -> showForSorting n
           
 instance ShowForSorting Name where
     showForSorting n =
         case n of
-          FirstLast f l -> l ++ f
-          SingleName sn -> sn
+          FirstLast f l -> map toLower $ l ++ f
+          SingleName sn -> map toLower sn
 
 instance Ord Name where
     compare l r = compare (showForSorting l) (showForSorting r)
@@ -75,13 +77,13 @@ instance JSON Name where
     readJSON (JSObject o) =
         FirstLast <$> valFromObj "first" o <*> valFromObj "last" o
         <|> SingleName <$> valFromObj "name" o
-    readJSON _ = Error "boo!"
-    showJSON n = showJSON $ toJSObject $
-                 case n of
-                   FirstLast f l -> [ ("first", showJSON f)
-                                    , ("last" , showJSON l)]
-                   SingleName sn -> [ ("name" , showJSON sn)]
+    readJSON v = Error $ "Expected JSObject, but " ++ (show . pp_value) v
+        ++ " found while parsing a name."
+    showJSON n = makeObj
+        $ case n of
+            FirstLast f l -> [ ("first", showJSON f), ("last" , showJSON l) ]
+            SingleName sn -> [ ("name" , showJSON sn) ]
                    
 instance JSON FirstSortedName where
     readJSON n = FirstSortedName <$> readJSON n
-    showJSON (FirstSortedName n) = showJSON n
+    showJSON   = showJSON . unFirstSortedName

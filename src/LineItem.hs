@@ -78,12 +78,14 @@ drawLineItem (LineItem l r i) =
          displayText r
          textStart (textWidth font_normal r - line_item_width) 0
       return (x :+ (y - line_item_leading))
+-- Horizontal line along the bottom of the drawing area.
 drawLineItem Divider = do
   (x :+ y) <- ask
   let x' = x + col_width
       y' = y - line_item_leading
   lift $ stroke (Line x y' x' y')
   return (x :+ (y - line_item_leading))
+-- Only used to fill the last column.
 drawLineItem Blank = asks (+(0 :+ (-line_item_leading)))
 
 -- |Draw a collection of LineItem objects with a box around it.
@@ -108,14 +110,15 @@ columnHeading = [mkLabelValue True "User Name" "Phone No.", Divider]
 
 -- | Flow a single column into multiple columns of equal height.  This
 -- certainly has bugs in it.
-flowCols :: Column   -- ^Column to divide up
-         -> Int      -- ^Number of resultant columns
-         -> [Column] -- ^Equal length columns.  The last one may have
-                     -- a few Blanks added to it.
-flowCols c n =
+flowCols :: [LineItem] -- ^Column to divide up
+         -> Int        -- ^Number of resultant columns
+         -> [Column]   -- ^Equal length columns.  The last one may have
+                       -- a few Blanks added to it.
+flowCols lx n =
   let
+    numBlanks = if length lx >= n then length lx `mod` n else n - (length lx `mod` n)
     -- Add a few blanks so the column will divide evenly
-    c' = c ++ replicate (length c `mod` n) Blank
-    len = length c' `div` n
+    c = lx ++ replicate numBlanks Blank
+    len = length c `div` n
   in
-    map fst $ take n $ tail $ iterate (\(_, rest) -> splitAt len rest) ( [], c')
+    map fst $ take n $ tail $ iterate (\(_, rest) -> splitAt len rest) ( [], c)
