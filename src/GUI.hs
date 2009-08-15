@@ -323,21 +323,6 @@ save :: FilePath -> Document Name -> IO ()
 save file = writeFile file . show . pp_value . showJSON
 
 -- |Attempt to load a document from the supplied file.
---load :: FilePath -> ErrorT String IO (Document Name)
---load fp =
---  let
---    msg = "Something went wrong while loading " ++ fp ++ "."
---    shim :: Either IOError a -> Either String a
---    shim = either (const $ Left msg) Right
---  in do
---    contents <- liftIO . try . readFile $ fp
---    case contents  of
---        Left _ -> throwError msg
---        Right s -> case resultToEither $ decodeStrict s >>= readJSON of
---            Left err -> throwError err
---            Right doc    -> return doc
-
--- |Attempt to load a document from the supplied file.
 load :: FilePath -> ErrorT String IO (Document Name)
 load fp = do
     res <- liftIO . try . readFile $ fp
