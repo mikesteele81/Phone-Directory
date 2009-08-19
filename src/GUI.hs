@@ -65,6 +65,7 @@ fileTypesSelection = [("Phone Directory (*.pdir)", ["*.pdir"])]
 defaultFile :: String
 defaultFile = "untitled.pdir"
 
+-- |Text blurb that goes in the about box.
 aboutTxt :: String
 aboutTxt =
     "PhoneDirectory Copyright (C) 2009 Michael Steele\n\n\
