@@ -31,6 +31,7 @@ import System.IO.Error
 import Text.JSON
 import Text.JSON.Pretty
 
+import Constants
 import ContactInfo
 import Document
 import Name
@@ -100,7 +101,7 @@ mainWindow = do
   eFirst    <- entry pRight []
   eLast     <- entry pRight []
   ePhone    <- entry pRight []
-  ePriority <- entry pRight []
+  ePriority <- spinCtrl pRight minPriority maxPriority []
 
   tc <- treeCtrl pLeft []
   
@@ -143,7 +144,7 @@ mainWindow = do
         firstName <- get eFirst    WX.text
         lastName  <- get eLast     WX.text
         phone     <- get ePhone    WX.text
-        priority  <- get ePriority WX.text
+        priority  <- get ePriority WX.selection
         let name = case (firstName, lastName) of
                      ("", n) -> SingleName n
                      (n, "") -> SingleName n
@@ -151,7 +152,7 @@ mainWindow = do
         return ContactInfo
                  { cName     = name
                  , cPhone    = phone
-                 , cPriority = read priority
+                 , cPriority = priority
                  }
 
       -- | update left side to match what's entered on right
@@ -173,7 +174,7 @@ mainWindow = do
             set eFirst [ enabled := True, WX.text := n  ]
             set eLast  [ enabled := True, WX.text := "" ]
         set ePhone     [ enabled := True, WX.text := cPhone ci ]
-        set ePriority  [ enabled := True, WX.text := show $ cPriority ci ]
+        set ePriority  [ enabled := True, WX.selection := cPriority ci ]
 
       clearDisableDetails :: IO ()
       clearDisableDetails = do

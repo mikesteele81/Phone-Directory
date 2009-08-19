@@ -21,6 +21,12 @@ import Graphics.PDF
 
 units_per_inch :: Int
 units_per_inch = 72
+
+minPriority :: Int
+minPriority = 0
+
+maxPriority :: Int
+maxPriority = 5
                  
 pageWidth, pageHeight :: Int
 pageWidth     = units_per_inch * 85 `div` 10
