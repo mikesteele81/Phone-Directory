@@ -22,6 +22,9 @@ module GUI
 import Control.Applicative
 import qualified Control.Monad as M
 import Control.Monad.Error
+import Data.Char
+import qualified Data.Function as F (on)
+import Data.List
 import Data.Time
 import Graphics.UI.WX as WX
 import Graphics.UI.WXCore hiding (Document)
@@ -183,9 +186,9 @@ mainWindow = do
         set ePhone    [ enabled := False, WX.text := "" ]
         set ePriority [ enabled := False, WX.text := "" ]
 
-      handleInputFocusChanged :: Bool -> IO ()
+      handleFocus :: Bool -> IO ()
       -- lost focus
-      handleInputFocusChanged False = do
+      handleFocus False = do
         itm <- treeCtrlGetSelection tc
         -- Never update the root node.
         root <- treeCtrlGetRootItem tc
@@ -193,7 +196,12 @@ mainWindow = do
           ci <- right2CI
           updateTreeItem itm ci
 
-      handleInputFocusChanged _ = return ()
+      handleFocus _ = return ()
+
+      commitStringInput :: TextCtrl a -> Bool -> IO ()
+      commitStringInput ctrl hasFocus = do
+          set ctrl [WX.text :~ unpad]
+          handleFocus hasFocus
 
   set mFile  [ WX.text := "&File"    ]
   set iNew   [ WX.text := "&New", on command := do
@@ -259,16 +267,16 @@ mainWindow = do
   set iAbout [ on command := infoDialog f "About Phone Directory" aboutTxt ]
 
   set eFirst    [ processEnter := True
-                , on command := handleInputFocusChanged False
-                , on focus := handleInputFocusChanged ]
+                , on command   := commitStringInput eFirst False
+                , on focus     := commitStringInput eFirst ]
   set eLast     [ processEnter := True
-                , on command := handleInputFocusChanged False
-                , on focus := handleInputFocusChanged ]
+                , on command   := commitStringInput eLast False
+                , on focus     := commitStringInput eLast ]
   set ePhone    [ processEnter := True
-                , on command := handleInputFocusChanged False
-                , on focus := handleInputFocusChanged ]
-  set ePriority [ on select := handleInputFocusChanged False
-                , on focus := handleInputFocusChanged ]
+                , on command   := commitStringInput ePhone False
+                , on focus     := commitStringInput ePhone ]
+  set ePriority [ on select := handleFocus False
+                , on focus  := handleFocus ]
 
   set tc [ on treeEvent := onTreeEvent ]
   
@@ -372,3 +380,9 @@ labeled :: String -- ^Label to use.
     -> Layout     -- ^Thing to get a label.
     -> Layout
 labeled s l = column lblPadding [label s, l]
+
+unpad :: String -> String
+unpad s = case tail . groupBy ((==) `F.on` isSpace) . (" " ++) . (++ " ") $ s of
+            [] -> []
+            s' -> join . init $ s'
+
