@@ -258,10 +258,17 @@ mainWindow = do
   set iQuit  [ on command := close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" aboutTxt ]
 
-  set eFirst    [ on focus := handleInputFocusChanged ]
-  set eLast     [ on focus := handleInputFocusChanged ]
-  set ePhone    [ on focus := handleInputFocusChanged ]
-  set ePriority [ on focus := handleInputFocusChanged ]
+  set eFirst    [ processEnter := True
+                , on command := handleInputFocusChanged False
+                , on focus := handleInputFocusChanged ]
+  set eLast     [ processEnter := True
+                , on command := handleInputFocusChanged False
+                , on focus := handleInputFocusChanged ]
+  set ePhone    [ processEnter := True
+                , on command := handleInputFocusChanged False
+                , on focus := handleInputFocusChanged ]
+  set ePriority [ on select := handleInputFocusChanged False
+                , on focus := handleInputFocusChanged ]
 
   set tc [ on treeEvent := onTreeEvent ]
   
