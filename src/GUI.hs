@@ -211,7 +211,7 @@ mainWindow = do
                       putStrLn $ "Opening " ++ name'
                       populateTree tc doc''
                       varSet file name'
-                      updateTitle f name'
+                      set f [WX.text := title name']
                   Left e -> errorDialog f "error" e
           Nothing -> return ()
              ]
@@ -238,7 +238,7 @@ mainWindow = do
                            M.when (doc'' /= doc''') $ populateTree tc doc'''
                          Nothing -> return ()
                        varSet file name'
-                       updateTitle f name'
+                       set f [WX.text := title name']
                      Nothing -> return ()
                ]
 
@@ -303,8 +303,8 @@ populateTree tc doc =
       treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
 
 -- |Set the supplied frame's title bar based on the supplied file.
-updateTitle :: Frame a -> FilePath -> IO ()
-updateTitle f fn = set f [WX.text := takeBaseName fn ++ " - Phone Directory"]
+title :: FilePath -> String
+title = (++ " - Phone Directory") . takeBaseName
 
 -- |Create a Document object based on the tree heirarchy.
 tree2Doc :: TreeCtrl a -> IO (Maybe (Document Name))
@@ -328,7 +328,7 @@ new
     -> IO ()
 new f tc fn = do
     populateTree tc (mkDocument :: Document Name)
-    updateTitle f fn
+    set f [WX.text := title fn]
 
 -- |Save the supplied document to a file.
 save :: FilePath -> Document Name -> ErrorT String IO ()
