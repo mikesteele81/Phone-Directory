@@ -37,6 +37,19 @@ import Name
 import Organization
 import PDF
 
+-- |The number of pixels between controls that are grouped together.
+ctrlPadding :: Int
+ctrlPadding = 4
+
+-- |The number of pixels between controls and their labels.
+lblPadding :: Int
+lblPadding = 3
+
+-- |The number of pixels between the window border or vertical/horizontal
+-- spacers and internal controls.
+winPadding :: Int
+winPadding = 7
+
 -- |The application only exports to .pdf.  I could see other formats like
 -- .html being useful to.
 exportTypesSelection :: [(String, [String])]
@@ -83,11 +96,6 @@ mainWindow = do
   mHelp   <- menuHelp        []
   iAbout  <- menuAbout mHelp []
   
-  tFirst    <- staticText pRight [ WX.text := "First Name:"   ]
-  tLast     <- staticText pRight [ WX.text := "Last Name:"    ]
-  tPhone    <- staticText pRight [ WX.text := "Phone Number:" ]
-  tPriority <- staticText pRight [ WX.text := "Priority:"     ]
-
   eFirst    <- entry pRight []
   eLast     <- entry pRight []
   ePhone    <- entry pRight []
@@ -257,16 +265,19 @@ mainWindow = do
   
   set pLeft [ layout := WX.fill $ widget tc ]
   set pRight
-      [ layout := margin 6 $ column 5
-          [ widget tFirst, widget eFirst, widget tLast, widget eLast
-          , widget tPhone, widget ePhone, widget tPriority, widget ePriority
-          ]
+      [ layout := margin winPadding $ column ctrlPadding
+          [ labeled "First Name:"   $ widget eFirst
+          , labeled "Last Name:"    $ widget eLast
+          , labeled "Phone Number:" $ widget ePhone
+          , labeled "Priority:"     $ widget ePriority ]
       ]
+
   -- the filename has already been set
   varGet file >>= new f tc
 
   set f [ menuBar    := [mFile, mHelp]
-        , layout     := WX.fill $ vsplit sw 5 200 (widget pLeft) (widget pRight)
+        , layout     := WX.fill $ margin winPadding $ vsplit sw winPadding 200
+                        (widget pLeft) (widget pRight)
         , clientSize := sz 640 480
         ]
 
@@ -347,3 +358,8 @@ fromIO
     -> ErrorT String IO a -- ^Result wrapped into the ErrorT String monad.
 fromIO msg = liftIO . try >=> either (const $ throwError msg) return
 
+-- |Combinator that lays out the first argument directly over the second.
+labeled :: String -- ^Label to use.
+    -> Layout     -- ^Thing to get a label.
+    -> Layout
+labeled s l = column lblPadding [label s, l]
