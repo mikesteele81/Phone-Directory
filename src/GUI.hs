@@ -203,6 +203,11 @@ mainWindow = do
           set ctrl [WX.text :~ unpad]
           handleFocus hasFocus
 
+      commitPriorityInput :: SpinCtrl a -> Bool -> IO ()
+      commitPriorityInput ctrl hasFocus = do
+          set ctrl [ selection :~ clipPriority minPriority maxPriority]
+          handleFocus hasFocus
+
   set mFile  [ WX.text := "&File"    ]
   set iNew   [ WX.text := "&New", on command := do
                  -- TODO: What about an unsaved file?
@@ -275,8 +280,8 @@ mainWindow = do
   set ePhone    [ processEnter := True
                 , on command   := commitStringInput ePhone False
                 , on focus     := commitStringInput ePhone ]
-  set ePriority [ on select := handleFocus False
-                , on focus  := handleFocus ]
+  set ePriority [ on select := commitPriorityInput ePriority False
+                , on focus  := commitPriorityInput ePriority ]
 
   set tc [ on treeEvent := onTreeEvent ]
   
@@ -386,3 +391,5 @@ unpad s = case tail . groupBy ((==) `F.on` isSpace) . (" " ++) . (++ " ") $ s of
             [] -> []
             s' -> join . init $ s'
 
+clipPriority :: Int -> Int -> Int -> Int
+clipPriority l h = min h . max l
