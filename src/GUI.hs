@@ -273,15 +273,24 @@ mainWindow = do
 
   set eFirst    [ processEnter := True
                 , on command   := commitStringInput eFirst False
-                , on focus     := commitStringInput eFirst ]
+                , on focus     := commitStringInput eFirst
+                , tooltip := "Enter the contact's first name.  If the contact \
+                             \only goes by a single name, enter it either \
+                             \here or in the last name field."]
   set eLast     [ processEnter := True
                 , on command   := commitStringInput eLast False
-                , on focus     := commitStringInput eLast ]
+                , on focus     := commitStringInput eLast
+                , tooltip := "Enter the contact's last name.  If the contact \
+                             \only goes by a single name, enter it either \
+                             \here or in the first name field."]
   set ePhone    [ processEnter := True
                 , on command   := commitStringInput ePhone False
-                , on focus     := commitStringInput ePhone ]
+                , on focus     := commitStringInput ePhone
+                , tooltip := "Enter thecontact's phone number." ]
   set ePriority [ on select := commitPriorityInput ePriority False
-                , on focus  := commitPriorityInput ePriority ]
+                , on focus  := commitPriorityInput ePriority
+                , tooltip := "Low values will sort before contacts with \
+                             \higher values." ]
 
   set tc [ on treeEvent := onTreeEvent ]
   
