@@ -28,14 +28,14 @@ import Organization
 import PDF
 
 -- |A Document contains a revision date and organizations to display.
-data Document name
+data Document a
   = Document
     { -- |This gets set whenever the document is ready to be
       -- printed. Because of this, it's not really necessary at this
       -- point.
       dRevised :: String
       -- |Organizations to print.
-    , dOrganizations :: [Organization name]
+    , dOrganizations :: [Organization a]
     } deriving (Eq)
       
 instance (JSON a) => JSON (Document a) where
