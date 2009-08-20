@@ -23,7 +23,6 @@ import Data.List (intercalate, sort)
 import Graphics.PDF
 import Text.JSON
 
-import Constants
 import LineItem
 import Organization
 import PDF
@@ -79,7 +78,7 @@ titleString = toPDFString "PHONE DIRECTORY"
 
 -- |Distance from left edge to draw the date string.
 dateInset :: PDFFloat
-dateInset = pageMargin + col_padding
+dateInset = pageMargin + fromIntegral units_per_inch / 16.0
 
 -- |Distance from bottom edge to draw the date string.
 dateRise :: PDFFloat
@@ -92,6 +91,9 @@ modeInset = titleInset
 -- |Distance from bottom edge to draw the sort specifier.
 modeRise :: PDFFloat
 modeRise = dateRise
+
+grid_rise :: PDFFloat
+grid_rise = fromIntegral units_per_inch * 9.75
 
 -- |Convenient way to make a Document.
 mkDocument :: Document a

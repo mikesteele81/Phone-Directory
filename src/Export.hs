@@ -16,14 +16,19 @@
 -}
 
 
-module Export where
+module Export
+    ( generate
+    ) where
 
 import Graphics.PDF
 
-import Constants
 import Document
 import Name
+import PDF
 
+pageWidth, pageHeight :: Int
+pageWidth     = units_per_inch * 85 `div` 10
+pageHeight    = units_per_inch * 11
 
 -- |Create a 2-page .pdf file.  The first page sorts by last name and
 -- the second sorts by first name.
