@@ -76,7 +76,7 @@ instance Ord FirstSortedName where
 instance JSON Name where
     readJSON (JSObject o) =
         FirstLast <$> valFromObj "first" o <*> valFromObj "last" o
-        <|> SingleName <$> valFromObj "name" o
+    readJSON (JSString s) = return . SingleName $ fromJSString s
     readJSON v = Error $ "Expected JSObject, but " ++ (show . pp_value) v
         ++ " found while parsing a name."
     showJSON n = case n of
