@@ -34,7 +34,7 @@ instance Bounded Priority where
     maxBound = Priority 5
 
 instance JSON Priority where
-    readJSON x = (readJSON x >>= return . mkPriority)
+    readJSON x = liftM mkPriority (readJSON x)
       <|> (Error $ "Could not parse " ++ show x ++ " as a value for a priority.")
     showJSON (Priority p) = showJSON p
 

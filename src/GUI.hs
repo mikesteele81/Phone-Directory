@@ -193,9 +193,8 @@ mainWindow = do
         itm <- treeCtrlGetSelection tc
         -- Never update the root node.
         root <- treeCtrlGetRootItem tc
-        M.when (root /= itm && treeItemIsOk itm) $ do
-          ci <- right2CI
-          updateTreeItem itm ci
+        M.when (root /= itm && treeItemIsOk itm)
+            $ right2CI >>= updateTreeItem itm
 
       handleFocus _ = return ()
 
