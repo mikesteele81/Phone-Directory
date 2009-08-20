@@ -19,41 +19,40 @@
 module Organization where
 
 import Control.Applicative
+import Control.Monad.Error
 import Data.List (sort)
 import Text.JSON
+import Text.JSON.Pretty
 
-import ContactInfo
 import LineItem
 
 -- |An organization has its own contact information and 0 or more
 -- contacts that are a part of it.
-data Organization name = Organization
+data Organization c = Organization
   { -- |Contact information for the organization itself.  This gets
     -- turned into a non-indented line item.
-    oInfo :: ContactInfo name
+    oInfo :: c
     -- |Contacts that make up the organization.  These all get turned
     -- into indented line items on the contact sheet.
-  , oContacts :: [ContactInfo name]
+  , oContacts :: [c]
   } deriving (Eq, Ord)
 
 instance (JSON a) => JSON (Organization a) where
     readJSON (JSObject o) =
-        do
-          info <- valFromObj "info" o
-          contacts <- valFromObj "contacts" o
-          return $ Organization info contacts
-    readJSON _ = Error "Could not parse Organization JSON object."
+        (Organization <$> valFromObj "info" o <*> valFromObj "contacts" o)
+        `catchError` (\e -> Error $ msg e)
+      where
+        msg e = "Could not parse Organization: " ++ e
+    readJSON v = Error $ "Expected JSObject, but " ++ (show . pp_value) v
+        ++ " found while parsing a contact information."
     showJSON o =
         showJSON $ toJSObject $
                  [ ("info", showJSON $ oInfo o)
                  , ("contacts", showJSONs $ oContacts o)]
                  
-instance forall a. (Show a) => ShowLineItems (Organization a) where
-    showLineItems (Organization o cx) =
-        let rest = getZipList $ mkLabelValue True 
-                   <$> ZipList (map (show . cName) cx)
-                   <*> ZipList (map cPhone cx)
-        in mkLabelValue False (show $ cName o) (cPhone o) : rest
+instance forall a. (ShowLineItems a) => ShowLineItems (Organization a) where
+    showLineItems (Organization o cx) = concat $ [header] : map showLineItems cx
+        where header = (head $ showLineItems o) {indent = False}
 
 -- |Sort all the contacts.
 sortOrg :: (Ord a) => Organization a -> Organization a
@@ -61,6 +60,4 @@ sortOrg o = o { oContacts = sort (oContacts o) }
 
 -- Perform an operation on the name.  Is this an abuse of Functors?
 instance Functor Organization where
-    f `fmap` o = o { oInfo = fmap f $ oInfo o
-                   , oContacts = map (fmap f) $ oContacts o
-                   }
+    f `fmap` o = o { oInfo = f $ oInfo o, oContacts = map f $ oContacts o}

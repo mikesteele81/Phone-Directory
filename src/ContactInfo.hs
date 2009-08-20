@@ -21,9 +21,11 @@ module ContactInfo
     ) where
 
 import Control.Applicative
+import Control.Monad.Error
 import Text.JSON
 import Text.JSON.Pretty
 
+import LineItem
 import Priority
 
 -- |Contact information for an individual or group.
@@ -38,11 +40,14 @@ data ContactInfo a = ContactInfo
   } deriving (Eq, Ord)
 
 instance (JSON a) => JSON (ContactInfo a) where
-    readJSON v@(JSObject o)
-        =   ContactInfo <$> valFromObj "priority" o <*> valFromObj "name" o
-        <*> valFromObj "phone" o
-        <|> Error ("Failed to parse contact information from "
-            ++ (show . pp_value) v ++ ".")
+    readJSON (JSObject o) =
+        ( ContactInfo <$> valFromObj "priority" o
+          <*> valFromObj "name" o
+          <*> (valFromObj "phone" o
+               `catchError` (\e -> Error $ "failed on phone: " ++ e)))
+        `catchError` (\e -> Error $ msg e)
+      where
+        msg e = "Failed to parse contact information: " ++ e
     readJSON v = Error $ "Expected JSObject, but " ++ (show . pp_value) v
         ++ " found while parsing a contact information."
     showJSON ci = makeObj
@@ -55,3 +60,6 @@ instance forall a. (Show a) => Show (ContactInfo a) where
 -- Perform an operation on the name.  Is this an abuse of Functors?
 instance Functor ContactInfo where
     f `fmap` x = x { cName = (f . cName) x }
+
+instance (Show a) => ShowLineItems (ContactInfo a) where
+    showLineItems ci = [mkLabelValue True (show $ cName ci) (show $ cPhone ci)]

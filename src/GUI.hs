@@ -328,7 +328,7 @@ title :: FilePath -> String
 title = (++ " - Phone Directory") . takeBaseName
 
 -- |Create a Document object based on the tree heirarchy.
-tree2Doc :: TreeCtrl a -> IO (Maybe (Document Name))
+tree2Doc :: TreeCtrl a -> IO (Maybe (Document (ContactInfo Name)))
 tree2Doc tc = do
   root <- treeCtrlGetRootItem tc
   orgs <- treeCtrlWithChildren tc root $ \itm -> do
@@ -352,7 +352,7 @@ new f tc fn = do
     set f [WX.text := title fn]
 
 -- |Save the supplied document to a file.
-save :: FilePath -> Document Name -> ErrorT String IO ()
+save :: FilePath -> Document (ContactInfo Name) -> ErrorT String IO ()
 save fp =
   let
     msg = "Something went wrong while saving " ++ fp ++ "."
@@ -360,7 +360,7 @@ save fp =
     fromIO msg . writeFile fp . show . pp_value . showJSON
 
 -- |Attempt to load a document from the supplied file.
-load :: FilePath -> ErrorT String IO (Document Name)
+load :: FilePath -> ErrorT String IO (Document (ContactInfo Name))
 load fp = do
     s <- fromIO msg $ readFile fp
     fromJSONResult $ decodeStrict s >>= readJSON

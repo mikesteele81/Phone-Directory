@@ -22,6 +22,7 @@ module Export
 
 import Graphics.PDF
 
+import ContactInfo
 import Document
 import Name
 import PDF
@@ -33,14 +34,14 @@ pageHeight    = units_per_inch * 11
 -- |Create a 2-page .pdf file.  The first page sorts by last name and
 -- the second sorts by first name.
 generate
-  :: Document Name -- ^Document to print.  It will be automatically
-                   -- resorted.
-  -> FilePath      -- ^Filename to save to.
+  :: Document (ContactInfo Name) -- ^Document to print.  It will be
+                                 -- automatically resorted.
+  -> FilePath                    -- ^Filename to save to.
   -> IO ()
 generate doc file =
   let
     page1 = sortDoc doc
-    page2 = sortDoc $ fmap FirstSortedName doc
+    page2 = sortDoc $ fmap (fmap FirstSortedName) doc
   in
     runPdf file standardDocInfo (PDFRect 0 0 pageWidth pageHeight) $ do
       renderDoc page1 "(Sorted by Location and then Last Name)"

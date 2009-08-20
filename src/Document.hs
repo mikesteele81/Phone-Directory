@@ -112,7 +112,7 @@ sortDoc d =
                          sort (dOrganizations d) }
         
 -- | Draw a Document on its own page.
-renderDoc :: forall a. (Show a, Ord a)
+renderDoc :: forall a. (ShowLineItems a, Ord a)
   => Document a      -- ^Document to append a page for.
   -> String -> PDF()
 renderDoc d lbl= 
