@@ -15,15 +15,28 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-module PDF where
 
-import Control.Monad.Reader
+module Export where
+
 import Graphics.PDF
 
--- |Draw a LineItem so that whatever Point is in the monad sits on the
--- upper-left corner of the bounding box of what's drawn.
-class Drawable a where
-    draw :: a                         -- ^Thing to draw
-        -> ReaderT Point Draw (Point) -- ^Suggested location to draw the next
-                                      -- Drawable. This will be the lowel-left
-                                      -- corner of the current column.
+import Constants
+import Document
+import Name
+
+
+-- |Create a 2-page .pdf file.  The first page sorts by last name and
+-- the second sorts by first name.
+generate
+  :: Document Name -- ^Document to print.  It will be automatically
+                   -- resorted.
+  -> FilePath      -- ^Filename to save to.
+  -> IO ()
+generate doc file =
+  let
+    page1 = sortDoc doc
+    page2 = sortDoc $ fmap FirstSortedName doc
+  in
+    runPdf file standardDocInfo (PDFRect 0 0 pageWidth pageHeight) $ do
+      renderDoc page1 "(Sorted by Location and then Last Name)"
+      renderDoc page2 "(Sorted by Location and then First Name)"

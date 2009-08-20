@@ -24,6 +24,7 @@ import Text.JSON
 
 import ContactInfo
 import LineItem
+import PDF
 
 -- |An organization has its own contact information and 0 or more
 -- contacts that are a part of it.

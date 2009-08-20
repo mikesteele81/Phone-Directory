@@ -26,6 +26,7 @@ import Text.JSON
 import Constants
 import LineItem
 import Organization
+import PDF
 
 -- |A Document contains a revision date and organizations to display.
 data Document name
@@ -116,7 +117,7 @@ renderDoc d lbl=
     let revised = toPDFString $ "Revised: " ++ dRevised d
         lineItems = intercalate [Divider] $ map showLineItems $ dOrganizations d
         columns = flowCols lineItems 4
-        op coord col = runReaderT (drawColumn col) coord
+        op coord col = runReaderT (draw col) coord
     in do
       p <- addPage Nothing
       drawWithPage p $ do

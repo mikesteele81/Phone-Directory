@@ -36,9 +36,9 @@ import Text.JSON.Pretty
 
 import ContactInfo
 import Document
+import Export
 import Name
 import Organization
-import PDF
 import Priority
 
 -- |The number of pixels between controls that are grouped together.

@@ -22,6 +22,7 @@ import Data.List
 import Graphics.PDF
 
 import Constants
+import PDF
 
 -- | A single line making up part of a column.
 data LineItem 
@@ -42,7 +43,7 @@ data LineItem
   deriving (Show)
 
 -- |Each page contains 4 columns of equal length.              
-type Column = [LineItem]
+newtype Column = Column {unColumn :: [LineItem]}
 
 -- |Things which can be converted to lists of LineItems.  This
 -- includes ContactInfo and Organization.
@@ -57,55 +58,44 @@ mkLabelValue :: Bool     -- ^Indent?
              -> LineItem
 mkLabelValue i l r = LineItem (toPDFString l) (toPDFString r) i
 
--- |Draw a LineItem so that whatever Point is in the monad sits on the
--- upper-left corner of the bounding box of what's drawn.
-drawLineItem :: LineItem                   -- ^Thing to draw
-             -> ReaderT Point Draw (Point) -- ^Suggested location to
-                                           -- draw the next
-                                           -- LineItem. This will be
-                                           -- the lowel-left corner of
-                                           -- the current column. 
-drawLineItem (LineItem l r i) =  
-    let offset = if i then line_item_indent else 0.0
-    in do
-      (x :+ y) <- ask
-      lift $ drawText $ do
-         textStart (x + col_padding) (y - line_item_leading)
-         setFont font_normal
-         textStart offset 0
-         displayText l
-         textStart (line_item_width - textWidth font_normal r - offset) 0
-         displayText r
-         textStart (textWidth font_normal r - line_item_width) 0
-      return (x :+ (y - line_item_leading))
--- Horizontal line along the bottom of the drawing area.
-drawLineItem Divider = do
-  (x :+ y) <- ask
-  let x' = x + col_width
-      y' = y - line_item_leading
-  lift $ stroke (Line x y' x' y')
-  return (x :+ (y - line_item_leading))
--- Only used to fill the last column.
-drawLineItem Blank = asks (+(0 :+ (-line_item_leading)))
+instance Drawable LineItem where
+    draw (LineItem l r i) =  
+      let offset = if i then line_item_indent else 0.0
+      in do
+        (x :+ y) <- ask
+        lift $ drawText $ do
+            textStart (x + col_padding) (y - line_item_leading)
+            setFont font_normal
+            textStart offset 0
+            displayText l
+            textStart (line_item_width - textWidth font_normal r - offset) 0
+            displayText r
+            textStart (textWidth font_normal r - line_item_width) 0
+        return (x :+ (y - line_item_leading))
 
--- |Draw a collection of LineItem objects with a box around it.
-drawColumn :: Column                     -- ^Thing to draw
-           -> ReaderT Point Draw (Point) -- ^Suggested location to
-                                         -- draw the next Column.
-                                         -- This will be the
-                                         -- upper-right corner of the
-                                         -- current Column.
-drawColumn lx =
-  let op a = local (const a) . drawLineItem
-  in do
-    p@(x :+ y) <- ask
-    (_ :+ y') <- foldM op p $ columnHeading ++ lx ++ [Blank]
-    let x' = x + col_width
-    lift $ stroke $ Rectangle p (x' :+ y')
-    return (x' :+ y)
+    -- Horizontal line along the bottom of the drawing area.
+    draw Divider = do
+        (x :+ y) <- ask
+        let x' = x + col_width
+            y' = y - line_item_leading
+        lift $ stroke (Line x y' x' y')
+        return (x :+ (y - line_item_leading))
+
+    -- Only used to fill the last column.
+    draw Blank = asks (+(0 :+ (-line_item_leading)))
+
+instance Drawable Column where
+    draw (Column lx) =
+      let op a = local (const a) . draw
+      in do
+        p@(x :+ y) <- ask
+        (_ :+ y') <- foldM op p $ columnHeading ++ lx ++ [Blank]
+        let x' = x + col_width
+        lift $ stroke $ Rectangle p (x' :+ y')
+        return (x' :+ y)
 
 -- |This gets prepended to every Column before being drawn.
-columnHeading :: Column
+columnHeading :: [LineItem]
 columnHeading = [mkLabelValue True "User Name" "Phone No.", Divider]
 
 -- | Flow a single column into multiple columns of equal height.  This
@@ -121,4 +111,5 @@ flowCols lx n =
     c = lx ++ replicate numBlanks Blank
     len = length c `div` n
   in
-    map fst $ take n $ tail $ iterate (\(_, rest) -> splitAt len rest) ( [], c)
+    map (Column . fst) $ take n $ tail
+    $ iterate (\(_, rest) -> splitAt len rest) ( [], c)
