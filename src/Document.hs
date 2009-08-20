@@ -19,7 +19,7 @@
 module Document where
 
 import Control.Monad.Reader
-import Data.List (intercalate, sort)
+import Data.List (sort)
 import Graphics.PDF
 import Text.JSON
 
@@ -117,8 +117,7 @@ renderDoc :: forall a. (Show a, Ord a)
   -> String -> PDF()
 renderDoc d lbl= 
     let revised = toPDFString $ "Revised: " ++ dRevised d
-        lineItems = intercalate [Divider] $ map showLineItems $ dOrganizations d
-        columns = flowCols lineItems 4
+        columns = flowCols (showLineItems $ dOrganizations d) 4
         op coord col = runReaderT (draw col) coord
     in do
       p <- addPage Nothing

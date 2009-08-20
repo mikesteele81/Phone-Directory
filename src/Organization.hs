@@ -24,7 +24,6 @@ import Text.JSON
 
 import ContactInfo
 import LineItem
-import PDF
 
 -- |An organization has its own contact information and 0 or more
 -- contacts that are a part of it.
@@ -64,4 +63,4 @@ sortOrg o = o { oContacts = sort (oContacts o) }
 instance Functor Organization where
     f `fmap` o = o { oInfo = fmap f $ oInfo o
                    , oContacts = map (fmap f) $ oContacts o
-                   } 
+                   }
