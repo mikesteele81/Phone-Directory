@@ -74,11 +74,11 @@ instance Ord FirstSortedName where
     compare l r = compare (showForSorting l) (showForSorting r)
     
 instance JSON Name where
-    readJSON (JSObject o) =
-        FirstLast <$> valFromObj "first" o <*> valFromObj "last" o
+    readJSON v@(JSObject o) =
+        (FirstLast <$> valFromObj "first" o <*> valFromObj "last" o)
+        <|> (Error $ "Unable to parse name: " ++ (show . pp_value) v)
     readJSON (JSString s) = return . SingleName $ fromJSString s
-    readJSON v = Error $ "Expected JSObject, but " ++ (show . pp_value) v
-        ++ " found while parsing a name."
+    readJSON v = Error $ "Unable to parse Name: " ++ (show . pp_value) v
     showJSON n = case n of
         FirstLast f l -> makeObj [ ("first", showJSON f), ("last" , showJSON l) ]
         SingleName sn -> showJSON sn
