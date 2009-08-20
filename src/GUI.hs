@@ -34,7 +34,6 @@ import System.IO.Error
 import Text.JSON
 import Text.JSON.Pretty
 
-import Constants
 import ContactInfo
 import Document
 import Name
@@ -105,7 +104,8 @@ mainWindow = do
   eFirst    <- entry pRight []
   eLast     <- entry pRight []
   ePhone    <- entry pRight []
-  ePriority <- spinCtrl pRight minPriority maxPriority []
+  ePriority <- spinCtrl pRight (fromEnum (minBound :: Priority))
+                               (fromEnum (maxBound :: Priority)) []
 
   tc <- treeCtrl pLeft []
   
@@ -206,7 +206,7 @@ mainWindow = do
 
       commitPriorityInput :: SpinCtrl a -> Bool -> IO ()
       commitPriorityInput ctrl hasFocus = do
-          set ctrl [ selection :~ clipPriority minPriority maxPriority]
+          set ctrl [ selection :~ fromEnum . mkPriority ]
           handleFocus hasFocus
 
   set mFile  [ WX.text := "&File"    ]
@@ -391,6 +391,3 @@ unpad :: String -> String
 unpad s = case tail . groupBy ((==) `F.on` isSpace) . (" " ++) . (++ " ") $ s of
             [] -> []
             s' -> join . init $ s'
-
-clipPriority :: Int -> Int -> Int -> Int
-clipPriority l h = min h . max l
