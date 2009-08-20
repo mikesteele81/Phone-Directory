@@ -79,10 +79,9 @@ instance JSON Name where
         <|> SingleName <$> valFromObj "name" o
     readJSON v = Error $ "Expected JSObject, but " ++ (show . pp_value) v
         ++ " found while parsing a name."
-    showJSON n = makeObj
-        $ case n of
-            FirstLast f l -> [ ("first", showJSON f), ("last" , showJSON l) ]
-            SingleName sn -> [ ("name" , showJSON sn) ]
+    showJSON n = case n of
+        FirstLast f l -> makeObj [ ("first", showJSON f), ("last" , showJSON l) ]
+        SingleName sn -> showJSON sn
                    
 instance JSON FirstSortedName where
     readJSON n = FirstSortedName <$> readJSON n
