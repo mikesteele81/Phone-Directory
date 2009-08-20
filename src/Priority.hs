@@ -15,6 +15,8 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Priority
     ( Priority ()
     , mkPriority
@@ -25,7 +27,7 @@ import Control.Monad
 import Text.JSON
 
 newtype Priority = Priority Int
-    deriving (Eq, Ord)
+    deriving (Enum, Eq, Ord)
 
 instance Bounded Priority where
     minBound = Priority 0

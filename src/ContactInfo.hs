@@ -24,10 +24,12 @@ import Control.Applicative
 import Text.JSON
 import Text.JSON.Pretty
 
+import Priority
+
 -- |Contact information for an individual or group.
 data ContactInfo a = ContactInfo
   { -- |for the purposes of sorting.  Higher numbers sort first.
-    cPriority :: Int
+    cPriority :: Priority
   , -- |Either a Name or FirstSortedName.  This ends up on the left
     -- side of each line item.
     cName :: a

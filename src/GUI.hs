@@ -40,6 +40,7 @@ import Document
 import Name
 import Organization
 import PDF
+import Priority
 
 -- |The number of pixels between controls that are grouped together.
 ctrlPadding :: Int
@@ -134,7 +135,7 @@ mainWindow = do
 
             itm' <- treeCtrlAppendItem tc p "<New Item>" 0 0 objectNull
             treeCtrlSetItemClientData tc itm' (return ())
-                (ContactInfo 1 (SingleName "") "")
+                (ContactInfo (mkPriority 1) (SingleName "") "")
             treeCtrlSelectItem tc itm'
             windowSetFocus eFirst
           KeyDelete -> unless (root == itm) $ treeCtrlDelete tc itm
@@ -147,7 +148,7 @@ mainWindow = do
         firstName <- get eFirst    WX.text
         lastName  <- get eLast     WX.text
         phone     <- get ePhone    WX.text
-        priority  <- get ePriority WX.selection
+        priority  <- liftM mkPriority $ get ePriority WX.selection
         let name = case (firstName, lastName) of
                      ("", n) -> SingleName n
                      (n, "") -> SingleName n
@@ -177,7 +178,7 @@ mainWindow = do
             set eFirst [ enabled := True, WX.text := n  ]
             set eLast  [ enabled := True, WX.text := "" ]
         set ePhone     [ enabled := True, WX.text := cPhone ci ]
-        set ePriority  [ enabled := True, WX.selection := cPriority ci ]
+        set ePriority  [ enabled := True, WX.selection := fromEnum $ cPriority ci ]
 
       clearDisableDetails :: IO ()
       clearDisableDetails = do
