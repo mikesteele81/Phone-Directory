@@ -8,7 +8,7 @@ Author:			Michael Steele <mikesteele81@gmail.com>
 Maintainer:		Michael Steele <mikesteele81@gmail.com>
 Build-Type:     Simple
 Cabal-Version:  >=1.2
-Executable:     phoneDirectory
+Executable:     pdirectory
 Build-Depends:  base, filepath, HPDF >= 1.4, json >= 0.4, mtl, time,
                 wx, wxcore
 Main-Is:        Main.hs
