@@ -18,12 +18,16 @@
 module TestLineItem
   where
 
+import Control.Monad
 import Data.Char (chr)
 import Data.List (nub)
 import Graphics.PDF
 import Test.QuickCheck
 
+import ContactInfo
 import LineItem
+import Name
+import Priority
 
 prop_flowCols_numColumns :: [LineItem] -> Int -> Property
 prop_flowCols_numColumns cx n
@@ -39,19 +43,46 @@ prop_flowCols_equalCols cx n
 
 main :: IO ()
 main = do
-  print "hello"
   quickCheck prop_flowCols_numColumns
   quickCheck prop_flowCols_equalCols
 
 instance Arbitrary Char where
-  arbitrary = chr `fmap` oneof [choose (0,127), choose (0,255)]
+  arbitrary = chr `fmap` choose (32,126)
   coarbitrary = undefined
+
+instance (Arbitrary a) => Arbitrary (ContactInfo a) where
+    arbitrary = do
+        name <- arbitrary
+        priority <- arbitrary
+        phone <- arbitrary
+        return $ ContactInfo priority name phone
+    coarbitrary = undefined
 
 instance Arbitrary LineItem where
-  arbitrary = do
-    indent <- arbitrary
-    left   <- arbitrary
-    right  <- arbitrary
-    return $ mkLabelValue indent left right
+    arbitrary = do
+        indent <- arbitrary
+        left   <- arbitrary
+        right  <- arbitrary
+        oneof
+            [ return $ mkLabelValue indent left right
+            , return Divider
+            , return Blank ]
+    coarbitrary = undefined
 
-  coarbitrary = undefined
+
+instance Arbitrary Name where
+    arbitrary = oneof [firstLast, single]
+      where
+        firstLast = do
+            nFirst <- arbitrary
+            nLast <- arbitrary
+            return $ FirstLast nFirst nLast
+        single = do
+            nSingle <- arbitrary
+            return $ SingleName nSingle
+    coarbitrary = undefined
+
+instance Arbitrary Priority where
+    -- magic numbers save lots of typing.
+    arbitrary = mkPriority `fmap` choose (0, 5)
+    coarbitrary = undefined
