@@ -56,6 +56,7 @@ data LineItem
 
 -- |Each page contains 4 columns of equal length.              
 newtype Column = Column {unColumn :: [LineItem]}
+    deriving (Show)
 
 -- |Things which can be converted to lists of LineItems.  This
 -- includes ContactInfo and Organization.
@@ -120,11 +121,28 @@ flowCols :: [LineItem] -- ^Column to divide up
          -> [Column]   -- ^Equal length columns.  The last one may have
                        -- a few Blanks added to it.
 flowCols lx n =
-  let
-    numBlanks = if length lx >= n then length lx `mod` n else n - (length lx `mod` n)
-    -- Add a few blanks so the column will divide evenly
-    c = lx ++ replicate numBlanks Blank
-    len = length c `div` n
-  in
-    map (Column . fst) $ take n $ tail
-    $ iterate (\(_, rest) -> splitAt len rest) ( [], c)
+    map (padColumn len) . padColumns n $ cx'
+  where
+    (cx, lx') = foldl (flow len) ([], []) lx
+    cx' = reverse $ Column (reverse lx') : cx
+    len = let (d, m) = length lx `divMod` n in d + if m /= 0 then 1 else 0
+
+padColumns :: Int -> [Column] -> [Column]
+padColumns n cx =
+    cx ++ (take (max 0 $ n - length cx) $ repeat $ Column [])
+
+padColumn :: Int -> Column -> Column
+padColumn n (Column lx) =
+    Column $ lx ++ (take (max 0 $ n - length lx) $ repeat Blank)
+
+flow :: Int -> ([Column], [LineItem]) -> LineItem -> ([Column], [LineItem])
+-- no leading dividers
+flow _ r@(_, []) Divider = r
+flow _ r@(_, []) Blank   = r 
+flow len (cx, lx) l
+    | len > length lx    = (cx, l:lx)
+    | otherwise          = case l of
+        -- no trailing dividers
+        Divider -> ((Column $ reverse lx) : cx, [])
+        Blank   -> ((Column $ reverse lx) : cx, [])
+        _       -> flow len ((Column $ reverse lx) : cx, []) l

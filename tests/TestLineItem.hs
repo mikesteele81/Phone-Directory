@@ -31,26 +31,26 @@ import Priority
 
 prop_flowCols_numColumns :: [LineItem] -> Int -> Property
 prop_flowCols_numColumns cx n
-  = label "flowCols: return # of columns requested."
-  $ n > 0
+  = n > 0
   ==> (length . flowCols cx) n == n
 
 prop_flowCols_equalCols :: [LineItem] -> Int -> Property
 prop_flowCols_equalCols cx n
-  = label "flowCols: return cols of equal length"
-  $ n > 0
+  = n > 0
   ==> (length . nub . map (length . unColumn) . flowCols cx) n == 1
 
 prop_flowCols_no_leading_dividers :: [LineItem] -> Int -> Property
 prop_flowCols_no_leading_dividers cx n
-    = label "flowCols: "
-    $ True
+    = n > 0 && (not $ null cx)
     ==> all (/= Divider) . map (head . unColumn) . flowCols cx $ n
 
 main :: IO ()
 main = do
+  putStrLn "flowCols: return # of columns requested." 
   quickCheck prop_flowCols_numColumns
+  putStrLn "flowCols: return cols of equal length"
   quickCheck prop_flowCols_equalCols
+  putStrLn "flowCols: Ensure that columns do not have a leading or trailing divider."
   quickCheck prop_flowCols_no_leading_dividers
 
 instance Arbitrary Char where
