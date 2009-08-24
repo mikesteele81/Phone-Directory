@@ -35,7 +35,7 @@ prop_flowCols_equalCols :: [LineItem] -> Int -> Property
 prop_flowCols_equalCols cx n
   = label "flowCols: return cols of equal length"
   $ n > 0
-  ==> (length . nub . map length . flowCols cx) n == 1
+  ==> (length . nub . map (length . unColumn) . flowCols cx) n == 1
 
 main :: IO ()
 main = do
