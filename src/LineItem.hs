@@ -52,7 +52,7 @@ data LineItem
   -- | Empty area.  This is used at the end to force columns to be of
   -- equal length.
   | Blank
-  deriving (Show)
+  deriving (Eq, Show)
 
 -- |Each page contains 4 columns of equal length.              
 newtype Column = Column {unColumn :: [LineItem]}

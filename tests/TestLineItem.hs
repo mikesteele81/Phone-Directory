@@ -41,13 +41,20 @@ prop_flowCols_equalCols cx n
   $ n > 0
   ==> (length . nub . map (length . unColumn) . flowCols cx) n == 1
 
+prop_flowCols_no_leading_dividers :: [LineItem] -> Int -> Property
+prop_flowCols_no_leading_dividers cx n
+    = label "flowCols: "
+    $ True
+    ==> all (/= Divider) . map (head . unColumn) . flowCols cx $ n
+
 main :: IO ()
 main = do
   quickCheck prop_flowCols_numColumns
   quickCheck prop_flowCols_equalCols
+  quickCheck prop_flowCols_no_leading_dividers
 
 instance Arbitrary Char where
-  arbitrary = chr `fmap` choose (32,126)
+  arbitrary = chr `fmap` oneof [choose (65, 90), choose (97, 122)]
   coarbitrary = undefined
 
 instance (Arbitrary a) => Arbitrary (ContactInfo a) where
@@ -68,7 +75,6 @@ instance Arbitrary LineItem where
             , return Divider
             , return Blank ]
     coarbitrary = undefined
-
 
 instance Arbitrary Name where
     arbitrary = oneof [firstLast, single]
