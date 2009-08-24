@@ -23,6 +23,7 @@ import Data.Char (chr)
 import Data.List (nub)
 import Graphics.PDF
 import Test.QuickCheck
+import Text.Regex.Posix
 
 import ContactInfo
 import LineItem

@@ -62,4 +62,4 @@ instance Functor ContactInfo where
     f `fmap` x = x { cName = (f . cName) x }
 
 instance (Show a) => ShowLineItems (ContactInfo a) where
-    showLineItems ci = [mkLabelValue True (show $ cName ci) (show $ cPhone ci)]
+    showLineItems ci = [mkLabelValue True (show $ cName ci) (cPhone ci)]
