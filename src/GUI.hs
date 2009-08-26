@@ -110,23 +110,24 @@ mainWindow = do
   tc <- treeCtrl pLeft []
   
   let
-      onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' = do
-          -- Delete non-root nodes without a name
-          root <- treeCtrlGetRootItem tc
-          M.when (root /= itm && treeItemIsOk itm) $ do
-              ci <- right2CI
-              case show ci of
-                "" -> treeCtrlDelete tc itm
-                _  -> return ()
+      onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' =
+          runErrorT ( do
+              -- Delete non-root nodes without a name
+              root <- fromIO Nothing $ treeCtrlGetRootItem tc
+              M.when (root /= itm && treeItemIsOk itm) $ do
+                  ci <- right2CI
+                  case show ci of
+                      "" -> fromIO Nothing $ treeCtrlDelete tc itm
+                      _  -> return ()
  
-          case root == itm' of
-            True -> clearDisableDetails
-            False -> runErrorT ( do
-                  ci2 <- treeItem2CI tc itm'
-                  fromIO Nothing $ updateDetails ci2
-                  ) >>= trapError
+              case root == itm' of
+                True -> fromIO Nothing $ clearDisableDetails
+                False -> do
+                    ci2 <- treeItem2CI tc itm'
+                    fromIO Nothing $ updateDetails ci2
 
-          propagateEvent
+              fromIO Nothing $ propagateEvent
+          ) >>= trapError
 
       onTreeEvent (TreeKeyDown _ (EventKey k _ _)) = do
         -- TreeKeyDown's item member doesn't hold anything.
@@ -148,8 +149,8 @@ mainWindow = do
         propagateEvent
       onTreeEvent _ = propagateEvent
       
-      right2CI :: IO (ContactInfo Name)
-      right2CI = do
+      right2CI :: ErrorT String IO (ContactInfo Name)
+      right2CI = fromIO Nothing $ do
           firstName <- get eFirst    WX.text
           lastName  <- get eLast     WX.text
           phone     <- get ePhone    WX.text
@@ -186,10 +187,11 @@ mainWindow = do
 
       handleFocus :: Bool -> IO ()
       -- lost focus
-      handleFocus False = do
+      handleFocus False = runErrorT ( do
           ci <- right2CI 
-          itm <- treeCtrlGetSelection tc
-          runErrorT (updateNode tc itm ci) >>= trapError
+          itm <- fromIO Nothing $ treeCtrlGetSelection tc
+          updateNode tc itm ci
+          ) >>= trapError
       handleFocus _ = return ()
 
       commitStringInput :: TextCtrl a -> Bool -> IO ()
