@@ -135,7 +135,7 @@ mainWindow = do
 
             itm' <- treeCtrlAppendItem tc p "<New Item>" 0 0 objectNull
             treeCtrlSetItemClientData tc itm' (return ())
-                (ContactInfo (mkPriority 1) (SingleName "") "")
+                (ContactInfo (mkPriority 1) (mkName "" "") "")
             treeCtrlSelectItem tc itm'
             windowSetFocus eFirst
           KeyDelete -> unless (root == itm) $ treeCtrlDelete tc itm
@@ -149,10 +149,7 @@ mainWindow = do
         lastName  <- get eLast     WX.text
         phone     <- get ePhone    WX.text
         priority  <- liftM mkPriority $ get ePriority WX.selection
-        let name = case (firstName, lastName) of
-                     ("", n) -> SingleName n
-                     (n, "") -> SingleName n
-                     (f', l) -> FirstLast f' l
+        let name = mkName firstName lastName
         return ContactInfo
                  { cName     = name
                  , cPhone    = phone

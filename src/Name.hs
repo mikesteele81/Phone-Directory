@@ -19,6 +19,7 @@
 module Name
     ( Name            ( FirstLast, SingleName)
     , FirstSortedName ( FirstSortedName )
+    , mkName
     ) where
 
 import Control.Applicative
@@ -87,3 +88,13 @@ instance JSON Name where
 instance JSON FirstSortedName where
     readJSON n = FirstSortedName <$> readJSON n
     showJSON   = showJSON . unFirstSortedName
+
+-- |Convencience function to create a name from two strings.
+mkName :: String -- ^First name or blank.
+    -> String    -- ^Last name or blank.
+    -> Name
+mkName f l =
+    case (f, l) of
+        ("", n) -> SingleName n
+        (n, "") -> SingleName n
+        _       -> FirstLast f l
