@@ -113,18 +113,18 @@ mainWindow = do
       onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' = do
           -- Delete non-root nodes without a name
           root <- treeCtrlGetRootItem tc
-          case root /= itm && treeItemIsOk itm of
-            True -> do
+          M.when (root /= itm && treeItemIsOk itm) $ do
               ci <- right2CI
               case show ci of
                 "" -> treeCtrlDelete tc itm
                 _  -> return ()
  
-              runErrorT ( do
+          case root == itm' of
+            True -> clearDisableDetails
+            False -> runErrorT ( do
                   ci2 <- treeItem2CI tc itm'
                   fromIO Nothing $ updateDetails ci2
                   ) >>= trapError
-            False -> clearDisableDetails
 
           propagateEvent
 
