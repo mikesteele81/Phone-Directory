@@ -172,6 +172,12 @@ mainWindow = do
         set eLast     [ enabled := False, WX.text := "" ]
         set ePhone    [ enabled := False, WX.text := "" ]
         set ePriority [ enabled := False, WX.text := "" ]
+      
+      trapError :: Either String () -> IO ()
+      trapError x =
+          case x of
+              Left x -> errorDialog f "error" x
+              Right _ -> return ()
 
       handleFocus :: Bool -> IO ()
       -- lost focus
@@ -209,7 +215,8 @@ mainWindow = do
                       populateTree tc doc''
                       varSet file name'
                       set f [WX.text := title name']
-                  Left e -> errorDialog f "error" e
+                  -- temporary hack while error handling is put into place.
+                  Left e -> trapError $ Left e
           Nothing -> return ()
              ]
   set iSave  [ WX.text := "&Save", on command := do
@@ -218,7 +225,7 @@ mainWindow = do
                    Just doc'' -> do
                      file' <- varGet file
                      let doc''' = sortDoc doc''
-                     runErrorT $ save file' $ sortDoc doc'''
+                     runErrorT (save file' $ sortDoc doc''') >>= trapError
                      M.when (doc'' /= doc''') $ populateTree tc doc'''
                    Nothing -> putStrLn "bad doc" >> return ()
              ]
@@ -231,7 +238,7 @@ mainWindow = do
                        case doc' of
                          Just doc'' -> do
                            let doc''' = sortDoc doc''
-                           runErrorT $ save name' doc''
+                           runErrorT (save name' doc'') >>= trapError
                            M.when (doc'' /= doc''') $ populateTree tc doc'''
                          Nothing -> return ()
                        varSet file name'
@@ -353,12 +360,12 @@ save fp =
   let
     msg = "Something went wrong while saving " ++ fp ++ "."
   in
-    fromIO msg . writeFile fp . show . pp_value . showJSON
+    fromIO (Just msg) . writeFile fp . show . pp_value . showJSON
 
 -- |Attempt to load a document from the supplied file.
 load :: FilePath -> ErrorT String IO (Document (ContactInfo Name))
 load fp = do
-    s <- fromIO msg $ readFile fp
+    s <- fromIO (Just msg) $ readFile fp
     fromJSONResult $ decodeStrict s >>= readJSON
   where
     msg = "Something went wrong while loading " ++ fp ++ "."
@@ -369,12 +376,18 @@ fromJSONResult = either throwError return . resultToEither
 -- |Execute an IO computation, trapping any IOError exceptions in the
 -- ErrorT String monad.
 fromIO 
-    :: String -- ^Error message to display.
-              -- TODO: provide a hook to use a different error message
-              -- depending on which IOError gets thrown.
+    :: Maybe String -- ^Error message to display. Nothing causes the
+                    -- underlying error to be used.  Just x causes x to be
+                    -- used.
+                    -- TODO: provide a hook to use a different error message
+                    -- depending on which IOError gets thrown.
     -> IO a   -- ^Computation to execute
     -> ErrorT String IO a -- ^Result wrapped into the ErrorT String monad.
-fromIO msg = liftIO . try >=> either (const $ throwError msg) return
+fromIO msg = liftIO . try >=> either errorOp return
+  where
+    errorOp = case msg of
+        Nothing -> throwError . show
+        Just x -> throwError . ((x ++ ": ") ++) . show
 
 -- |Combinator that lays out the first argument directly over the second.
 labeled :: String -- ^Label to use.
