@@ -119,7 +119,7 @@ mainWindow = do
             "" -> treeCtrlDelete tc itm
             _  -> return ()
         
-        ci <- getTreeItem itm'
+        ci <- treeItem2CI tc itm'
         maybe clearDisableDetails updateDetails ci
 
         propagateEvent
@@ -158,9 +158,6 @@ mainWindow = do
                  , cPhone    = phone
                  , cPriority = priority
                  }
-
-      getTreeItem :: TreeItem -> IO (Maybe (ContactInfo Name))
-      getTreeItem = unsafeTreeCtrlGetItemClientData tc
 
       updateDetails :: ContactInfo Name -> IO ()
       updateDetails ci = do
@@ -327,16 +324,20 @@ title = (++ " - Phone Directory") . takeBaseName
 -- |Create a Document object based on the tree heirarchy.
 tree2Doc :: TreeCtrl a -> IO (Maybe (Document (ContactInfo Name)))
 tree2Doc tc = do
-  root <- treeCtrlGetRootItem tc
-  orgs <- treeCtrlWithChildren tc root $ \itm -> do
-    orgCI <- unsafeTreeCtrlGetItemClientData tc itm
-    contacts <- treeCtrlWithChildren tc itm
-      $ unsafeTreeCtrlGetItemClientData tc
-    return $ Organization <$> orgCI <*> sequence contacts
-  time <- getCurrentTime
-  let (year, month, day) = toGregorian $ utctDay time
-  return $ Document (show month ++ "/" ++ show day ++ "/" ++ show year)
+    root <- treeCtrlGetRootItem tc
+    orgs <- treeCtrlWithChildren tc root $ \itm -> do
+        orgCI <- treeItem2CI tc itm
+        contacts <- treeCtrlWithChildren tc itm $ treeItem2CI tc
+        return $ Organization <$> orgCI <*> sequence contacts
+    time <- getCurrentTime
+    let (year, month, day) = toGregorian $ utctDay time
+    return $ Document (show month ++ "/" ++ show day ++ "/" ++ show year)
         <$> sequence orgs
+
+-- |Create a ContactInfo by pulling it from the tree heirarchy.  This is the
+-- only place where 'unsafeTreeCtrlGetItemClientData' should be called.
+treeItem2CI :: TreeCtrl a -> TreeItem -> IO (Maybe (ContactInfo Name))
+treeItem2CI = unsafeTreeCtrlGetItemClientData
 
 -- |Reset the GUI to a new file.
 new
