@@ -52,4 +52,3 @@ fromEither
     :: Either String b
     -> WXError b
 fromEither = either throwError return
-

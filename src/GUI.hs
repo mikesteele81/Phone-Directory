@@ -215,15 +215,13 @@ mainWindow = do
           fileTypesSelection "" ""
       case name of
           Just name' -> do
-              doc' <- runErrorT $ load name'
-              case doc' of
-                  Right doc'' -> do
-                      putStrLn $ "Opening " ++ name'
-                      populateTree tc doc''
-                      varSet file name'
-                      set f [WX.text := title name']
-                  -- temporary hack while error handling is put into place.
-                  Left e -> trapError $ Left e
+              putStrLn $ "Opening " ++ name'
+              runErrorT ( do
+                  doc <- load name'
+                  populateTree tc doc
+                  fromIO Nothing $ varSet file name'
+                  fromIO Nothing $ set f [WX.text := title name']
+                  ) >>= trapError
           Nothing -> return ()
              ]
   set iSave [ WX.text := "&Save"
@@ -232,7 +230,7 @@ mainWindow = do
                     file' <- fromIO Nothing $ varGet file
                     let doc' = sortDoc doc
                     save file' doc'
-                    M.when (doc /= doc') $ fromIO Nothing $ populateTree tc doc'
+                    M.when (doc /= doc') $ populateTree tc doc'
                 ) >>= trapError
             ]
   set iSaveAs
@@ -245,7 +243,7 @@ mainWindow = do
                   doc' <- tree2Doc tc
                   let doc'' = sortDoc doc'
                   save name' doc''
-                  M.when (doc' /= doc'') $ fromIO Nothing $ populateTree tc doc''
+                  M.when (doc' /= doc'') $ populateTree tc doc''
                   fromIO Nothing $ varSet file name'
                   fromIO Nothing $ set f [WX.text := title name']
               ) >>= trapError
@@ -314,9 +312,9 @@ mainWindow = do
 
 -- |Scrap and rebuild the heirarchical tree.  Once this is done, expand it and
 -- select the first non-root node.
-populateTree :: (Show b) => TreeCtrl a -> Document b -> IO ()
+populateTree :: (Show b) => TreeCtrl a -> Document b -> WXError ()
 populateTree tc doc =
-    let addItem p itm = do
+    let addItem p itm = fromIO Nothing $ do
           tc' <- treeCtrlAppendItem tc p (show itm) 0 0 objectNull
           treeCtrlSetItemClientData tc tc' (return ()) itm
           return tc'
@@ -324,11 +322,11 @@ populateTree tc doc =
           orgTc <- addItem p $ oInfo org
           mapM_ (addItem orgTc) $ oContacts org
     in do
-      treeCtrlDeleteAllItems tc
-      root <- treeCtrlAddRoot tc "Organizations" 0 0 objectNull
+      fromIO Nothing $ treeCtrlDeleteAllItems tc
+      root <- fromIO Nothing $ treeCtrlAddRoot tc "Organizations" 0 0 objectNull
       mapM_ (populateOrg root) $ dOrganizations doc
-      treeCtrlExpand tc root
-      treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
+      fromIO Nothing $ treeCtrlExpand tc root
+      fromIO Nothing (treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc)
 
 -- |Set the supplied frame's title bar based on the supplied file.
 title :: FilePath -> String
@@ -370,7 +368,7 @@ new
     -> String      -- ^ Filename
     -> IO ()
 new f tc fn = do
-    populateTree tc (mkDocument :: Document Name)
+    runErrorT $ populateTree tc (mkDocument :: Document Name)
     set f [WX.text := title fn]
 
 -- |Save the supplied document to a file.
