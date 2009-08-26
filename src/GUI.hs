@@ -189,7 +189,7 @@ mainWindow = do
       handleFocus False = do
           ci <- right2CI 
           itm <- treeCtrlGetSelection tc
-          updateNode tc itm ci
+          runErrorT (updateNode tc itm ci) >>= trapError
       handleFocus _ = return ()
 
       commitStringInput :: TextCtrl a -> Bool -> IO ()
@@ -429,8 +429,12 @@ unpad s = case tail . groupBy ((==) `F.on` isSpace) . (" " ++) . (++ " ") $ s of
             s' -> join . init $ s'
 
 -- | update left side to match what's entered on right
-updateNode :: (Show b) => TreeCtrl a -> TreeItem -> ContactInfo b -> IO ()
-updateNode tc itm ci = do
+updateNode :: (Show b)
+    => TreeCtrl a
+    -> TreeItem
+    -> ContactInfo b
+    -> ErrorT String IO ()
+updateNode tc itm ci = fromIO Nothing $ do
     -- Never update the root node.
     root <- treeCtrlGetRootItem tc
     M.when (root /= itm && treeItemIsOk itm) $ do
