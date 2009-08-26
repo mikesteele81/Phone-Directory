@@ -145,16 +145,14 @@ mainWindow = do
       
       right2CI :: IO (ContactInfo Name)
       right2CI = do
-        firstName <- get eFirst    WX.text
-        lastName  <- get eLast     WX.text
-        phone     <- get ePhone    WX.text
-        priority  <- liftM mkPriority $ get ePriority WX.selection
-        let name = mkName firstName lastName
-        return ContactInfo
-                 { cName     = name
-                 , cPhone    = phone
-                 , cPriority = priority
-                 }
+          firstName <- get eFirst    WX.text
+          lastName  <- get eLast     WX.text
+          phone     <- get ePhone    WX.text
+          priority  <- get ePriority WX.selection
+          return ContactInfo
+              { cName     = mkName firstName lastName
+              , cPhone    = phone
+              , cPriority = mkPriority priority }
 
       updateDetails :: ContactInfo Name -> IO ()
       updateDetails ci = do
