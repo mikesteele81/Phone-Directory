@@ -121,10 +121,8 @@ mainWindow = do
                       _  -> return ()
  
               case root == itm' of
-                True -> fromIO Nothing $ clearDisableDetails
-                False -> do
-                    ci2 <- treeItem2CI tc itm'
-                    fromIO Nothing $ updateDetails ci2
+                True  -> clearDisableDetails
+                False -> treeItem2CI tc itm' >>= updateDetails
 
               fromIO Nothing $ propagateEvent
           ) >>= trapError
@@ -160,8 +158,8 @@ mainWindow = do
               , cPhone    = phone
               , cPriority = mkPriority priority }
 
-      updateDetails :: ContactInfo Name -> IO ()
-      updateDetails ci = do
+      updateDetails :: ContactInfo Name -> WXError ()
+      updateDetails ci = fromIO Nothing $ do
         case cName ci of
           FirstLast first l -> do
             set eFirst [ enabled := True, WX.text := first ]
@@ -172,8 +170,8 @@ mainWindow = do
         set ePhone     [ enabled := True, WX.text := cPhone ci ]
         set ePriority  [ enabled := True, WX.selection := fromEnum $ cPriority ci ]
 
-      clearDisableDetails :: IO ()
-      clearDisableDetails = do
+      clearDisableDetails :: WXError ()
+      clearDisableDetails = fromIO Nothing $ do
         set eFirst    [ enabled := False, WX.text := "" ]
         set eLast     [ enabled := False, WX.text := "" ]
         set ePhone    [ enabled := False, WX.text := "" ]
