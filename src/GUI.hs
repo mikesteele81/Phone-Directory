@@ -183,23 +183,22 @@ mainWindow = do
               Left y -> errorDialog f "error" y
               Right _ -> return ()
 
-      handleFocus :: Bool -> IO ()
+      handleFocus :: Bool -> WXError ()
       -- lost focus
-      handleFocus False = runErrorT ( do
+      handleFocus False = do
           ci <- right2CI 
           itm <- fromIO Nothing $ treeCtrlGetSelection tc
           updateNode tc itm ci
-          ) >>= trapError
       handleFocus _ = return ()
 
-      commitStringInput :: TextCtrl a -> Bool -> IO ()
+      commitStringInput :: TextCtrl a -> Bool -> WXError ()
       commitStringInput ctrl hasFocus = do
-          set ctrl [WX.text :~ unpad]
+          fromIO Nothing $ set ctrl [WX.text :~ unpad]
           handleFocus hasFocus
 
-      commitPriorityInput :: SpinCtrl a -> Bool -> IO ()
+      commitPriorityInput :: SpinCtrl a -> Bool -> WXError ()
       commitPriorityInput ctrl hasFocus = do
-          set ctrl [ selection :~ fromEnum . mkPriority ]
+          fromIO Nothing $ set ctrl [ selection :~ fromEnum . mkPriority ]
           handleFocus hasFocus
 
   set mFile  [ WX.text := "&File"    ]
@@ -266,23 +265,23 @@ mainWindow = do
   set iAbout [ on command := infoDialog f "About Phone Directory" aboutTxt ]
 
   set eFirst    [ processEnter := True
-                , on command   := commitStringInput eFirst False
-                , on focus     := commitStringInput eFirst
+                , on command   := runErrorT (commitStringInput eFirst False) >>= trapError
+                , on focus     := \x -> runErrorT (commitStringInput eFirst x) >>= trapError
                 , tooltip := "Enter the contact's first name.  If the contact \
                              \only goes by a single name, enter it either \
                              \here or in the last name field."]
   set eLast     [ processEnter := True
-                , on command   := commitStringInput eLast False
-                , on focus     := commitStringInput eLast
+                , on command   := runErrorT (commitStringInput eLast False) >>= trapError
+                , on focus     := \x -> runErrorT (commitStringInput eLast x) >>= trapError
                 , tooltip := "Enter the contact's last name.  If the contact \
                              \only goes by a single name, enter it either \
                              \here or in the first name field."]
   set ePhone    [ processEnter := True
-                , on command   := commitStringInput ePhone False
-                , on focus     := commitStringInput ePhone
+                , on command   := runErrorT (commitStringInput ePhone False) >>= trapError
+                , on focus     := \x -> runErrorT (commitStringInput ePhone x) >>= trapError
                 , tooltip := "Enter thecontact's phone number." ]
-  set ePriority [ on select := commitPriorityInput ePriority False
-                , on focus  := commitPriorityInput ePriority
+  set ePriority [ on select := runErrorT (commitPriorityInput ePriority False) >>= trapError
+                , on focus  := \x -> runErrorT (commitPriorityInput ePriority x) >>= trapError
                 , tooltip := "Low values will sort before contacts with \
                              \higher values." ]
 
