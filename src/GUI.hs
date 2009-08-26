@@ -111,18 +111,23 @@ mainWindow = do
   
   let
       onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' = do
-        -- Delete non-root nodes without a name
-        root <- treeCtrlGetRootItem tc
-        M.when (root /= itm && treeItemIsOk itm) $ do
-          ci <- right2CI
-          case show ci of
-            "" -> treeCtrlDelete tc itm
-            _  -> return ()
-        
-        ci <- treeItem2CI tc itm'
-        maybe clearDisableDetails updateDetails ci
+          -- Delete non-root nodes without a name
+          root <- treeCtrlGetRootItem tc
+          case root /= itm && treeItemIsOk itm of
+            True -> do
+              ci <- right2CI
+              case show ci of
+                "" -> treeCtrlDelete tc itm
+                _  -> return ()
+ 
+              runErrorT ( do
+                  ci2 <- treeItem2CI tc itm'
+                  fromIO Nothing $ updateDetails ci2
+                  ) >>= trapError
+            False -> clearDisableDetails
 
-        propagateEvent
+          propagateEvent
+
       onTreeEvent (TreeKeyDown _ (EventKey k _ _)) = do
         -- TreeKeyDown's item member doesn't hold anything.
         itm <- treeCtrlGetSelection tc
@@ -172,11 +177,11 @@ mainWindow = do
         set eLast     [ enabled := False, WX.text := "" ]
         set ePhone    [ enabled := False, WX.text := "" ]
         set ePriority [ enabled := False, WX.text := "" ]
-      
+
       trapError :: Either String () -> IO ()
       trapError x =
           case x of
-              Left x -> errorDialog f "error" x
+              Left y -> errorDialog f "error" y
               Right _ -> return ()
 
       handleFocus :: Bool -> IO ()
@@ -219,44 +224,45 @@ mainWindow = do
                   Left e -> trapError $ Left e
           Nothing -> return ()
              ]
-  set iSave  [ WX.text := "&Save", on command := do
-                 doc' <- tree2Doc tc
-                 case doc' of
-                   Just doc'' -> do
-                     file' <- varGet file
-                     let doc''' = sortDoc doc''
-                     runErrorT (save file' $ sortDoc doc''') >>= trapError
-                     M.when (doc'' /= doc''') $ populateTree tc doc'''
-                   Nothing -> putStrLn "bad doc" >> return ()
-             ]
-  set iSaveAs  [ WX.text := "Save &As...", on command := do
-                   name <- fileSaveDialog f True True "Save phone directory"
-                           fileTypesSelection "" ""
-                   case name of
-                     Just name' -> do
-                       doc' <- tree2Doc tc
-                       case doc' of
-                         Just doc'' -> do
-                           let doc''' = sortDoc doc''
-                           runErrorT (save name' doc'') >>= trapError
-                           M.when (doc'' /= doc''') $ populateTree tc doc'''
-                         Nothing -> return ()
-                       varSet file name'
-                       set f [WX.text := title name']
-                     Nothing -> return ()
-               ]
+  set iSave [ WX.text := "&Save"
+            , on command := runErrorT ( do
+                    doc <- tree2Doc tc
+                    file' <- fromIO Nothing $ varGet file
+                    let doc' = sortDoc doc
+                    save file' doc'
+                    M.when (doc /= doc') $ fromIO Nothing $ populateTree tc doc'
+                ) >>= trapError
+            ]
+  set iSaveAs
+      [ WX.text := "Save &As..."
+      , on command := do
+          name <- fileSaveDialog f True True "Save phone directory"
+                  fileTypesSelection "" ""
+          case name of
+            Just name' -> runErrorT ( do
+                  doc' <- tree2Doc tc
+                  let doc'' = sortDoc doc'
+                  save name' doc''
+                  M.when (doc' /= doc'') $ fromIO Nothing $ populateTree tc doc''
+                  fromIO Nothing $ varSet file name'
+                  fromIO Nothing $ set f [WX.text := title name']
+              ) >>= trapError
+            Nothing -> return ()
+      ]
 
-  set iExport [ WX.text := "Ex&port...", on command := do
-                  name <- fileSaveDialog f True True "Export phone directory"
-                          exportTypesSelection "" ""
-                  case name of
-                    Just name' -> do
-                      doc' <- tree2Doc tc
-                      case doc' of
-                        Just doc'' -> generate doc'' name'
-                        Nothing    -> return ()
-                    Nothing -> return ()
-              ]
+  set iExport
+      [ WX.text := "Ex&port..."
+      , on command := do
+          name <- fileSaveDialog f True True "Export phone directory"
+                  exportTypesSelection "" ""
+          case name of
+            Just name' ->
+              runErrorT ( do
+                  doc <- tree2Doc tc
+                  fromIO Nothing $ generate doc name'
+              ) >>= trapError
+            Nothing -> return ()
+      ]
 
   set iQuit  [ on command := close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" aboutTxt ]
@@ -327,22 +333,33 @@ title :: FilePath -> String
 title = (++ " - Phone Directory") . takeBaseName
 
 -- |Create a Document object based on the tree heirarchy.
-tree2Doc :: TreeCtrl a -> IO (Maybe (Document (ContactInfo Name)))
+tree2Doc :: TreeCtrl a -> ErrorT String IO (Document (ContactInfo Name))
 tree2Doc tc = do
-    root <- treeCtrlGetRootItem tc
-    orgs <- treeCtrlWithChildren tc root $ \itm -> do
-        orgCI <- treeItem2CI tc itm
-        contacts <- treeCtrlWithChildren tc itm $ treeItem2CI tc
-        return $ Organization <$> orgCI <*> sequence contacts
-    time <- getCurrentTime
+    root <- getRootNode tc
+    orgs <- fromIO Nothing $ treeCtrlWithChildren tc root $ \itm ->
+        runErrorT $ do
+            orgCI <- treeItem2CI tc itm
+            contacts <- fromIO Nothing $ treeCtrlWithChildren tc itm $
+                \itm' -> runErrorT $ treeItem2CI tc itm'
+            fromEither $ Organization orgCI <$> sequence contacts
+    time <- fromIO Nothing getCurrentTime
     let (year, month, day) = toGregorian $ utctDay time
-    return $ Document (show month ++ "/" ++ show day ++ "/" ++ show year)
-        <$> sequence orgs
+        date = show month ++ "/" ++ show day ++ "/" ++ show year
+    fromEither $ Document date <$> sequence orgs
+
+getRootNode :: TreeCtrl a -> ErrorT String IO TreeItem
+getRootNode tc
+    = fromIO (Just "Failed to retreive the root node of the tree.")
+    $ treeCtrlGetRootItem tc
 
 -- |Create a ContactInfo by pulling it from the tree heirarchy.  This is the
 -- only place where 'unsafeTreeCtrlGetItemClientData' should be called.
-treeItem2CI :: TreeCtrl a -> TreeItem -> IO (Maybe (ContactInfo Name))
-treeItem2CI = unsafeTreeCtrlGetItemClientData
+treeItem2CI :: TreeCtrl a -> TreeItem -> ErrorT String IO (ContactInfo Name)
+treeItem2CI tc itm = do
+    ci <- fromIO Nothing $ unsafeTreeCtrlGetItemClientData tc itm
+    fromMaybe msg ci
+  where
+    msg = "Unable to retreive contact information from the tree heirarchy."
 
 -- |Reset the GUI to a new file.
 new
@@ -388,6 +405,17 @@ fromIO msg = liftIO . try >=> either errorOp return
     errorOp = case msg of
         Nothing -> throwError . show
         Just x -> throwError . ((x ++ ": ") ++) . show
+
+fromMaybe
+    :: String
+    -> Maybe a
+    -> ErrorT String IO a
+fromMaybe msg = maybe (throwError msg) return
+
+fromEither
+    :: Either String b
+    -> ErrorT String IO b
+fromEither = either throwError return
 
 -- |Combinator that lays out the first argument directly over the second.
 labeled :: String -- ^Label to use.
