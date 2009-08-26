@@ -30,7 +30,6 @@ import Graphics.UI.WX as WX
 import Graphics.UI.WXCore hiding (Document)
 import System.FilePath
 import System.IO
-import System.IO.Error
 import Text.JSON
 import Text.JSON.Pretty
 
@@ -40,6 +39,7 @@ import Export
 import Name
 import Organization
 import Priority
+import WXError
 
 -- |The number of pixels between controls that are grouped together.
 ctrlPadding :: Int
@@ -149,7 +149,7 @@ mainWindow = do
         propagateEvent
       onTreeEvent _ = propagateEvent
       
-      right2CI :: ErrorT String IO (ContactInfo Name)
+      right2CI :: WXError (ContactInfo Name)
       right2CI = fromIO Nothing $ do
           firstName <- get eFirst    WX.text
           lastName  <- get eLast     WX.text
@@ -335,7 +335,7 @@ title :: FilePath -> String
 title = (++ " - Phone Directory") . takeBaseName
 
 -- |Create a Document object based on the tree heirarchy.
-tree2Doc :: TreeCtrl a -> ErrorT String IO (Document (ContactInfo Name))
+tree2Doc :: TreeCtrl a -> WXError (Document (ContactInfo Name))
 tree2Doc tc = do
     root <- getRootNode tc
     orgs <- fromIO Nothing $ treeCtrlWithChildren tc root $ \itm ->
@@ -349,14 +349,14 @@ tree2Doc tc = do
         date = show month ++ "/" ++ show day ++ "/" ++ show year
     fromEither $ Document date <$> sequence orgs
 
-getRootNode :: TreeCtrl a -> ErrorT String IO TreeItem
+getRootNode :: TreeCtrl a -> WXError TreeItem
 getRootNode tc
     = fromIO (Just "Failed to retreive the root node of the tree.")
     $ treeCtrlGetRootItem tc
 
 -- |Create a ContactInfo by pulling it from the tree heirarchy.  This is the
 -- only place where 'unsafeTreeCtrlGetItemClientData' should be called.
-treeItem2CI :: TreeCtrl a -> TreeItem -> ErrorT String IO (ContactInfo Name)
+treeItem2CI :: TreeCtrl a -> TreeItem -> WXError (ContactInfo Name)
 treeItem2CI tc itm = do
     ci <- fromIO Nothing $ unsafeTreeCtrlGetItemClientData tc itm
     fromMaybe msg ci
@@ -374,7 +374,7 @@ new f tc fn = do
     set f [WX.text := title fn]
 
 -- |Save the supplied document to a file.
-save :: FilePath -> Document (ContactInfo Name) -> ErrorT String IO ()
+save :: FilePath -> Document (ContactInfo Name) -> WXError ()
 save fp =
   let
     msg = "Something went wrong while saving " ++ fp ++ "."
@@ -382,42 +382,12 @@ save fp =
     fromIO (Just msg) . writeFile fp . show . pp_value . showJSON
 
 -- |Attempt to load a document from the supplied file.
-load :: FilePath -> ErrorT String IO (Document (ContactInfo Name))
+load :: FilePath -> WXError (Document (ContactInfo Name))
 load fp = do
     s <- fromIO (Just msg) $ readFile fp
     fromJSONResult $ decodeStrict s >>= readJSON
   where
     msg = "Something went wrong while loading " ++ fp ++ "."
-
-fromJSONResult :: Result a -> ErrorT String IO a
-fromJSONResult = either throwError return . resultToEither
-
--- |Execute an IO computation, trapping any IOError exceptions in the
--- ErrorT String monad.
-fromIO 
-    :: Maybe String -- ^Error message to display. Nothing causes the
-                    -- underlying error to be used.  Just x causes x to be
-                    -- used.
-                    -- TODO: provide a hook to use a different error message
-                    -- depending on which IOError gets thrown.
-    -> IO a   -- ^Computation to execute
-    -> ErrorT String IO a -- ^Result wrapped into the ErrorT String monad.
-fromIO msg = liftIO . try >=> either errorOp return
-  where
-    errorOp = case msg of
-        Nothing -> throwError . show
-        Just x -> throwError . ((x ++ ": ") ++) . show
-
-fromMaybe
-    :: String
-    -> Maybe a
-    -> ErrorT String IO a
-fromMaybe msg = maybe (throwError msg) return
-
-fromEither
-    :: Either String b
-    -> ErrorT String IO b
-fromEither = either throwError return
 
 -- |Combinator that lays out the first argument directly over the second.
 labeled :: String -- ^Label to use.
@@ -435,7 +405,7 @@ updateNode :: (Show b)
     => TreeCtrl a
     -> TreeItem
     -> ContactInfo b
-    -> ErrorT String IO ()
+    -> WXError ()
 updateNode tc itm ci = fromIO Nothing $ do
     -- Never update the root node.
     root <- treeCtrlGetRootItem tc
