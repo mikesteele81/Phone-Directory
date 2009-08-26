@@ -159,12 +159,6 @@ mainWindow = do
                  , cPriority = priority
                  }
 
-      -- | update left side to match what's entered on right
-      updateTreeItem :: (Show a) => TreeItem -> ContactInfo a -> IO ()
-      updateTreeItem itm ci = do
-        treeCtrlSetItemClientData tc itm (return ()) ci
-        treeCtrlSetItemText tc itm $ show ci
-
       getTreeItem :: TreeItem -> IO (Maybe (ContactInfo Name))
       getTreeItem = unsafeTreeCtrlGetItemClientData tc
 
@@ -189,13 +183,7 @@ mainWindow = do
 
       handleFocus :: Bool -> IO ()
       -- lost focus
-      handleFocus False = do
-        itm <- treeCtrlGetSelection tc
-        -- Never update the root node.
-        root <- treeCtrlGetRootItem tc
-        M.when (root /= itm && treeItemIsOk itm)
-            $ right2CI >>= updateTreeItem itm
-
+      handleFocus False = right2CI >>= updateSelectedNode tc
       handleFocus _ = return ()
 
       commitStringInput :: TextCtrl a -> Bool -> IO ()
@@ -399,3 +387,14 @@ unpad :: String -> String
 unpad s = case tail . groupBy ((==) `F.on` isSpace) . (" " ++) . (++ " ") $ s of
             [] -> []
             s' -> join . init $ s'
+
+-- | update left side to match what's entered on right
+updateSelectedNode :: (Show b) => TreeCtrl a -> ContactInfo b -> IO ()
+updateSelectedNode tc ci = do
+    itm <- treeCtrlGetSelection tc
+    -- Never update the root node.
+    root <- treeCtrlGetRootItem tc
+    M.when (root /= itm && treeItemIsOk itm) $ do
+        treeCtrlSetItemClientData tc itm (return ()) ci
+        treeCtrlSetItemText tc itm $ show ci
+
