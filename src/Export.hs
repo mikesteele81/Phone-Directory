@@ -26,6 +26,7 @@ import ContactInfo
 import Document
 import Name
 import PDF
+import WXError
 
 pageWidth, pageHeight :: Int
 pageWidth     = units_per_inch * 85 `div` 10
@@ -34,15 +35,15 @@ pageHeight    = units_per_inch * 11
 -- |Create a 2-page .pdf file.  The first page sorts by last name and
 -- the second sorts by first name.
 generate
-  :: Document (ContactInfo Name) -- ^Document to print.  It will be
+  :: FilePath                    -- ^Filename to save to.
+  -> Document (ContactInfo Name) -- ^Document to print.  It will be
                                  -- automatically resorted.
-  -> FilePath                    -- ^Filename to save to.
-  -> IO ()
-generate doc file =
+  -> WXError ()
+generate file doc =
   let
     page1 = sortDoc doc
     page2 = sortDoc $ fmap (fmap FirstSortedName) doc
   in
-    runPdf file standardDocInfo (PDFRect 0 0 pageWidth pageHeight) $ do
+    liftIO $ runPdf file standardDocInfo (PDFRect 0 0 pageWidth pageHeight) $ do
       renderDoc page1 "(Sorted by Location and then Last Name)"
       renderDoc page2 "(Sorted by Location and then First Name)"

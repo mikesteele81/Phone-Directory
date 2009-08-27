@@ -249,9 +249,7 @@ mainWindow = do
           name <- fileSaveDialog f True True "Export phone directory"
                   exportTypesSelection "" ""
           case name of
-            Just name' -> trapError $ do
-                doc <- tree2Doc tc
-                liftIO $ generate doc name'
+            Just name' -> trapError $ tree2Doc tc >>= generate name'
             Nothing -> return ()
       ]
 
