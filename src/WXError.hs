@@ -20,7 +20,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module WXError
-    ( WXError(..)
+    ( WXError()
     , fromEither
     , fromJSONResult
     , fromMaybe
@@ -48,6 +48,7 @@ instance MonadError String WXError where
 instance MonadIO WXError where
     liftIO a = WXError $ liftIO (try a) >>= either (throwError . show) return
 
+-- |Convenience function for getting out of the WXError monad
 wxerror :: WXError a -> IO (Either String a)
 wxerror = runErrorT . runWXError
 
