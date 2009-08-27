@@ -113,18 +113,18 @@ mainWindow = do
       onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' =
           wxerror ( do
               -- Delete non-root nodes without a name
-              root <- fromIO Nothing $ treeCtrlGetRootItem tc
+              root <- liftIO $ treeCtrlGetRootItem tc
               M.when (root /= itm && treeItemIsOk itm) $ do
                   ci <- right2CI
                   case show ci of
-                      "" -> fromIO Nothing $ treeCtrlDelete tc itm
+                      "" -> liftIO $ treeCtrlDelete tc itm
                       _  -> return ()
  
               case root == itm' of
                 True  -> clearDisableDetails
                 False -> treeItem2CI tc itm' >>= updateDetails
 
-              fromIO Nothing $ propagateEvent
+              liftIO $ propagateEvent
           ) >>= trapError
 
       onTreeEvent (TreeKeyDown _ (EventKey k _ _)) = do
@@ -148,7 +148,7 @@ mainWindow = do
       onTreeEvent _ = propagateEvent
       
       right2CI :: WXError (ContactInfo Name)
-      right2CI = fromIO Nothing $ do
+      right2CI = liftIO $ do
           firstName <- get eFirst    WX.text
           lastName  <- get eLast     WX.text
           phone     <- get ePhone    WX.text
@@ -159,7 +159,7 @@ mainWindow = do
               , cPriority = mkPriority priority }
 
       updateDetails :: ContactInfo Name -> WXError ()
-      updateDetails ci = fromIO Nothing $ do
+      updateDetails ci = liftIO $ do
         case cName ci of
           FirstLast first l -> do
             set eFirst [ enabled := True, WX.text := first ]
@@ -171,7 +171,7 @@ mainWindow = do
         set ePriority  [ enabled := True, WX.selection := fromEnum $ cPriority ci ]
 
       clearDisableDetails :: WXError ()
-      clearDisableDetails = fromIO Nothing $ do
+      clearDisableDetails = liftIO $ do
         set eFirst    [ enabled := False, WX.text := "" ]
         set eLast     [ enabled := False, WX.text := "" ]
         set ePhone    [ enabled := False, WX.text := "" ]
@@ -187,25 +187,25 @@ mainWindow = do
       -- lost focus
       handleFocus False = do
           ci <- right2CI 
-          itm <- fromIO Nothing $ treeCtrlGetSelection tc
+          itm <- liftIO $ treeCtrlGetSelection tc
           updateNode tc itm ci
       handleFocus _ = return ()
 
       commitStringInput :: TextCtrl a -> Bool -> WXError ()
       commitStringInput ctrl hasFocus = do
-          fromIO Nothing $ set ctrl [WX.text :~ unpad]
+          liftIO $ set ctrl [WX.text :~ unpad]
           handleFocus hasFocus
 
       commitPriorityInput :: SpinCtrl a -> Bool -> WXError ()
       commitPriorityInput ctrl hasFocus = do
-          fromIO Nothing $ set ctrl [ selection :~ fromEnum . mkPriority ]
+          liftIO $ set ctrl [ selection :~ fromEnum . mkPriority ]
           handleFocus hasFocus
 
   set mFile  [ WX.text := "&File"    ]
   set iNew   [ WX.text := "&New"
              , on command := wxerror ( do
                  -- TODO: What about an unsaved file?
-                 fromIO Nothing $ varSet file defaultFile
+                 liftIO $ varSet file defaultFile
                  new f tc defaultFile) >>= trapError
              ]
   set iOpen  [ WX.text := "&Open...", on command := do
@@ -217,15 +217,15 @@ mainWindow = do
               wxerror ( do
                   doc <- load name'
                   populateTree tc doc
-                  fromIO Nothing $ varSet file name'
-                  fromIO Nothing $ set f [WX.text := title name']
+                  liftIO $ varSet file name'
+                  liftIO $ set f [WX.text := title name']
                   ) >>= trapError
           Nothing -> return ()
              ]
   set iSave [ WX.text := "&Save"
             , on command := wxerror ( do
                     doc <- tree2Doc tc
-                    file' <- fromIO Nothing $ varGet file
+                    file' <- liftIO $ varGet file
                     let doc' = sortDoc doc
                     save file' doc'
                     M.when (doc /= doc') $ populateTree tc doc'
@@ -242,8 +242,8 @@ mainWindow = do
                   let doc'' = sortDoc doc'
                   save name' doc''
                   M.when (doc' /= doc'') $ populateTree tc doc''
-                  fromIO Nothing $ varSet file name'
-                  fromIO Nothing $ set f [WX.text := title name']
+                  liftIO $ varSet file name'
+                  liftIO $ set f [WX.text := title name']
               ) >>= trapError
             Nothing -> return ()
       ]
@@ -257,7 +257,7 @@ mainWindow = do
             Just name' ->
               wxerror ( do
                   doc <- tree2Doc tc
-                  fromIO Nothing $ generate doc name'
+                  liftIO $ generate doc name'
               ) >>= trapError
             Nothing -> return ()
       ]
@@ -298,7 +298,7 @@ mainWindow = do
       ]
 
   -- the filename has already been set
-  wxerror (fromIO Nothing (varGet file) >>= new f tc) >>= trapError
+  wxerror (liftIO (varGet file) >>= new f tc) >>= trapError
 
   set f [ menuBar    := [mFile, mHelp]
         , layout     := WX.fill $ margin winPadding $ vsplit sw winPadding 200
@@ -312,7 +312,7 @@ mainWindow = do
 -- select the first non-root node.
 populateTree :: (Show b) => TreeCtrl a -> Document b -> WXError ()
 populateTree tc doc =
-    let addItem p itm = fromIO Nothing $ do
+    let addItem p itm = liftIO $ do
           tc' <- treeCtrlAppendItem tc p (show itm) 0 0 objectNull
           treeCtrlSetItemClientData tc tc' (return ()) itm
           return tc'
@@ -320,11 +320,11 @@ populateTree tc doc =
           orgTc <- addItem p $ oInfo org
           mapM_ (addItem orgTc) $ oContacts org
     in do
-      fromIO Nothing $ treeCtrlDeleteAllItems tc
-      root <- fromIO Nothing $ treeCtrlAddRoot tc "Organizations" 0 0 objectNull
+      liftIO $ treeCtrlDeleteAllItems tc
+      root <- liftIO $ treeCtrlAddRoot tc "Organizations" 0 0 objectNull
       mapM_ (populateOrg root) $ dOrganizations doc
-      fromIO Nothing $ treeCtrlExpand tc root
-      fromIO Nothing (treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc)
+      liftIO $ treeCtrlExpand tc root
+      liftIO (treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc)
 
 -- |Set the supplied frame's title bar based on the supplied file.
 title :: FilePath -> String
@@ -334,13 +334,13 @@ title = (++ " - Phone Directory") . takeBaseName
 tree2Doc :: TreeCtrl a -> WXError (Document (ContactInfo Name))
 tree2Doc tc = do
     root <- getRootNode tc
-    orgs <- fromIO Nothing $ treeCtrlWithChildren tc root $ \itm ->
+    orgs <- liftIO $ treeCtrlWithChildren tc root $ \itm ->
         wxerror $ do
             orgCI <- treeItem2CI tc itm
-            contacts <- fromIO Nothing $ treeCtrlWithChildren tc itm $
+            contacts <- liftIO $ treeCtrlWithChildren tc itm $
                 \itm' -> wxerror $ treeItem2CI tc itm'
             fromEither $ Organization orgCI <$> sequence contacts
-    time <- fromIO Nothing getCurrentTime
+    time <- liftIO getCurrentTime
     let (year, month, day) = toGregorian $ utctDay time
         date = show month ++ "/" ++ show day ++ "/" ++ show year
     fromEither $ Document date <$> sequence orgs
@@ -354,7 +354,7 @@ getRootNode tc
 -- only place where 'unsafeTreeCtrlGetItemClientData' should be called.
 treeItem2CI :: TreeCtrl a -> TreeItem -> WXError (ContactInfo Name)
 treeItem2CI tc itm = do
-    ci <- fromIO Nothing $ unsafeTreeCtrlGetItemClientData tc itm
+    ci <- liftIO $ unsafeTreeCtrlGetItemClientData tc itm
     fromMaybe msg ci
   where
     msg = "Unable to retreive contact information from the tree heirarchy."
@@ -367,7 +367,7 @@ new
     -> WXError ()
 new f tc fn = do
     populateTree tc (mkDocument :: Document Name)
-    fromIO Nothing $ set f [WX.text := title fn]
+    liftIO $ set f [WX.text := title fn]
 
 -- |Save the supplied document to a file.
 save :: FilePath -> Document (ContactInfo Name) -> WXError ()
@@ -403,7 +403,7 @@ updateNode :: (Show b)
     -> TreeItem
     -> ContactInfo b
     -> WXError ()
-updateNode tc itm ci = fromIO Nothing $ do
+updateNode tc itm ci = liftIO $ do
     -- Never update the root node.
     root <- treeCtrlGetRootItem tc
     M.when (root /= itm && treeItemIsOk itm) $ do
