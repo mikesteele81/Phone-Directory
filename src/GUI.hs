@@ -351,8 +351,7 @@ treeItem2CI :: TreeCtrl a -> TreeItem -> WXError (ContactInfo Name)
 treeItem2CI tc itm = do
     -- If this fails, it will probably raise a segmentation fault.
     ci <- liftIO $ unsafeTreeCtrlGetItemClientData tc itm
-    maybe (throwError "Tree node does not contain contact information")
-        return ci
+    fromMaybe "Tree node does not contain contact information" ci
 
 -- |Reset the GUI to a new file.
 new

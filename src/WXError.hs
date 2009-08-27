@@ -22,7 +22,6 @@
 module WXError
     ( WXError(..)
     , fromEither
-    , fromIO
     , fromJSONResult
     , fromMaybe
     , wxerror
@@ -54,22 +53,6 @@ wxerror = runErrorT . runWXError
 
 fromJSONResult :: Result a -> WXError a
 fromJSONResult = either throwError return . resultToEither
-
--- |Execute an IO computation, trapping any IOError exceptions in the
--- ErrorT String monad.
-fromIO 
-    :: Maybe String -- ^Error message to display. Nothing causes the
-                    -- underlying error to be used.  Just x causes x to be
-                    -- used.
-                    -- TODO: provide a hook to use a different error message
-                    -- depending on which IOError gets thrown.
-    -> IO a   -- ^Computation to execute
-    -> WXError a -- ^Result wrapped into the ErrorT String monad.
-fromIO msg = liftIO . try >=> either errorOp return
-  where
-    errorOp = case msg of
-        Nothing -> throwError . show
-        Just x -> throwError . ((x ++ ": ") ++) . show
 
 fromMaybe
     :: String
