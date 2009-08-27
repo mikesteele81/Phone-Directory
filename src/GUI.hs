@@ -82,7 +82,8 @@ aboutTxt =
 -- |Build the main window and start the event loop.
 mainWindow :: IO ()
 mainWindow = do
-  file <- varCreate defaultFile
+  file     <- varCreate defaultFile
+  modified <- varCreate False
 
   f  <- frame            []
   sw <- splitterWindow f []
@@ -139,13 +140,23 @@ mainWindow = do
             itm' <- treeCtrlAppendItem tc p "<New Item>" 0 0 objectNull
             treeCtrlSetItemClientData tc itm' (return ())
                 (ContactInfo (mkPriority 1) (mkName "" "") "")
+            setModified True
             treeCtrlSelectItem tc itm'
             windowSetFocus eFirst
-          KeyDelete -> unless (root == itm) $ treeCtrlDelete tc itm
+          KeyDelete -> unless (root == itm) $ do
+              treeCtrlDelete tc itm
+              setModified True
           _         -> return ()
         propagateEvent
       onTreeEvent _ = propagateEvent
       
+      setModified m = varSet modified m >> updateTitle
+
+      updateTitle = do
+          fn <- varGet file
+          m <- varGet modified
+          set f [WX.text := title m fn]
+
       right2CI :: WXError (ContactInfo Name)
       right2CI = liftIO $ do
           firstName <- get eFirst    WX.text
@@ -186,9 +197,12 @@ mainWindow = do
       handleFocus :: Bool -> WXError ()
       -- lost focus
       handleFocus False = do
-          ci <- right2CI 
           itm <- liftIO $ treeCtrlGetSelection tc
-          updateNode tc itm ci
+          ci <- treeItem2CI tc itm
+          ci' <- right2CI
+          M.when (ci /= ci') $ do
+              updateNode tc itm ci'
+              liftIO $ setModified True
       handleFocus _ = return ()
 
       commitStringInput :: TextCtrl a -> Bool -> WXError ()
@@ -207,6 +221,7 @@ mainWindow = do
                  -- TODO: What about an unsaved file?
                  new f tc defaultFile
                  liftIO $ varSet file defaultFile
+                 liftIO $ setModified False
              ]
   set iOpen  [ WX.text := "&Open...", on command := do
       name <- fileOpenDialog f True True "Open phone directory"
@@ -215,8 +230,9 @@ mainWindow = do
           Just name' -> trapError $ do
                   doc <- load name'
                   populateTree tc doc
-                  liftIO $ varSet file name'
-                  liftIO $ set f [WX.text := title name']
+                  liftIO $ do
+                      varSet file name'
+                      setModified False
           Nothing -> return ()
              ]
   set iSave [ WX.text := "&Save"
@@ -226,6 +242,7 @@ mainWindow = do
                 let doc' = sortDoc doc
                 save file' doc'
                 M.when (doc /= doc') $ populateTree tc doc'
+                liftIO $ setModified False
             ]
   set iSaveAs
       [ WX.text := "Save &As..."
@@ -238,8 +255,9 @@ mainWindow = do
                 let doc' = sortDoc doc
                 save name' doc'
                 M.when (doc /= doc') $ populateTree tc doc'
-                liftIO $ varSet file name'
-                liftIO $ set f [WX.text := title name']
+                liftIO $ do
+                    varSet file name'
+                    setModified False
             Nothing -> return ()
       ]
 
@@ -319,8 +337,11 @@ populateTree tc doc =
         mapM_ (addItem orgTc) $ oContacts org
 
 -- |Set the supplied frame's title bar based on the supplied file.
-title :: FilePath -> String
-title = (++ " - Phone Directory") . takeBaseName
+title
+    :: Bool      -- ^Modifications?
+    -> FilePath  -- ^File name
+    -> String
+title m = (if m then ("* " ++) else id) . (++ " - Phone Directory") . takeBaseName
 
 -- |Create a Document object based on the tree heirarchy.
 tree2Doc :: TreeCtrl a -> WXError (Document (ContactInfo Name))
@@ -353,7 +374,7 @@ new
     -> WXError ()
 new f tc fn = do
     populateTree tc (mkDocument :: Document Name)
-    liftIO $ set f [WX.text := title fn]
+    liftIO $ set f [WX.text := title False fn]
 
 -- |Save the supplied document to a file.
 save :: FilePath -> Document (ContactInfo Name) -> WXError ()
