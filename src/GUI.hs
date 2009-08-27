@@ -338,8 +338,13 @@ populateTree tc doc =
         treeCtrlDeleteAllItems tc
         root <- treeCtrlAddRoot tc "Organizations" 0 0 objectNull
         mapM_ (populateOrg root) $ dOrganizations doc
-        treeCtrlExpand tc root
-        treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
+        --Select root first.  That way if there are no child nodes at least
+        --something gets selected.
+        if null (dOrganizations doc)
+          then treeCtrlSelectItem tc root
+          else do
+            treeCtrlExpand tc root
+            treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
   where
     addItem p itm = do
         tc' <- treeCtrlAppendItem tc p (show itm) 0 0 objectNull
