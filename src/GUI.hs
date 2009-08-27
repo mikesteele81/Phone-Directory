@@ -246,6 +246,17 @@ mainWindow = do
               varSet file fp
               setModified False
 
+      save :: FilePath -> WXError ()
+      save fp = do
+          doc <- tree2Doc tc
+          let doc' = sortDoc doc
+          saveDoc fp doc'
+          M.when (doc /= doc') $ do
+              clearDisableDetails
+              populateTree tc doc'
+          liftIO $ varSet file fp
+          liftIO $ setModified False
+
   set mFile  [ WX.text := "&File"]
   set iNew   [ WX.text := "&New"
              , on command := trapError $ checkConfirmUnsaved new
@@ -260,30 +271,15 @@ mainWindow = do
       ]
 
   set iSave [ WX.text := "&Save"
-            , on command := trapError $ do
-                doc <- tree2Doc tc
-                file' <- liftIO $ varGet file
-                let doc' = sortDoc doc
-                save file' doc'
-                M.when (doc /= doc') $ populateTree tc doc'
-                liftIO $ setModified False
+            , on command := trapError $ liftIO (varGet file) >>= save
             ]
 
   set iSaveAs
       [ WX.text := "Save &As..."
-      , on command := do
-          name <- fileSaveDialog f True True "Save phone directory"
-                  fileTypesSelection "" ""
-          case name of
-            Just name' -> trapError $ do
-                doc <- tree2Doc tc
-                let doc' = sortDoc doc
-                save name' doc'
-                M.when (doc /= doc') $ populateTree tc doc'
-                liftIO $ do
-                    varSet file name'
-                    setModified False
-            Nothing -> return ()
+      , on command := trapError $ do
+          name <- liftIO $ fileSaveDialog f True True "Save phone directory"
+              fileTypesSelection "" ""
+          maybe (return ()) save name
       ]
 
   set iExport
@@ -397,8 +393,8 @@ treeItem2CI tc itm = do
     fromMaybe "Tree node does not contain contact information" ci
 
 -- |Save the supplied document to a file.
-save :: FilePath -> Document (ContactInfo Name) -> WXError ()
-save fp doc =
+saveDoc :: FilePath -> Document (ContactInfo Name) -> WXError ()
+saveDoc fp doc =
     (liftIO . writeFile fp . show . pp_value . showJSON $ doc)
     `catchError` (throwError . (msg ++))
   where
