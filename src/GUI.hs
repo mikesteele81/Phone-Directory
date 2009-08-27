@@ -333,7 +333,7 @@ title = (++ " - Phone Directory") . takeBaseName
 -- |Create a Document object based on the tree heirarchy.
 tree2Doc :: TreeCtrl a -> WXError (Document (ContactInfo Name))
 tree2Doc tc = do
-    root <- getRootNode tc
+    root <- liftIO $ treeCtrlGetRootItem tc
     orgs <- liftIO $ treeCtrlWithChildren tc root $ \itm ->
         wxerror $ do
             orgCI <- treeItem2CI tc itm
@@ -344,11 +344,6 @@ tree2Doc tc = do
     let (year, month, day) = toGregorian $ utctDay time
         date = show month ++ "/" ++ show day ++ "/" ++ show year
     fromEither $ Document date <$> sequence orgs
-
-getRootNode :: TreeCtrl a -> WXError TreeItem
-getRootNode tc
-    = fromIO (Just "Failed to retreive the root node of the tree.")
-    $ treeCtrlGetRootItem tc
 
 -- |Create a ContactInfo by pulling it from the tree heirarchy.  This is the
 -- only place where 'unsafeTreeCtrlGetItemClientData' should be called.
