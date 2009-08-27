@@ -202,10 +202,11 @@ mainWindow = do
           handleFocus hasFocus
 
   set mFile  [ WX.text := "&File"    ]
-  set iNew   [ WX.text := "&New", on command := do
+  set iNew   [ WX.text := "&New"
+             , on command := runErrorT ( do
                  -- TODO: What about an unsaved file?
-                 varSet file defaultFile
-                 new f tc defaultFile
+                 fromIO Nothing $ varSet file defaultFile
+                 new f tc defaultFile) >>= trapError
              ]
   set iOpen  [ WX.text := "&Open...", on command := do
       name <- fileOpenDialog f True True "Open phone directory"
@@ -297,7 +298,7 @@ mainWindow = do
       ]
 
   -- the filename has already been set
-  varGet file >>= new f tc
+  runErrorT (fromIO Nothing (varGet file) >>= new f tc) >>= trapError
 
   set f [ menuBar    := [mFile, mHelp]
         , layout     := WX.fill $ margin winPadding $ vsplit sw winPadding 200
@@ -363,10 +364,10 @@ new
     :: Frame a     -- ^ Window with a title needing to be
     -> TreeCtrl a  -- ^ Main window's tree control.  This will be cleared.
     -> String      -- ^ Filename
-    -> IO ()
+    -> WXError ()
 new f tc fn = do
-    runErrorT $ populateTree tc (mkDocument :: Document Name)
-    set f [WX.text := title fn]
+    populateTree tc (mkDocument :: Document Name)
+    fromIO Nothing $ set f [WX.text := title fn]
 
 -- |Save the supplied document to a file.
 save :: FilePath -> Document (ContactInfo Name) -> WXError ()
