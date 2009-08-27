@@ -15,7 +15,6 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE ExistentialQuantification #-}
 module Organization where
 
 import Control.Applicative
@@ -50,7 +49,7 @@ instance (JSON a) => JSON (Organization a) where
                  [ ("info", showJSON $ oInfo o)
                  , ("contacts", showJSONs $ oContacts o)]
                  
-instance forall a. (ShowLineItems a) => ShowLineItems (Organization a) where
+instance (ShowLineItems a) => ShowLineItems (Organization a) where
     showLineItems (Organization o cx) = concat $ [header] : map showLineItems cx
         where header = (head $ showLineItems o) {indent = False}
 
