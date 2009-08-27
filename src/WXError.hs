@@ -15,15 +15,31 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module WXError where
 
 import Control.Monad.Error
 import Text.JSON
 import System.IO.Error (try)
 
-type WXError a = ErrorT String IO a
+newtype WXError a = WXError { runWXError :: ErrorT String IO a }
+    deriving (Functor, Monad, MonadIO)
 
-fromJSONResult :: Result a -> ErrorT String IO a
+instance MonadError String WXError where
+    throwError = WXError . throwError
+    m `catchError` h = WXError $ ErrorT $ do
+        a <- runErrorT $ runWXError m
+        case a of
+            Left l  -> runErrorT (runWXError $ h l)
+            Right r -> return (Right r)
+
+wxerror :: WXError a -> IO (Either String a)
+wxerror = runErrorT . runWXError
+
+fromJSONResult :: Result a -> WXError a
 fromJSONResult = either throwError return . resultToEither
 
 -- |Execute an IO computation, trapping any IOError exceptions in the
