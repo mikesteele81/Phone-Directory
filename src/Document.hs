@@ -15,8 +15,12 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE ExistentialQuantification #-}
-module Document where
+module Document
+    ( Document (..)
+    , mkDocument
+    , renderDoc
+    , sortDoc
+    ) where
 
 import Control.Monad.Reader
 import Data.List (sort)
@@ -97,10 +101,7 @@ grid_rise = fromIntegral units_per_inch * 9.75
 
 -- |Convenient way to make a Document.
 mkDocument :: Document a
-mkDocument = Document
-             { dRevised = "1/1/2009"
-             , dOrganizations = []
-             }
+mkDocument = Document { dRevised = "", dOrganizations = [] }
 
 -- |Deep sort the document and all organizations that are a part of it.
 sortDoc :: (Ord a)
@@ -108,13 +109,13 @@ sortDoc :: (Ord a)
   -> Document a -- ^An identical Document that has possibly been
                 -- rearranged.
 sortDoc d =
-    d { dOrganizations = map sortOrg $ 
-                         sort (dOrganizations d) }
+    d { dOrganizations = map sortOrg $ sort (dOrganizations d) }
         
 -- | Draw a Document on its own page.
-renderDoc :: forall a. (ShowLineItems a, Ord a)
-  => Document a      -- ^Document to append a page for.
-  -> String -> PDF()
+renderDoc :: (ShowLineItems a, Ord a)
+  => Document a -- ^Document to append a page for.
+  -> String     -- ^Subtitle
+  -> PDF()
 renderDoc d lbl= 
     let revised = toPDFString $ "Revised: " ++ dRevised d
         columns = flowCols (showLineItems $ dOrganizations d) 4
