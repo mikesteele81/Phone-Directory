@@ -349,10 +349,10 @@ tree2Doc tc = do
 -- only place where 'unsafeTreeCtrlGetItemClientData' should be called.
 treeItem2CI :: TreeCtrl a -> TreeItem -> WXError (ContactInfo Name)
 treeItem2CI tc itm = do
+    -- If this fails, it will probably raise a segmentation fault.
     ci <- liftIO $ unsafeTreeCtrlGetItemClientData tc itm
-    fromMaybe msg ci
-  where
-    msg = "Unable to retreive contact information from the tree heirarchy."
+    maybe (throwError "Tree node does not contain contact information")
+        return ci
 
 -- |Reset the GUI to a new file.
 new
