@@ -157,6 +157,18 @@ mainWindow = do
           m <- varGet modified
           set f [WX.text := title m fn]
 
+      checkConfirmUnsaved :: WXError () -> WXError ()
+      checkConfirmUnsaved op = do
+          m <- liftIO $ varGet modified
+          case m of
+            True -> do
+              confirmed <- liftIO $ confirmDialog f caption msg False
+              M.when confirmed op
+            False -> op
+        where
+          caption = "Unsaved Changes"
+          msg = "You have unsaved changes.  Are you sure you want to continue?"
+
       right2CI :: WXError (ContactInfo Name)
       right2CI = liftIO $ do
           firstName <- get eFirst    WX.text
@@ -217,7 +229,7 @@ mainWindow = do
 
   set mFile  [ WX.text := "&File"    ]
   set iNew   [ WX.text := "&New"
-             , on command := trapError $ do
+             , on command := trapError $ checkConfirmUnsaved $ do
                  -- TODO: What about an unsaved file?
                  new f tc defaultFile
                  liftIO $ varSet file defaultFile
@@ -244,6 +256,7 @@ mainWindow = do
                 M.when (doc /= doc') $ populateTree tc doc'
                 liftIO $ setModified False
             ]
+
   set iSaveAs
       [ WX.text := "Save &As..."
       , on command := do
