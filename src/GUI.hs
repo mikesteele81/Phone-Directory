@@ -312,19 +312,20 @@ mainWindow = do
 -- select the first non-root node.
 populateTree :: (Show b) => TreeCtrl a -> Document b -> WXError ()
 populateTree tc doc =
-    let addItem p itm = liftIO $ do
-          tc' <- treeCtrlAppendItem tc p (show itm) 0 0 objectNull
-          treeCtrlSetItemClientData tc tc' (return ()) itm
-          return tc'
-        populateOrg p org = do
-          orgTc <- addItem p $ oInfo org
-          mapM_ (addItem orgTc) $ oContacts org
-    in do
-      liftIO $ treeCtrlDeleteAllItems tc
-      root <- liftIO $ treeCtrlAddRoot tc "Organizations" 0 0 objectNull
-      mapM_ (populateOrg root) $ dOrganizations doc
-      liftIO $ treeCtrlExpand tc root
-      liftIO (treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc)
+    liftIO $ do
+        treeCtrlDeleteAllItems tc
+        root <- treeCtrlAddRoot tc "Organizations" 0 0 objectNull
+        mapM_ (populateOrg root) $ dOrganizations doc
+        treeCtrlExpand tc root
+        treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
+  where
+    addItem p itm = do
+        tc' <- treeCtrlAppendItem tc p (show itm) 0 0 objectNull
+        treeCtrlSetItemClientData tc tc' (return ()) itm
+        return tc'
+    populateOrg p org = do
+        orgTc <- addItem p $ oInfo org
+        mapM_ (addItem orgTc) $ oContacts org
 
 -- |Set the supplied frame's title bar based on the supplied file.
 title :: FilePath -> String
