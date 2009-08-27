@@ -121,11 +121,10 @@ mainWindow = do
                       "" -> liftIO $ treeCtrlDelete tc itm
                       _  -> return ()
  
-              case root == itm' of
-                True  -> clearDisableDetails
-                False -> treeItem2CI tc itm' >>= updateDetails
+              if root == itm' then clearDisableDetails
+                else treeItem2CI tc itm' >>= updateDetails
 
-              liftIO $ propagateEvent
+              liftIO propagateEvent
 
       onTreeEvent (TreeKeyDown _ (EventKey k _ _)) = do
         -- TreeKeyDown's item member doesn't hold anything.
@@ -160,11 +159,11 @@ mainWindow = do
       checkConfirmUnsaved :: WXError () -> WXError ()
       checkConfirmUnsaved op = do
           m <- liftIO $ varGet modified
-          case m of
-            True -> do
+          if m
+            then do
               confirmed <- liftIO $ confirmDialog f caption msg False
               M.when confirmed op
-            False -> op
+            else op
         where
           caption = "Unsaved Changes"
           msg = "You have unsaved changes.  Are you sure you want to continue?"
@@ -249,7 +248,7 @@ mainWindow = do
 
   set mFile  [ WX.text := "&File"]
   set iNew   [ WX.text := "&New"
-             , on command := trapError $ checkConfirmUnsaved $ new
+             , on command := trapError $ checkConfirmUnsaved new
              ]
 
   set iOpen
@@ -333,7 +332,7 @@ mainWindow = do
       ]
 
   -- the filename has already been set
-  trapError $ new
+  trapError new
 
   set f [ menuBar    := [mFile, mHelp]
         , layout     := WX.fill $ margin winPadding $ vsplit sw winPadding 200
@@ -381,8 +380,8 @@ tree2Doc tc = do
     orgs <- liftIO $ treeCtrlWithChildren tc root $ \itm ->
         wxerror $ do
             orgCI <- treeItem2CI tc itm
-            contacts <- liftIO $ treeCtrlWithChildren tc itm $
-                \itm' -> wxerror $ treeItem2CI tc itm'
+            contacts <- liftIO $ treeCtrlWithChildren tc itm
+                $ wxerror . treeItem2CI tc
             fromEither $ Organization orgCI <$> sequence contacts
     time <- liftIO getCurrentTime
     let (year, month, day) = toGregorian $ utctDay time
