@@ -111,7 +111,7 @@ mainWindow = do
   
   let
       onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' =
-          wxerror ( do
+          trapError $ do
               -- Delete non-root nodes without a name
               root <- liftIO $ treeCtrlGetRootItem tc
               M.when (root /= itm && treeItemIsOk itm) $ do
@@ -125,7 +125,6 @@ mainWindow = do
                 False -> treeItem2CI tc itm' >>= updateDetails
 
               liftIO $ propagateEvent
-          ) >>= trapError
 
       onTreeEvent (TreeKeyDown _ (EventKey k _ _)) = do
         -- TreeKeyDown's item member doesn't hold anything.
@@ -177,9 +176,10 @@ mainWindow = do
         set ePhone    [ enabled := False, WX.text := "" ]
         set ePriority [ enabled := False, WX.text := "" ]
 
-      trapError :: Either String () -> IO ()
-      trapError x =
-          case x of
+      trapError :: WXError a -> IO ()
+      trapError x = do
+          x' <- wxerror x
+          case x' of
               Left y -> errorDialog f "error" y
               Right _ -> return ()
 
@@ -203,33 +203,29 @@ mainWindow = do
 
   set mFile  [ WX.text := "&File"    ]
   set iNew   [ WX.text := "&New"
-             , on command := wxerror ( do
+             , on command := trapError $ do
                  -- TODO: What about an unsaved file?
                  new f tc defaultFile
-                 liftIO $ varSet file defaultFile) >>= trapError
+                 liftIO $ varSet file defaultFile
              ]
   set iOpen  [ WX.text := "&Open...", on command := do
       name <- fileOpenDialog f True True "Open phone directory"
           fileTypesSelection "" ""
       case name of
-          Just name' -> do
-              putStrLn $ "Opening " ++ name'
-              wxerror ( do
+          Just name' -> trapError $ do
                   doc <- load name'
                   populateTree tc doc
                   liftIO $ varSet file name'
                   liftIO $ set f [WX.text := title name']
-                  ) >>= trapError
           Nothing -> return ()
              ]
   set iSave [ WX.text := "&Save"
-            , on command := wxerror ( do
-                    doc <- tree2Doc tc
-                    file' <- liftIO $ varGet file
-                    let doc' = sortDoc doc
-                    save file' doc'
-                    M.when (doc /= doc') $ populateTree tc doc'
-                ) >>= trapError
+            , on command := trapError $ do
+                doc <- tree2Doc tc
+                file' <- liftIO $ varGet file
+                let doc' = sortDoc doc
+                save file' doc'
+                M.when (doc /= doc') $ populateTree tc doc'
             ]
   set iSaveAs
       [ WX.text := "Save &As..."
@@ -237,14 +233,13 @@ mainWindow = do
           name <- fileSaveDialog f True True "Save phone directory"
                   fileTypesSelection "" ""
           case name of
-            Just name' -> wxerror ( do
-                  doc' <- tree2Doc tc
-                  let doc'' = sortDoc doc'
-                  save name' doc''
-                  M.when (doc' /= doc'') $ populateTree tc doc''
-                  liftIO $ varSet file name'
-                  liftIO $ set f [WX.text := title name']
-              ) >>= trapError
+            Just name' -> trapError $ do
+                doc <- tree2Doc tc
+                let doc' = sortDoc doc
+                save name' doc'
+                M.when (doc /= doc') $ populateTree tc doc'
+                liftIO $ varSet file name'
+                liftIO $ set f [WX.text := title name']
             Nothing -> return ()
       ]
 
@@ -254,11 +249,9 @@ mainWindow = do
           name <- fileSaveDialog f True True "Export phone directory"
                   exportTypesSelection "" ""
           case name of
-            Just name' ->
-              wxerror ( do
-                  doc <- tree2Doc tc
-                  liftIO $ generate doc name'
-              ) >>= trapError
+            Just name' -> trapError $ do
+                doc <- tree2Doc tc
+                liftIO $ generate doc name'
             Nothing -> return ()
       ]
 
@@ -266,23 +259,23 @@ mainWindow = do
   set iAbout [ on command := infoDialog f "About Phone Directory" aboutTxt ]
 
   set eFirst    [ processEnter := True
-                , on command   := wxerror (commitStringInput eFirst False) >>= trapError
-                , on focus     := \x -> wxerror (commitStringInput eFirst x) >>= trapError
+                , on command   := trapError $ commitStringInput eFirst False
+                , on focus     := trapError . commitStringInput eFirst
                 , tooltip := "Enter the contact's first name.  If the contact \
                              \only goes by a single name, enter it either \
                              \here or in the last name field."]
   set eLast     [ processEnter := True
-                , on command   := wxerror (commitStringInput eLast False) >>= trapError
-                , on focus     := \x -> wxerror (commitStringInput eLast x) >>= trapError
+                , on command   := trapError $ commitStringInput eLast False
+                , on focus     := trapError . commitStringInput eLast
                 , tooltip := "Enter the contact's last name.  If the contact \
                              \only goes by a single name, enter it either \
                              \here or in the first name field."]
   set ePhone    [ processEnter := True
-                , on command   := wxerror (commitStringInput ePhone False) >>= trapError
-                , on focus     := \x -> wxerror (commitStringInput ePhone x) >>= trapError
+                , on command   := trapError $ commitStringInput ePhone False
+                , on focus     := trapError . commitStringInput ePhone
                 , tooltip := "Enter thecontact's phone number." ]
-  set ePriority [ on select := wxerror (commitPriorityInput ePriority False) >>= trapError
-                , on focus  := \x -> wxerror (commitPriorityInput ePriority x) >>= trapError
+  set ePriority [ on select := trapError $ commitPriorityInput ePriority False
+                , on focus  := trapError . commitPriorityInput ePriority
                 , tooltip := "Low values will sort before contacts with \
                              \higher values." ]
 
@@ -298,7 +291,7 @@ mainWindow = do
       ]
 
   -- the filename has already been set
-  wxerror (liftIO (varGet file) >>= new f tc) >>= trapError
+  trapError $ liftIO (varGet file) >>= new f tc
 
   set f [ menuBar    := [mFile, mHelp]
         , layout     := WX.fill $ margin winPadding $ vsplit sw winPadding 200
