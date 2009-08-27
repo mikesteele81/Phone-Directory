@@ -229,6 +229,7 @@ mainWindow = do
 
       new :: WXError ()
       new = do
+          -- this prevents events from firing.
           clearDisableDetails
           populateTree tc (mkDocument :: Document Name)
           liftIO $ do
@@ -236,23 +237,28 @@ mainWindow = do
               setModified False
               windowSetFocus tc
 
+      open :: FilePath -> WXError ()
+      open fp = do
+          doc <- loadDoc fp
+          -- this prevents events from firing.
+          clearDisableDetails
+          populateTree tc doc
+          liftIO $ do
+              varSet file fp
+              setModified False
+
   set mFile  [ WX.text := "&File"]
   set iNew   [ WX.text := "&New"
              , on command := trapError $ checkConfirmUnsaved $ new
              ]
 
-  set iOpen  [ WX.text := "&Open...", on command := do
-      name <- fileOpenDialog f True True "Open phone directory"
-          fileTypesSelection "" ""
-      case name of
-          Just name' -> trapError $ do
-                  doc <- load name'
-                  populateTree tc doc
-                  liftIO $ do
-                      varSet file name'
-                      setModified False
-          Nothing -> return ()
-             ]
+  set iOpen
+      [ WX.text := "&Open..."
+      , on command := trapError $ checkConfirmUnsaved $ do
+          name <- liftIO $ fileOpenDialog f True True "Open phone directory"
+              fileTypesSelection "" ""
+          maybe (return ()) open name
+      ]
 
   set iSave [ WX.text := "&Save"
             , on command := trapError $ do
@@ -400,8 +406,8 @@ save fp doc =
     msg = "Failed to save directory to " ++ fp ++ ":\n"
 
 -- |Attempt to load a document from the supplied file.
-load :: FilePath -> WXError (Document (ContactInfo Name))
-load fp = ( do
+loadDoc :: FilePath -> WXError (Document (ContactInfo Name))
+loadDoc fp = ( do
         s <- liftIO $ readFile fp
         fromJSONResult $ decodeStrict s >>= readJSON
     ) `catchError` (throwError . (msg ++))
