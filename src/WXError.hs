@@ -19,9 +19,18 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module WXError where
+module WXError
+    ( WXError(..)
+    , fromEither
+    , fromIO
+    , fromJSONResult
+    , fromMaybe
+    , wxerror
+    , module Control.Monad.Trans
+    ) where
 
 import Control.Monad.Error
+import Control.Monad.Trans
 import Text.JSON
 import System.IO.Error (try)
 

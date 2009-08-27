@@ -21,6 +21,7 @@ module GUI
 
 import Control.Applicative
 import Control.Monad as M
+import Control.Monad.Error (catchError, throwError)
 import Data.Char
 import qualified Data.Function as F (on)
 import Data.List
@@ -378,11 +379,13 @@ save fp =
 
 -- |Attempt to load a document from the supplied file.
 load :: FilePath -> WXError (Document (ContactInfo Name))
-load fp = do
-    s <- fromIO (Just msg) $ readFile fp
-    fromJSONResult $ decodeStrict s >>= readJSON
+load fp =
+    ( do
+        s <- liftIO $ readFile fp
+        fromJSONResult $ decodeStrict s >>= readJSON
+    ) `catchError` (throwError . (msg ++))
   where
-    msg = "Something went wrong while loading " ++ fp ++ "."
+    msg = "Failed to load " ++ fp ++ ":\n"
 
 -- |Combinator that lays out the first argument directly over the second.
 labeled :: String -- ^Label to use.
