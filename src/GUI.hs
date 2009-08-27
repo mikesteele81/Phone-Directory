@@ -297,7 +297,7 @@ mainWindow = do
             Nothing -> return ()
       ]
 
-  set iQuit  [ on command := close f ]
+  set iQuit  [ on command := trapError $ checkConfirmUnsaved $ liftIO $ close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" aboutTxt ]
 
   set eFirst    [ processEnter := True
