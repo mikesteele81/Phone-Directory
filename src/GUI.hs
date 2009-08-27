@@ -205,8 +205,8 @@ mainWindow = do
   set iNew   [ WX.text := "&New"
              , on command := wxerror ( do
                  -- TODO: What about an unsaved file?
-                 liftIO $ varSet file defaultFile
-                 new f tc defaultFile) >>= trapError
+                 new f tc defaultFile
+                 liftIO $ varSet file defaultFile) >>= trapError
              ]
   set iOpen  [ WX.text := "&Open...", on command := do
       name <- fileOpenDialog f True True "Open phone directory"
