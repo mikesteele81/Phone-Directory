@@ -35,7 +35,7 @@ import Text.JSON
 import System.IO.Error (try)
 
 newtype WXError a = WXError { runWXError :: ErrorT String IO a }
-    deriving (Functor, Monad, MonadIO)
+    deriving (Functor, Monad)
 
 instance MonadError String WXError where
     throwError = WXError . throwError
@@ -44,6 +44,10 @@ instance MonadError String WXError where
         case a of
             Left l  -> runErrorT (runWXError $ h l)
             Right r -> return (Right r)
+
+-- |Redirect all IO exceptions into the normal error stream.
+instance MonadIO WXError where
+    liftIO a = WXError $ liftIO (try a) >>= either (throwError . show) return
 
 wxerror :: WXError a -> IO (Either String a)
 wxerror = runErrorT . runWXError

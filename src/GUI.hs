@@ -371,16 +371,15 @@ new f tc fn = do
 
 -- |Save the supplied document to a file.
 save :: FilePath -> Document (ContactInfo Name) -> WXError ()
-save fp =
-  let
-    msg = "Something went wrong while saving " ++ fp ++ "."
-  in
-    fromIO (Just msg) . writeFile fp . show . pp_value . showJSON
+save fp doc =
+    (liftIO . writeFile fp . show . pp_value . showJSON $ doc)
+    `catchError` (throwError . (msg ++))
+  where
+    msg = "Failed to save directory to " ++ fp ++ ":\n"
 
 -- |Attempt to load a document from the supplied file.
 load :: FilePath -> WXError (Document (ContactInfo Name))
-load fp =
-    ( do
+load fp = ( do
         s <- liftIO $ readFile fp
         fromJSONResult $ decodeStrict s >>= readJSON
     ) `catchError` (throwError . (msg ++))
