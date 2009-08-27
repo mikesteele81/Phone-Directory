@@ -227,14 +227,20 @@ mainWindow = do
           liftIO $ set ctrl [ selection :~ fromEnum . mkPriority ]
           handleFocus hasFocus
 
-  set mFile  [ WX.text := "&File"    ]
+      new :: WXError ()
+      new = do
+          clearDisableDetails
+          populateTree tc (mkDocument :: Document Name)
+          liftIO $ do
+              varSet file defaultFile
+              setModified False
+              windowSetFocus tc
+
+  set mFile  [ WX.text := "&File"]
   set iNew   [ WX.text := "&New"
-             , on command := trapError $ checkConfirmUnsaved $ do
-                 -- TODO: What about an unsaved file?
-                 new f tc defaultFile
-                 liftIO $ varSet file defaultFile
-                 liftIO $ setModified False
+             , on command := trapError $ checkConfirmUnsaved $ new
              ]
+
   set iOpen  [ WX.text := "&Open...", on command := do
       name <- fileOpenDialog f True True "Open phone directory"
           fileTypesSelection "" ""
@@ -247,6 +253,7 @@ mainWindow = do
                       setModified False
           Nothing -> return ()
              ]
+
   set iSave [ WX.text := "&Save"
             , on command := trapError $ do
                 doc <- tree2Doc tc
@@ -320,7 +327,7 @@ mainWindow = do
       ]
 
   -- the filename has already been set
-  trapError $ liftIO (varGet file) >>= new f tc
+  trapError $ new
 
   set f [ menuBar    := [mFile, mHelp]
         , layout     := WX.fill $ margin winPadding $ vsplit sw winPadding 200
@@ -383,16 +390,6 @@ treeItem2CI tc itm = do
     -- If this fails, it will probably raise a segmentation fault.
     ci <- liftIO $ unsafeTreeCtrlGetItemClientData tc itm
     fromMaybe "Tree node does not contain contact information" ci
-
--- |Reset the GUI to a new file.
-new
-    :: Frame a     -- ^ Window with a title needing to be
-    -> TreeCtrl a  -- ^ Main window's tree control.  This will be cleared.
-    -> String      -- ^ Filename
-    -> WXError ()
-new f tc fn = do
-    populateTree tc (mkDocument :: Document Name)
-    liftIO $ set f [WX.text := title False fn]
 
 -- |Save the supplied document to a file.
 save :: FilePath -> Document (ContactInfo Name) -> WXError ()
