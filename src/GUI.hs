@@ -331,6 +331,7 @@ mainWindow = do
   trapError new
 
   set f [ menuBar    := [mFile, mHelp]
+        , picture    := "data/images/pdirectory.ico"
         , layout     := WX.fill $ margin winPadding $ vsplit sw winPadding 200
                         (widget pLeft) (widget pRight)
         , clientSize := sz 640 480
