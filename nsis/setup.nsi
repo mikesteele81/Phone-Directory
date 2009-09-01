@@ -69,6 +69,10 @@ Section "-Main Program" SecMain
   File "pdirectory.exe"
   File "..\LICENSE.txt"
   File "..\README.txt"
+
+  SetOutPath "$INSTDIR\data\images\"
+
+  File "..\data\images\pdirectory.ico"
   
   ;Store installation folder
   WriteRegStr HKCU "Software\Phone Directory" "" $INSTDIR
@@ -114,6 +118,11 @@ Section "Uninstall"
   Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\README.txt"
   Delete "$INSTDIR\Uninstall.exe"
+
+  Delete "$INSTDIR\data\images\pdirectory.ico"
+
+  RMDir "$INSTDIR\data\images"
+  RMDir "$INSTDIR\data"
 
   RMDir "$INSTDIR"
 
