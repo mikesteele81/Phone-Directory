@@ -1,16 +1,34 @@
 Name:           PhoneDirectory
 Version:        0.1
-Category:       Utils
-Description:    Create a nicely formatted .pdf of a sorted list of contacts.
+Cabal-Version:  >=1.6
+Build-Type:     Simple
 License:        GPL
 License-file:   LICENSE.txt
+Copyright:      (C) 2009 Michael Steele
 Author:			Michael Steele <mikesteele81@gmail.com>
 Maintainer:		Michael Steele <mikesteele81@gmail.com>
-Build-Type:     Simple
-Cabal-Version:  >=1.2
-Executable:     pdirectory
-Build-Depends:  base, filepath, HPDF >= 1.4, json >= 0.4, mtl, time,
-                wx, wxcore
-Main-Is:        Main.hs
-hs-source-dirs: src
-ghc-options:    -Wall -O2
+Stability:      provisional
+Homepage:       http://www.michaelsteele.us/phonedirectory/
+Bug-Reports:    http://github.com/mikesteele81/Phone-Directory/issues/
+Synopsis:       Create a nicely formatted list of contacts.
+Description:
+  PhoneDirectory is an application used to create a nicely formatted 2-page
+  .pdf file representing a list of contact names and numbers.  It features a
+  simple GUI interface that makes adding, changing, or deleting information
+  easy.
+Category:       Utils
+Data-Files:     data/images/*.ico
+
+Executable pdirectory
+  Build-Depends:
+    base,
+    filepath,
+    HPDF >= 1.4,
+    json >= 0.4,
+    mtl,
+    time,
+    wx,
+    wxcore
+  Main-Is:        Main.hs
+  hs-source-dirs: src
+  ghc-options:    -Wall -O2
