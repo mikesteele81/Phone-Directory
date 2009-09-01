@@ -35,6 +35,24 @@ At this point you can either execute `cabal install`, but if you are using
 Windows the best thing would be to generate an installer from the 'nsis'
 folder.
 
+Preparing an installer for Windows
+----------------------------------
+
+Currently cabal has some limitations in what can be done, so there are a few
+manual steps that must be followed to create an installer.
+
+running 'cabal build' will compile the application, but doesn't know how to
+insert the icon resource into the executable:
+
+    windres.exe "data/images/icon.rc" "src/icon.o"
+    cd src
+    ghc --make Main.hs icon.o
+    strip -s Main.exe
+    move Main.exe "../dist/build/pdirectory/pdirectory.exe"
+
+Now that this is done, you can execute the NSIS installer script from the nsis
+folder.
+
 Installing from a Windows binary
 --------------------------------
 
