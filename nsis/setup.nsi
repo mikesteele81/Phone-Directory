@@ -129,6 +129,7 @@ Section "Uninstall"
   !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
     
   Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
+  Delete "$SMPROGRAMS\$StartMenuFolder\Phone Directory.lnk"
   RMDir "$SMPROGRAMS\$StartMenuFolder"
 
   DeleteRegKey /ifempty HKCU "Software\Phone Directory"

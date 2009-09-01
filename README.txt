@@ -46,7 +46,7 @@ insert the icon resource into the executable:
 
     windres.exe "data/images/icon.rc" "src/icon.o"
     cd src
-    ghc --make Main.hs icon.o
+    ghc --make Main.hs icon.o -optl-mwindows
     strip -s Main.exe
     move Main.exe "../dist/build/pdirectory/pdirectory.exe"
 
