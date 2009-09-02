@@ -17,7 +17,7 @@
 
 module LineItem where
 
-import Control.Monad.Cont
+import Control.Monad (foldM)
 import Data.List
 import Graphics.PDF
 
@@ -76,7 +76,7 @@ mkLabelValue i l r = LineItem (toPDFString l) (toPDFString r) i
 
 instance Drawable LineItem where
     draw (x :+ y) (LineItem l r i) = do
-        lift . drawText $ do
+        drawText $ do
             textStart (x + col_padding) y'
             setFont font_normal
             textStart offset 0
@@ -90,7 +90,7 @@ instance Drawable LineItem where
         y'     = y - line_item_leading
 
     draw (x :+ y) Divider = do
-        lift $ stroke (Line x y' (x + col_width) y')
+        stroke (Line x y' (x + col_width) y')
         return $ x :+ y'
       where
         y' = y - line_item_leading
@@ -100,7 +100,7 @@ instance Drawable LineItem where
 instance Drawable Column where
     draw p@(x :+ y) (Column lx) = do
         (_ :+ y') <- foldM draw p $ columnHeading ++ lx ++ [Blank]
-        lift . stroke $ Rectangle p (x' :+ y')
+        stroke $ Rectangle p (x' :+ y')
         return (x' :+ y)
       where
         x' = x + col_width

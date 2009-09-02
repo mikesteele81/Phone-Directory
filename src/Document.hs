@@ -22,7 +22,7 @@ module Document
     , sortDoc
     ) where
 
-import Control.Monad.Cont
+import Control.Monad (foldM_)
 import Data.List (sort)
 import Graphics.PDF
 import Text.JSON
@@ -125,5 +125,4 @@ renderDoc d lbl=
          drawText $ text fontTitle titleInset titleRise titleString
          drawText $ text fontSubtitle dateInset dateRise revised
          drawText $ text fontSubtitle modeInset modeRise $ toPDFString lbl
-         runContT (foldM draw (pageMargin :+ grid_rise) columns) return
-         return ()
+         foldM_ draw (pageMargin :+ grid_rise) columns
