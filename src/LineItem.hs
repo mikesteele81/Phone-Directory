@@ -17,7 +17,7 @@
 
 module LineItem where
 
-import Control.Monad.Reader
+import Control.Monad.Cont
 import Data.List
 import Graphics.PDF
 
@@ -75,40 +75,35 @@ mkLabelValue :: Bool     -- ^Indent?
 mkLabelValue i l r = LineItem (toPDFString l) (toPDFString r) i
 
 instance Drawable LineItem where
-    draw (LineItem l r i) =  
-      let offset = if i then line_item_indent else 0.0
-      in do
-        (x :+ y) <- ask
-        lift $ drawText $ do
-            textStart (x + col_padding) (y - line_item_leading)
+    draw (x :+ y) (LineItem l r i) = do
+        lift . drawText $ do
+            textStart (x + col_padding) y'
             setFont font_normal
             textStart offset 0
             displayText l
             textStart (line_item_width - textWidth font_normal r - offset) 0
             displayText r
             textStart (textWidth font_normal r - line_item_width) 0
-        return (x :+ (y - line_item_leading))
+        return (x :+ y')
+      where
+        offset = if i then line_item_indent else 0.0
+        y'     = y - line_item_leading
 
-    -- Horizontal line along the bottom of the drawing area.
-    draw Divider = do
-        (x :+ y) <- ask
-        let x' = x + col_width
-            y' = y - line_item_leading
-        lift $ stroke (Line x y' x' y')
-        return (x :+ (y - line_item_leading))
+    draw (x :+ y) Divider = do
+        lift $ stroke (Line x y' (x + col_width) y')
+        return $ x :+ y'
+      where
+        y' = y - line_item_leading
 
-    -- Only used to fill the last column.
-    draw Blank = asks (+(0 :+ (-line_item_leading)))
+    draw (x :+ y) Blank = return $ x :+ (y - line_item_leading)
 
 instance Drawable Column where
-    draw (Column lx) =
-      let op a = local (const a) . draw
-      in do
-        p@(x :+ y) <- ask
-        (_ :+ y') <- foldM op p $ columnHeading ++ lx ++ [Blank]
-        let x' = x + col_width
-        lift $ stroke $ Rectangle p (x' :+ y')
+    draw p@(x :+ y) (Column lx) = do
+        (_ :+ y') <- foldM draw p $ columnHeading ++ lx ++ [Blank]
+        lift . stroke $ Rectangle p (x' :+ y')
         return (x' :+ y)
+      where
+        x' = x + col_width
 
 -- |This gets prepended to every Column before being drawn.
 columnHeading :: [LineItem]

@@ -22,7 +22,7 @@ module Document
     , sortDoc
     ) where
 
-import Control.Monad.Reader
+import Control.Monad.Cont
 import Data.List (sort)
 import Graphics.PDF
 import Text.JSON
@@ -119,12 +119,11 @@ renderDoc :: (ShowLineItems a, Ord a)
 renderDoc d lbl= 
     let revised = toPDFString $ "Revised: " ++ dRevised d
         columns = flowCols (showLineItems $ dOrganizations d) 4
-        op coord col = runReaderT (draw col) coord
     in do
       p <- addPage Nothing
       drawWithPage p $ do
          drawText $ text fontTitle titleInset titleRise titleString
          drawText $ text fontSubtitle dateInset dateRise revised
          drawText $ text fontSubtitle modeInset modeRise $ toPDFString lbl
-         foldM_ op (pageMargin :+ grid_rise) columns
+         runContT (foldM draw (pageMargin :+ grid_rise) columns) return
          return ()
