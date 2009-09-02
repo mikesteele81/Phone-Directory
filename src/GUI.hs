@@ -317,10 +317,17 @@ mainWindow = do
                              \higher values." ]
 
   set tc [ on treeEvent := onTreeEvent ]
-  
+
+  set f [ menuBar    := [mFile, mHelp]
+        , picture    := "data/images/pdirectory.ico"
+        , layout     := WX.fill $ margin winPadding $ vsplit sw winPadding 200
+                        (widget pLeft) (widget pRight)
+        , clientSize := sz 640 480
+        ]
+
   set pLeft [ layout := WX.fill $ widget tc ]
   set pRight
-      [ layout := margin winPadding $ column ctrlPadding
+      [ layout := column ctrlPadding
           [ labeled "First Name:"   $ widget eFirst
           , labeled "Last Name:"    $ widget eLast
           , labeled "Phone Number:" $ widget ePhone
@@ -329,13 +336,6 @@ mainWindow = do
 
   -- the filename has already been set
   trapError new
-
-  set f [ menuBar    := [mFile, mHelp]
-        , picture    := "data/images/pdirectory.ico"
-        , layout     := WX.fill $ margin winPadding $ vsplit sw winPadding 200
-                        (widget pLeft) (widget pRight)
-        , clientSize := sz 640 480
-        ]
 
   windowSetFocus tc
 
