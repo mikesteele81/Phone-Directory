@@ -80,8 +80,8 @@ aboutTxt =
     \included license file for details."
 
 -- |Build the main window and start the event loop.
-mainWindow :: IO ()
-mainWindow = do
+mainWindow :: Maybe String -> IO ()
+mainWindow filename = do
   file     <- varCreate defaultFile
   modified <- varCreate False
 
@@ -334,10 +334,13 @@ mainWindow = do
           , labeled "Priority:"     $ widget ePriority ]
       ]
 
-  -- the filename has already been set
+  --name has already been set.  make a new one in case opening a file fails.
   trapError new
-
   windowSetFocus tc
+
+  case filename of
+      Nothing -> return ()
+      Just fn -> trapError $ open fn
 
 -- |Scrap and rebuild the heirarchical tree.  Once this is done, expand it and
 -- select the first non-root node.

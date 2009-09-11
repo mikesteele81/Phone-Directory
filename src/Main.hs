@@ -42,8 +42,8 @@ main :: IO ()
 main = do
     opts <- getArgs >>= parseOpts
     case action opts of
-        MakeNew -> start mainWindow
-        Open    -> start mainWindow
+        MakeNew -> start $ mainWindow Nothing
+        Open    -> start $ mainWindow $ Just (file opts)
 
 parseOpts :: [String] -> IO Options
 parseOpts argv =
