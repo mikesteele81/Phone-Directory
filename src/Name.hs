@@ -25,9 +25,7 @@ module Name
     ) where
 
 import Control.Applicative
-import Data.Char (toLower)
 import Data.Monoid
-import Data.Ord (comparing)
 import Text.JSON
 import Text.JSON.Pretty (pp_value)
 
