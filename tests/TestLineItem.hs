@@ -53,10 +53,10 @@ prop_name_and_fsn_produce_same_json n = True ==> n' == fsn
     n' = show . showJSON $ n
     fsn = show . showJSON . FirstSortedName $ n
 
-prop_reflective_json_name :: Name -> Property
-prop_reflective_json_name n
+prop_reflective_json :: (JSON x, Eq x) => x -> Property
+prop_reflective_json x
     = True
-    ==> (readJSON . showJSON $ n) == return n
+    ==> (readJSON . showJSON $ x) == return x
 
 main :: IO ()
 main = do
@@ -71,7 +71,13 @@ main = do
       \the same JSON representation."
   quickCheck prop_name_and_fsn_produce_same_json
   putStrLn "Name: Names should have reflective JSON instances."
-  quickCheck prop_reflective_json_name
+  quickCheck (prop_reflective_json :: Name -> Property)
+
+  putStrLn "Priority: should have reflective JSON instances."
+  quickCheck (prop_reflective_json :: Priority -> Property)
+
+  putStrLn "ContactInfo: should have reflective JSON instances."
+  quickCheck (prop_reflective_json :: ContactInfo Name -> Property)
 
 instance Arbitrary Char where
   arbitrary = chr `fmap` oneof [choose (65, 90), choose (97, 122)]

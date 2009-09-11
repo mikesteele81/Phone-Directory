@@ -27,7 +27,8 @@ import Control.Monad
 import Text.JSON
 
 newtype Priority = Priority Int
-    deriving (Enum, Eq, Ord)
+    -- the Show instance is only for QC properties
+    deriving (Enum, Eq, Ord, Show)
 
 instance Bounded Priority where
     minBound = Priority 0
