@@ -107,7 +107,7 @@ instance Drawable Column where
 
 -- |This gets prepended to every Column before being drawn.
 columnHeading :: [LineItem]
-columnHeading = [mkLabelValue True "User Name" "Phone No.", Divider]
+columnHeading = [mkLabelValue True "Name" "Phone Number", Divider]
 
 -- | Flow a single column into multiple columns of equal height.  This
 -- certainly has bugs in it.

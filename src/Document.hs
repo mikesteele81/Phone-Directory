@@ -69,9 +69,12 @@ fontSubtitle = PDFFont Helvetica 10
 pageMargin :: PDFFloat
 pageMargin = fromIntegral units_per_inch / 4.0
 
+pageWidth :: PDFFloat
+pageWidth = fromIntegral units_per_inch * 8.5
+
 -- |Distance from left edge to draw the title.
 titleInset :: PDFFloat
-titleInset = fromIntegral units_per_inch * 1.75
+titleInset = (pageWidth - titleWidth) / 2.0
 
 -- |Distance from bottom edge to draw the title.
 titleRise :: PDFFloat
@@ -80,24 +83,23 @@ titleRise = fromIntegral units_per_inch * 10.5
 titleString :: PDFString
 titleString = toPDFString "PHONE DIRECTORY"
 
+titleWidth :: PDFFloat
+titleWidth = textWidth fontTitle titleString
+
 -- |Distance from left edge to draw the date string.
 dateInset :: PDFFloat
 dateInset = pageMargin + fromIntegral units_per_inch / 16.0
 
 -- |Distance from bottom edge to draw the date string.
 dateRise :: PDFFloat
-dateRise = fromIntegral units_per_inch * 10.0
-
--- |Distance from left edge to draw the sort specifier.
-modeInset :: PDFFloat
-modeInset = titleInset
+dateRise = fromIntegral units_per_inch * 10.35
 
 -- |Distance from bottom edge to draw the sort specifier.
 modeRise :: PDFFloat
 modeRise = dateRise
 
-grid_rise :: PDFFloat
-grid_rise = fromIntegral units_per_inch * 9.75
+gridRise :: PDFFloat
+gridRise = fromIntegral units_per_inch * 10.25
 
 -- |Convenient way to make a Document.
 mkDocument :: Document a
@@ -119,10 +121,12 @@ renderDoc :: (ShowLineItems a, Ord a)
 renderDoc d lbl= 
     let revised = toPDFString $ "Revised: " ++ dRevised d
         columns = flowCols (showLineItems $ dOrganizations d) 4
+        lbl' = toPDFString lbl
+        lblInset = (pageWidth - textWidth fontSubtitle lbl') / 2.0
     in do
       p <- addPage Nothing
       drawWithPage p $ do
-         drawText $ text fontTitle titleInset titleRise titleString
-         drawText $ text fontSubtitle dateInset dateRise revised
-         drawText $ text fontSubtitle modeInset modeRise $ toPDFString lbl
-         foldM_ draw (pageMargin :+ grid_rise) columns
+         drawText $ text fontTitle    titleInset titleRise titleString
+         drawText $ text fontSubtitle dateInset  dateRise  revised
+         drawText $ text fontSubtitle lblInset   modeRise  lbl'
+         foldM_ draw (pageMargin :+ gridRise) columns
