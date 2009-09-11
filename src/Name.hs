@@ -60,17 +60,17 @@ instance Show Name where
 instance Ord Name where
     compare (FirstLast fl ll) (FirstLast fr lr) =
        compare ll lr `mappend` compare fl fr
-    compare (FirstLast _ l) (SingleName n) = compare l n
-    compare (SingleName n) (FirstLast _ l) = compare n l
+    compare (FirstLast _ l) (SingleName n) = compare l n `mappend` GT
+    compare (SingleName n) (FirstLast _ l) = compare n l `mappend` LT
     compare (SingleName l) (SingleName r) = compare l r
 
 instance Ord FirstSortedName where
     compare (FirstSortedName (FirstLast fl ll)) (FirstSortedName (FirstLast fr lr)) =
         compare fl fr `mappend` compare ll lr
     compare (FirstSortedName (FirstLast f _)) (FirstSortedName (SingleName n)) =
-        compare f n
+        compare f n `mappend` GT
     compare (FirstSortedName (SingleName n)) (FirstSortedName (FirstLast f _)) =
-        compare n f
+        compare n f `mappend` LT
     compare (FirstSortedName (SingleName l)) (FirstSortedName (SingleName r)) =
         compare l r
 
