@@ -1,11 +1,7 @@
-;NSIS Modern User Interface
-;Basic Example Script
-;Written by Joost Verburg
-
-;--------------------------------
-;Include Modern UI
-
+;Includes
+  
   !include "MUI2.nsh"
+  !include "FileAssociation.nsh"
 
 ;--------------------------------
 ;General
@@ -81,6 +77,8 @@ Section "-Main Program" SecMain
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
+  ${registerExtension} "$INSTDIR\pdirectory.exe -o" ".pdir" "Phone Directory"
+
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
     
     ;Create shortcuts
@@ -127,6 +125,8 @@ Section "Uninstall"
   RMDir "$INSTDIR\data"
 
   RMDir "$INSTDIR"
+
+  ${unregisterExtension} ".pdir" "Phone Directory"
 
   !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
     
