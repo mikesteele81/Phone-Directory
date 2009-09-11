@@ -18,8 +18,37 @@
 module Main where
 
 import Graphics.UI.WX (start)
+import System.Console.GetOpt
+import System.Environment (getArgs)
 
 import GUI
 
+data Action = MakeNew | Open
+
+data Options = Options
+    { file :: String
+    , action :: Action }
+
+defaultOptions :: Options
+defaultOptions = Options "" MakeNew
+
+options :: [OptDescr (Options -> Options)]
+options =
+    [ Option "o" ["open"] (ReqArg (\f opts -> opts {file = f, action = Open})
+        "FILE") "open FILE"
+    ]
+
 main :: IO ()
-main = start mainWindow
+main = do
+    opts <- getArgs >>= parseOpts
+    case action opts of
+        MakeNew -> start mainWindow
+        Open    -> start mainWindow
+
+parseOpts :: [String] -> IO Options
+parseOpts argv =
+    case getOpt Permute options argv of
+        (o, [], []) -> return $ foldl (flip id) defaultOptions o
+        (_, _, errs) -> ioError (userError (concat errs ++ usageInfo header options))
+  where
+    header = "Usage: main [OPTION...]"
