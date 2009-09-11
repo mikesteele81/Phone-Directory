@@ -25,9 +25,11 @@ module Name
     ) where
 
 import Control.Applicative
-import Data.Char           ( toLower )
+import Data.Char (toLower)
+import Data.Monoid
+import Data.Ord (comparing)
 import Text.JSON
-import Text.JSON.Pretty    ( pp_value )
+import Text.JSON.Pretty (pp_value)
 
 -- |A contact's name. This sorts by last name and prints out as 'Last,
 -- First'.
@@ -55,28 +57,23 @@ instance Show Name where
           FirstLast f l -> l ++ ", " ++ f
           SingleName sn -> sn
 
--- |This class is a hack to simplify the sorting of names.
-class ShowForSorting a where
-    showForSorting :: a -> String
-    
-instance ShowForSorting FirstSortedName where
-    showForSorting (FirstSortedName n) =
-        case n of
-          FirstLast f l -> map toLower $ f ++ l
-          _             -> showForSorting n
-          
-instance ShowForSorting Name where
-    showForSorting n =
-        case n of
-          FirstLast f l -> map toLower $ l ++ f
-          SingleName sn -> map toLower sn
-
 instance Ord Name where
-    compare l r = compare (showForSorting l) (showForSorting r)
+    compare (FirstLast fl ll) (FirstLast fr lr) =
+       compare ll lr `mappend` compare fl fr
+    compare (FirstLast _ l) (SingleName n) = compare l n
+    compare (SingleName n) (FirstLast _ l) = compare n l
+    compare (SingleName l) (SingleName r) = compare l r
 
 instance Ord FirstSortedName where
-    compare l r = compare (showForSorting l) (showForSorting r)
-    
+    compare (FirstSortedName (FirstLast fl ll)) (FirstSortedName (FirstLast fr lr)) =
+        compare fl fr `mappend` compare ll lr
+    compare (FirstSortedName (FirstLast f _)) (FirstSortedName (SingleName n)) =
+        compare f n
+    compare (FirstSortedName (SingleName n)) (FirstSortedName (FirstLast f _)) =
+        compare n f
+    compare (FirstSortedName (SingleName l)) (FirstSortedName (SingleName r)) =
+        compare l r
+
 instance JSON Name where
     readJSON v@(JSObject o) =
         (FirstLast <$> valFromObj "first" o <*> valFromObj "last" o)
