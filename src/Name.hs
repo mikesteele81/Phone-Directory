@@ -16,6 +16,8 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Name
     ( Name            ( FirstLast, SingleName)
     , FirstSortedName ( FirstSortedName )
@@ -38,8 +40,8 @@ data Name
   deriving (Eq)
 
 -- |This prints out 'First Last' and sorts by first name.
-newtype FirstSortedName = FirstSortedName { unFirstSortedName :: Name }
-    deriving (Eq)
+newtype FirstSortedName = FirstSortedName Name
+    deriving (Eq, JSON)
 
 instance Show FirstSortedName where
     show (FirstSortedName n) =
@@ -85,10 +87,6 @@ instance JSON Name where
         FirstLast f l -> makeObj [ ("first", showJSON f), ("last" , showJSON l) ]
         SingleName sn -> showJSON sn
                    
-instance JSON FirstSortedName where
-    readJSON n = FirstSortedName <$> readJSON n
-    showJSON   = showJSON . unFirstSortedName
-
 -- |Convencience function to create a name from two strings.
 mkName :: String -- ^First name or blank.
     -> String    -- ^Last name or blank.

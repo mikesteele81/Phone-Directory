@@ -20,9 +20,11 @@ module TestLineItem
 
 import Control.Monad
 import Data.Char (chr)
+import Data.Function (on)
 import Data.List (nub)
 import Graphics.PDF
 import Test.QuickCheck
+import Text.JSON
 import Text.Regex.Posix
 
 import ContactInfo
@@ -45,6 +47,12 @@ prop_flowCols_no_leading_dividers cx n
     = n > 0 && (not $ null cx)
     ==> all (/= Divider) . map (head . unColumn) . flowCols cx $ n
 
+prop_name_and_fsn_produce_same_json :: Name -> Property
+prop_name_and_fsn_produce_same_json n = True ==> n' == fsn
+  where
+    n' = show . showJSON $ n
+    fsn = show . showJSON . FirstSortedName $ n
+
 main :: IO ()
 main = do
   putStrLn "flowCols: return # of columns requested." 
@@ -53,6 +61,9 @@ main = do
   quickCheck prop_flowCols_equalCols
   putStrLn "flowCols: Ensure that columns do not have a leading or trailing divider."
   quickCheck prop_flowCols_no_leading_dividers
+  putStrLn "Name: a Name and a FirstSortedName should both have \
+      \the same JSON representation."
+  quickCheck prop_name_and_fsn_produce_same_json
 
 instance Arbitrary Char where
   arbitrary = chr `fmap` oneof [choose (65, 90), choose (97, 122)]
