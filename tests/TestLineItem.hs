@@ -53,6 +53,11 @@ prop_name_and_fsn_produce_same_json n = True ==> n' == fsn
     n' = show . showJSON $ n
     fsn = show . showJSON . FirstSortedName $ n
 
+prop_reflective_json_name :: Name -> Property
+prop_reflective_json_name n
+    = True
+    ==> (readJSON . showJSON $ n) == return n
+
 main :: IO ()
 main = do
   putStrLn "flowCols: return # of columns requested." 
@@ -61,9 +66,12 @@ main = do
   quickCheck prop_flowCols_equalCols
   putStrLn "flowCols: Ensure that columns do not have a leading or trailing divider."
   quickCheck prop_flowCols_no_leading_dividers
+
   putStrLn "Name: a Name and a FirstSortedName should both have \
       \the same JSON representation."
   quickCheck prop_name_and_fsn_produce_same_json
+  putStrLn "Name: Names should have reflective JSON instances."
+  quickCheck prop_reflective_json_name
 
 instance Arbitrary Char where
   arbitrary = chr `fmap` oneof [choose (65, 90), choose (97, 122)]
