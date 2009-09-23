@@ -77,7 +77,7 @@ Section "-Main Program" SecMain
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
 
-  ${registerExtension} "$INSTDIR\pdirectory.exe -o" ".pdir" "Phone Directory"
+  ${RegisterExtension} "$INSTDIR\pdirectory.exe" ".pdir" "Phone Directory"
 
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
     
@@ -126,7 +126,7 @@ Section "Uninstall"
 
   RMDir "$INSTDIR"
 
-  ${unregisterExtension} ".pdir" "Phone Directory"
+  ${UnregisterExtension} ".pdir" "Phone Directory"
 
   !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
     

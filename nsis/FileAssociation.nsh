@@ -4,7 +4,8 @@ _____________________________________________________________________________
                        File Association
 _____________________________________________________________________________
  
- Based on code taken from http://nsis.sourceforge.net/File_Association 
+ Based on code taken from http://nsis.sourceforge.net/File_Association
+ Modified so it works on per-user file associations instead of global ones.
  
  Usage in script:
  1. !include "FileAssociation.nsh"
@@ -117,22 +118,22 @@ _____________________________________________________________________________
   Push $0
   Push $1
  
-  ReadRegStr $1 HKCR $R1 ""  ; read current file association
+  ReadRegStr $1 HKCU "SOFTWARE\Classes\$R1" ""  ; read current file association
   StrCmp "$1" "" NoBackup  ; is it empty
   StrCmp "$1" "$R0" NoBackup  ; is it our own
-    WriteRegStr HKCR $R1 "backup_val" "$1"  ; backup current value
+    WriteRegStr HKCU "SOFTWARE\Classes\$R1" "backup_val" "$1"  ; backup current value
 NoBackup:
-  WriteRegStr HKCR $R1 "" "$R0"  ; set our file association
+  WriteRegStr HKCU "SOFTWARE\Classes\$R1" "" "$R0"  ; set our file association
  
-  ReadRegStr $0 HKCR $R0 ""
+  ReadRegStr $0 HKCU "SOFTWARE\Classes\$R0" ""
   StrCmp $0 "" 0 Skip
-    WriteRegStr HKCR "$R0" "" "$R0"
-    WriteRegStr HKCR "$R0\shell" "" "open"
-    WriteRegStr HKCR "$R0\DefaultIcon" "" "$R2,0"
+    WriteRegStr HKCU "SOFTWARE\Classes\$R0" "" "$R0"
+    WriteRegStr HKCU "SOFTWARE\Classes\$R0\shell" "" "open"
+    WriteRegStr HKCU "SOFTWARE\Classes\$R0\DefaultIcon" "" "$R2,0"
 Skip:
-  WriteRegStr HKCR "$R0\shell\open\command" "" '"$R2" "%1"'
-  WriteRegStr HKCR "$R0\shell\edit" "" "Edit $R0"
-  WriteRegStr HKCR "$R0\shell\edit\command" "" '"$R2" "%1"'
+  WriteRegStr HKCU "SOFTWARE\Classes\$R0\shell\open\command" "" '"$R2" "%1"'
+  WriteRegStr HKCU "SOFTWARE\Classes\$R0\shell\edit" "" "Edit $R0"
+  WriteRegStr HKCU "SOFTWARE\Classes\$R0\shell\edit\command" "" '"$R2" "%1"'
  
   Pop $1
   Pop $0
@@ -165,17 +166,17 @@ Skip:
   Push $0
   Push $1
  
-  ReadRegStr $1 HKCR $R0 ""
+  ReadRegStr $1 HKCU "SOFTWARE\Classes\$R0" ""
   StrCmp $1 $R1 0 NoOwn ; only do this if we own it
-  ReadRegStr $1 HKCR $R0 "backup_val"
+  ReadRegStr $1 HKCU "SOFTWARE\Classes\$R0" "backup_val"
   StrCmp $1 "" 0 Restore ; if backup="" then delete the whole key
-  DeleteRegKey HKCR $R0
+  DeleteRegKey HKCU "SOFTWARE\Classes\$R0"
   Goto NoOwn
  
 Restore:
-  WriteRegStr HKCR $R0 "" $1
-  DeleteRegValue HKCR $R0 "backup_val"
-  DeleteRegKey HKCR $R1 ;Delete key with association name settings
+  WriteRegStr HKCU "SOFTWARE\Classes\$R0" "" $1
+  DeleteRegValue HKCU "SOFTWARE\Classes\$R0" "backup_val"
+  DeleteRegKey HKCU "SOFTWARE\Classes\$R1" ;Delete key with association name settings
  
 NoOwn:
  
