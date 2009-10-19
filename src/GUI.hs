@@ -36,24 +36,12 @@ import Text.JSON.Pretty
 import ContactInfo
 import Document
 import Export
+import GUIConstants
 import Name
 import Organization
 import PageSetupGUI
 import Priority
 import WXError
-
--- |The number of pixels between controls that are grouped together.
-ctrlPadding :: Int
-ctrlPadding = 4
-
--- |The number of pixels between controls and their labels.
-lblPadding :: Int
-lblPadding = 3
-
--- |The number of pixels between the window border or vertical/horizontal
--- spacers and internal controls.
-winPadding :: Int
-winPadding = 7
 
 -- |The application only exports to .pdf.  I could see other formats like
 -- .html being useful to.
