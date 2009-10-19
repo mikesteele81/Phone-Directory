@@ -25,12 +25,12 @@ import Graphics.PDF
 import ContactInfo
 import Document
 import Name
-import PDF
+import UnitConversion
 import WXError
 
-pageWidth, pageHeight :: Int
-pageWidth     = units_per_inch * 85 `div` 10
-pageHeight    = units_per_inch * 11
+pageWidth, pageHeight :: PDFUnits
+pageWidth     = asPDFUnits (Inches 8.5)
+pageHeight    = asPDFUnits (Inches 11)
 
 -- |Create a 2-page .pdf file.  The first page sorts by last name and
 -- the second sorts by first name.
@@ -44,6 +44,8 @@ generate file doc =
     page1 = sortDoc doc
     page2 = sortDoc $ fmap (fmap FirstSortedName) doc
   in
-    liftIO $ runPdf file standardDocInfo (PDFRect 0 0 pageWidth pageHeight) $ do
-      renderDoc page1 "(Sorted by Location and then Last Name)"
-      renderDoc page2 "(Sorted by Location and then First Name)"
+    liftIO $ runPdf file standardDocInfo
+    (PDFRect 0 0 (floor . unPDFUnits $ pageWidth) (floor . unPDFUnits $ pageHeight))
+    $ do
+        renderDoc page1 "(Sorted by Location and then Last Name)"
+        renderDoc page2 "(Sorted by Location and then First Name)"

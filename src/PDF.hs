@@ -19,9 +19,6 @@ module PDF where
 
 import Graphics.PDF
 
-units_per_inch :: Int
-units_per_inch = 72
-
 -- |Draw a LineItem so that whatever Point is in the monad sits on the
 -- upper-left corner of the bounding box of what's drawn.
 class Drawable a where

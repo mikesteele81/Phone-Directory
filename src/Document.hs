@@ -30,6 +30,7 @@ import Text.JSON
 import LineItem
 import Organization
 import PDF
+import UnitConversion
 
 -- |A Document contains a revision date and organizations to display.
 data Document a
@@ -66,40 +67,40 @@ fontSubtitle :: PDFFont
 fontSubtitle = PDFFont Helvetica 10
 
 -- |Margin used for entire page.
-pageMargin :: PDFFloat
-pageMargin = fromIntegral units_per_inch / 4.0
+pageMargin :: PDFUnits
+pageMargin = asPDFUnits . Inches $ 0.25
 
-pageWidth :: PDFFloat
-pageWidth = fromIntegral units_per_inch * 8.5
+pageWidth :: PDFUnits
+pageWidth = asPDFUnits . Inches $ 8.5
 
 -- |Distance from left edge to draw the title.
-titleInset :: PDFFloat
+titleInset :: PDFUnits
 titleInset = (pageWidth - titleWidth) / 2.0
 
 -- |Distance from bottom edge to draw the title.
-titleRise :: PDFFloat
-titleRise = fromIntegral units_per_inch * 10.5
+titleRise :: PDFUnits
+titleRise = asPDFUnits . Inches $ 10.5
 
 titleString :: PDFString
 titleString = toPDFString "PHONE DIRECTORY"
 
-titleWidth :: PDFFloat
-titleWidth = textWidth fontTitle titleString
+titleWidth :: PDFUnits
+titleWidth = PDFUnits $ textWidth fontTitle titleString
 
 -- |Distance from left edge to draw the date string.
-dateInset :: PDFFloat
-dateInset = pageMargin + fromIntegral units_per_inch / 16.0
+dateInset :: PDFUnits
+dateInset = pageMargin + (asPDFUnits . Inches $ 1 / 16)
 
 -- |Distance from bottom edge to draw the date string.
-dateRise :: PDFFloat
-dateRise = fromIntegral units_per_inch * 10.35
+dateRise :: PDFUnits
+dateRise = asPDFUnits . Inches $ 10.35
 
 -- |Distance from bottom edge to draw the sort specifier.
-modeRise :: PDFFloat
+modeRise :: PDFUnits
 modeRise = dateRise
 
-gridRise :: PDFFloat
-gridRise = fromIntegral units_per_inch * 10.25
+gridRise :: PDFUnits
+gridRise = asPDFUnits . Inches $ 10.25
 
 -- |Convenient way to make a Document.
 mkDocument :: Document a
@@ -122,11 +123,14 @@ renderDoc d lbl=
     let revised = toPDFString $ "Revised: " ++ dRevised d
         columns = flowCols (showLineItems $ dOrganizations d) 4
         lbl' = toPDFString lbl
-        lblInset = (pageWidth - textWidth fontSubtitle lbl') / 2.0
+        lblInset = (pageWidth - (PDFUnits $ textWidth fontSubtitle lbl')) / 2.0
     in do
       p <- addPage Nothing
       drawWithPage p $ do
-         drawText $ text fontTitle    titleInset titleRise titleString
-         drawText $ text fontSubtitle dateInset  dateRise  revised
-         drawText $ text fontSubtitle lblInset   modeRise  lbl'
-         foldM_ draw (pageMargin :+ gridRise) columns
+         drawText $ text fontTitle (unPDFUnits titleInset) (unPDFUnits titleRise)
+             titleString
+         drawText $ text fontSubtitle (unPDFUnits dateInset)
+             (unPDFUnits dateRise)  revised
+         drawText $ text fontSubtitle (unPDFUnits lblInset)
+             (unPDFUnits modeRise) lbl'
+         foldM_ draw (unPDFUnits pageMargin :+ unPDFUnits gridRise) columns

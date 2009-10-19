@@ -22,19 +22,20 @@ import Data.List
 import Graphics.PDF
 
 import PDF
+import UnitConversion
 
 font_normal :: PDFFont
 font_normal    = PDFFont Helvetica 8
 
-line_item_width, line_item_indent, line_item_leading :: PDFFloat
+line_item_width, line_item_indent, line_item_leading :: PDFUnits
 -- 1 7/8"
 line_item_width   = col_width - 2.0 * col_padding
-line_item_indent  = fromIntegral units_per_inch / 8.0
-line_item_leading = fromIntegral units_per_inch / 7.0
+line_item_indent  = asPDFUnits . Inches $ 1 / 8
+line_item_leading = asPDFUnits . Inches $ 1 / 7
 
-col_width, col_padding :: PDFFloat
-col_width = fromIntegral $ units_per_inch * 2
-col_padding = fromIntegral units_per_inch / 16.0
+col_width, col_padding :: PDFUnits
+col_width = asPDFUnits . Inches $ 2
+col_padding = asPDFUnits . Inches $ 1 / 16
 
 -- | A single line making up part of a column.
 data LineItem 
@@ -77,25 +78,27 @@ mkLabelValue i l r = LineItem (toPDFString l) (toPDFString r) i
 instance Drawable LineItem where
     draw (x :+ y) (LineItem l r i) = do
         drawText $ do
-            textStart (x + col_padding) y'
+            textStart (x + unPDFUnits col_padding) y'
             setFont font_normal
-            textStart offset 0
+            textStart (unPDFUnits offset) 0
             displayText l
-            textStart (line_item_width - textWidth font_normal r - offset) 0
+            textStart ( unPDFUnits $ line_item_width
+                      - (PDFUnits $ textWidth font_normal r) - offset) 0
             displayText r
-            textStart (textWidth font_normal r - line_item_width) 0
+            textStart ( unPDFUnits $ (PDFUnits $ textWidth font_normal r)
+                      - line_item_width) 0
         return (x :+ y')
       where
         offset = if i then line_item_indent else 0.0
-        y'     = y - line_item_leading
+        y'     = y - unPDFUnits line_item_leading
 
     draw (x :+ y) Divider = do
-        stroke (Line x y' (x + col_width) y')
+        stroke (Line x y' (x + unPDFUnits col_width) y')
         return $ x :+ y'
       where
-        y' = y - line_item_leading
+        y' = y - unPDFUnits line_item_leading
 
-    draw (x :+ y) Blank = return $ x :+ (y - line_item_leading)
+    draw (x :+ y) Blank = return $ x :+ (y - unPDFUnits line_item_leading)
 
 instance Drawable Column where
     draw p@(x :+ y) (Column lx) = do
@@ -103,7 +106,7 @@ instance Drawable Column where
         stroke $ Rectangle p (x' :+ y')
         return (x' :+ y)
       where
-        x' = x + col_width
+        x' = x + unPDFUnits col_width
 
 -- |This gets prepended to every Column before being drawn.
 columnHeading :: [LineItem]
@@ -124,11 +127,11 @@ flowCols lx n =
 
 padColumns :: Int -> [Column] -> [Column]
 padColumns n cx =
-    cx ++ (take (max 0 $ n - length cx) $ repeat $ Column [])
+    cx ++ replicate (max 0 $ n - length cx) (Column [])
 
 padColumn :: Int -> Column -> Column
 padColumn n (Column lx) =
-    Column $ lx ++ (take (max 0 $ n - length lx) $ repeat Blank)
+    Column $ lx ++ replicate (max 0 $ n - length lx) Blank
 
 flow :: Int -> ([Column], [LineItem]) -> LineItem -> ([Column], [LineItem])
 -- no leading dividers
