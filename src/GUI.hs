@@ -96,9 +96,12 @@ mainWindow filename = do
   iOpen   <- menuItem mFile  []
   iSave   <- menuItem mFile  []
   iSaveAs <- menuItem mFile  []
+  menuLine mFile
+  iPage   <- menuItem mFile  []
   iExport <- menuItem mFile  []
-  ()      <- menuLine mFile
+  menuLine mFile
   iQuit   <- menuQuit mFile  []
+
   mHelp   <- menuHelp        []
   iAbout  <- menuAbout mHelp []
   
@@ -280,6 +283,12 @@ mainWindow filename = do
           name <- liftIO $ fileSaveDialog f True True "Save phone directory"
               fileTypesSelection "" ""
           maybe (return ()) save name
+      ]
+
+  set iPage
+      [ WX.text := "Page Setup..."
+      , on command := trapError $ do
+          return ()
       ]
 
   set iExport
