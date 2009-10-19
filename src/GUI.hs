@@ -38,6 +38,7 @@ import Document
 import Export
 import Name
 import Organization
+import PageSetupGUI
 import Priority
 import WXError
 
@@ -288,6 +289,7 @@ mainWindow filename = do
   set iPage
       [ WX.text := "Page Setup..."
       , on command := trapError $ do
+          liftIO $ mkPageSetupWindow f
           return ()
       ]
 
