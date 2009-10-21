@@ -48,10 +48,10 @@ data PageProperties = PageProperties
 instance JSON PageProperties where
     readJSON (JSObject o) = do
         l  <- (valFromObj "layout"       o <|> return Portrait)
-        lm <- (valFromObj "leftMargin"   o <|> return halfInch)
-        rm <- (valFromObj "rightMargin"  o <|> return halfInch)
-        tm <- (valFromObj "topMargin"    o <|> return halfInch)
-        bm <- (valFromObj "bottomMargin" o <|> return halfInch)
+        lm <- (valFromObj "leftMargin"   o <|> return quarterInch)
+        rm <- (valFromObj "rightMargin"  o <|> return quarterInch)
+        tm <- (valFromObj "topMargin"    o <|> return quarterInch)
+        bm <- (valFromObj "bottomMargin" o <|> return quarterInch)
         return $ PageProperties l lm rm tm bm
     readJSON v = Error $ "Expected JSObject, but " ++ (show . pp_value) v
         ++ " found while parsing a contact information."
@@ -65,10 +65,10 @@ instance JSON PageProperties where
 mkPageProperties :: PageProperties
 mkPageProperties = PageProperties
     { layout       = Portrait
-    , leftMargin   = halfInch
-    , rightMargin  = halfInch
-    , topMargin    = halfInch
-    , bottomMargin = halfInch }
+    , leftMargin   = quarterInch
+    , rightMargin  = quarterInch
+    , topMargin    = quarterInch
+    , bottomMargin = quarterInch }
 
-halfInch :: Inches
-halfInch = Inches 0.5
+quarterInch :: Inches
+quarterInch = Inches 0.25

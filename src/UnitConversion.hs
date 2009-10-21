@@ -28,6 +28,9 @@ newtype Inches = Inches { unInches :: Double }
 newtype PDFUnits = PDFUnits { unPDFUnits :: PDFFloat }
     deriving (Eq, Fractional, Num, Ord, Show)
 
+sixteenthInch :: Inches
+sixteenthInch = Inches $ 1 / 16.0
+
 instance JSON Inches where
     readJSON (JSRational _ v) = return . Inches . fromRational $ v
     readJSON v = Error $ "Expected JSString, but " ++ (show . pp_value) v

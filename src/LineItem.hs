@@ -29,7 +29,7 @@ font_normal    = PDFFont Helvetica 8
 
 line_item_width, line_item_indent, line_item_leading :: PDFUnits
 -- 1 7/8"
-line_item_width   = col_width - 2.0 * col_padding
+line_item_width   = col_width - (PDFUnits 2.0) * col_padding
 line_item_indent  = asPDFUnits . Inches $ 1 / 8
 line_item_leading = asPDFUnits . Inches $ 1 / 7
 
@@ -89,7 +89,7 @@ instance Drawable LineItem where
                       - line_item_width) 0
         return (x :+ y')
       where
-        offset = if i then line_item_indent else 0.0
+        offset = if i then line_item_indent else PDFUnits 0.0
         y'     = y - unPDFUnits line_item_leading
 
     draw (x :+ y) Divider = do

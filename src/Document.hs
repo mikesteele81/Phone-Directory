@@ -71,20 +71,20 @@ fontTitle    = PDFFont Times_Bold 18
 fontSubtitle :: PDFFont
 fontSubtitle = PDFFont Helvetica 10
 
--- |Margin used for entire page.
-pageMargin :: PDFUnits
-pageMargin = asPDFUnits . Inches $ 0.25
-
 pageWidth :: PDFUnits
 pageWidth = asPDFUnits . Inches $ 8.5
+
+pageHeight :: PDFUnits
+pageHeight = asPDFUnits . Inches $ 11.0
 
 -- |Distance from left edge to draw the title.
 titleInset :: PDFUnits
 titleInset = (pageWidth - titleWidth) / 2.0
 
 -- |Distance from bottom edge to draw the title.
-titleRise :: PDFUnits
-titleRise = asPDFUnits . Inches $ 10.5
+titleRise :: PageProperties -> PDFUnits
+titleRise p = pageHeight - (asPDFUnits . topMargin $ p)
+    - (PDFUnits $ getHeight fontTitle)
 
 titleString :: PDFString
 titleString = toPDFString "PHONE DIRECTORY"
@@ -93,16 +93,17 @@ titleWidth :: PDFUnits
 titleWidth = PDFUnits $ textWidth fontTitle titleString
 
 -- |Distance from left edge to draw the date string.
-dateInset :: PDFUnits
-dateInset = pageMargin + (asPDFUnits . Inches $ 1 / 16)
+dateInset :: PageProperties -> PDFUnits
+dateInset p = asPDFUnits $ leftMargin p + Inches (1 / 16)
 
 -- |Distance from bottom edge to draw the date string.
-dateRise :: PDFUnits
-dateRise = asPDFUnits . Inches $ 10.35
+dateRise :: PageProperties -> PDFUnits
+dateRise p = titleRise p - (PDFUnits $ getHeight fontSubtitle)
+    - asPDFUnits sixteenthInch
 
 -- |Distance from bottom edge to draw the sort specifier.
-modeRise :: PDFUnits
-modeRise = dateRise
+modeRise :: PageProperties -> PDFUnits
+modeRise p = dateRise p
 
 gridRise :: PDFUnits
 gridRise = asPDFUnits . Inches $ 10.25
@@ -132,13 +133,16 @@ renderDoc d lbl=
         columns = flowCols (showLineItems $ dOrganizations d) 4
         lbl' = toPDFString lbl
         lblInset = (pageWidth - (PDFUnits $ textWidth fontSubtitle lbl')) / 2.0
+        prop = pageProperties d
     in do
       p <- addPage Nothing
       drawWithPage p $ do
-         drawText $ text fontTitle (unPDFUnits titleInset) (unPDFUnits titleRise)
+         drawText $ text fontTitle (unPDFUnits titleInset) (unPDFUnits $ titleRise prop)
              titleString
-         drawText $ text fontSubtitle (unPDFUnits dateInset)
-             (unPDFUnits dateRise)  revised
+         drawText $ text fontSubtitle (unPDFUnits . dateInset $ prop)
+             (unPDFUnits . dateRise $ prop)  revised
          drawText $ text fontSubtitle (unPDFUnits lblInset)
-             (unPDFUnits modeRise) lbl'
-         foldM_ draw (unPDFUnits pageMargin :+ unPDFUnits gridRise) columns
+             (unPDFUnits . modeRise $ prop) lbl'
+         foldM_ draw
+             ((unPDFUnits . asPDFUnits . leftMargin $ prop)
+             :+ unPDFUnits gridRise) columns
