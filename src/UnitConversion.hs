@@ -24,9 +24,9 @@ import Text.JSON
 import Text.JSON.Pretty
 
 newtype Inches = Inches { unInches :: Double }
-    deriving (Eq, Fractional, Num, Show)
+    deriving (Eq, Fractional, Num, Ord, Show)
 newtype PDFUnits = PDFUnits { unPDFUnits :: PDFFloat }
-    deriving (Eq, Fractional, Num, Show)
+    deriving (Eq, Fractional, Num, Ord, Show)
 
 instance JSON Inches where
     readJSON (JSRational _ v) = return . Inches . fromRational $ v
