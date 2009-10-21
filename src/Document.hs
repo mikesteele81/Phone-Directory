@@ -22,6 +22,7 @@ module Document
     , sortDoc
     ) where
 
+import Control.Applicative
 import Control.Monad (foldM_)
 import Data.List (sort)
 import Graphics.PDF
@@ -29,6 +30,7 @@ import Text.JSON
 
 import LineItem
 import Organization
+import PageProperties
 import PDF
 import UnitConversion
 
@@ -41,18 +43,21 @@ data Document a
       dRevised :: String
       -- |Organizations to print.
     , dOrganizations :: [Organization a]
-    } deriving (Eq)
+    , pageProperties :: PageProperties
+    } deriving (Eq, Show)
       
 instance (JSON a) => JSON (Document a) where
     readJSON (JSObject d) =
         do revised <- valFromObj "revised" d
            organizations <- valFromObj "organizations" d
-           return $ Document revised organizations
+           prop <- valFromObj "pageProperties" d <|> return mkPageProperties
+           return $ Document revised organizations prop
     readJSON _ = Error "Could not parse Document JSON object."
     showJSON d =
         showJSON $ toJSObject
         [ ("revised", showJSON $ dRevised d)
-        , ("organizations", showJSONs $ dOrganizations d) ]
+        , ("organizations", showJSONs $ dOrganizations d)
+        , ("pageProperties", showJSON . pageProperties $ d)]
 
 -- Perform an operation on the name.  Is this an abuse of Functors?
 instance Functor Document where
@@ -104,7 +109,10 @@ gridRise = asPDFUnits . Inches $ 10.25
 
 -- |Convenient way to make a Document.
 mkDocument :: Document a
-mkDocument = Document { dRevised = "", dOrganizations = [] }
+mkDocument = Document
+    { dRevised = ""
+    , dOrganizations = []
+    , pageProperties = mkPageProperties }
 
 -- |Deep sort the document and all organizations that are a part of it.
 sortDoc :: (Ord a)

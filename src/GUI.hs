@@ -39,6 +39,7 @@ import Export
 import GUIConstants
 import Name
 import Organization
+import PageProperties (mkPageProperties, PageProperties)
 import PageSetupGUI
 import Priority
 import WXError
@@ -71,8 +72,9 @@ aboutTxt =
 -- |Build the main window and start the event loop.
 mainWindow :: Maybe String -> IO ()
 mainWindow filename = do
-  file     <- varCreate defaultFile
-  modified <- varCreate False
+  file       <- varCreate defaultFile
+  modified   <- varCreate False
+  properties <- varCreate mkPageProperties
 
   f  <- frame            []
   sw <- splitterWindow f []
@@ -237,11 +239,15 @@ mainWindow filename = do
           liftIO $ do
               varSet file fp
               setModified False
+              varSet properties (pageProperties doc)
 
       save :: FilePath -> WXError ()
       save fp = do
-          doc <- tree2Doc tc
-          let doc' = sortDoc doc
+          props <- liftIO $ varGet properties
+          props2Doc <- tree2Doc tc
+          let
+              doc  = props2Doc props
+              doc' = sortDoc doc
           saveDoc fp doc'
           M.when (doc /= doc') $ do
               clearDisableDetails
@@ -287,7 +293,10 @@ mainWindow filename = do
           name <- fileSaveDialog f True True "Export phone directory"
                   exportTypesSelection "" ""
           case name of
-            Just name' -> trapError $ tree2Doc tc >>= generate name'
+            Just name' -> trapError $ do
+                props <- liftIO $ varGet properties
+                op <- tree2Doc tc
+                generate name' (op props)
             Nothing -> return ()
       ]
 
@@ -373,7 +382,7 @@ title
 title m = (if m then ("* " ++) else id) . (++ " - Phone Directory") . takeBaseName
 
 -- |Create a Document object based on the tree heirarchy.
-tree2Doc :: TreeCtrl a -> WXError (Document (ContactInfo Name))
+tree2Doc :: TreeCtrl a -> WXError (PageProperties -> Document (ContactInfo Name))
 tree2Doc tc = do
     root <- liftIO $ treeCtrlGetRootItem tc
     orgs <- liftIO $ treeCtrlWithChildren tc root $ \itm ->

@@ -34,7 +34,7 @@ data Organization c = Organization
     -- |Contacts that make up the organization.  These all get turned
     -- into indented line items on the contact sheet.
   , oContacts :: [c]
-  } deriving (Eq, Ord)
+  } deriving (Eq, Ord, Show)
 
 instance (JSON a) => JSON (Organization a) where
     readJSON (JSObject o) =
