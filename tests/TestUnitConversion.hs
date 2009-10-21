@@ -15,8 +15,7 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-module TestPageProperties
-  where
+module TestUnitConversion where
 
 import Test.QuickCheck
 import Text.JSON
@@ -32,7 +31,6 @@ prop_reflective_json_instance :: (Eq a, JSON a) => a -> Bool
 prop_reflective_json_instance i = i' == i
   where
     (Ok i') = readJSON . showJSON $ i
-
 
 main :: IO ()
 main = do

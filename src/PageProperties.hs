@@ -29,7 +29,7 @@ import Text.JSON.Pretty
 import UnitConversion
 
 data Layout = Portrait | Landscape
-    deriving (Read, Show)
+    deriving (Eq, Read, Show)
 
 instance JSON Layout where
     readJSON (JSString str) = return . read . fromJSString $ str
@@ -43,7 +43,7 @@ data PageProperties = PageProperties
     , rightMargin  :: Inches
     , topMargin    :: Inches
     , bottomMargin :: Inches }
-    deriving (Show)
+    deriving (Eq, Show)
 
 instance JSON PageProperties where
     readJSON (JSObject o) = do
