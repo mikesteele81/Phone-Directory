@@ -32,20 +32,19 @@ import LineItem
 import Name
 import Priority
 
-prop_flowCols_numColumns :: [LineItem] -> Int -> Property
-prop_flowCols_numColumns cx n
-  = n > 0
-  ==> (length . flowCols cx) n == n
+prop_flowCols_numColumns :: [LineItem] -> Positive Int -> Bool
+prop_flowCols_numColumns cx (Positive n)
+  = (length . flowCols cx) n == n
 
-prop_flowCols_equalCols :: [LineItem] -> Int -> Property
-prop_flowCols_equalCols cx n
-  = n > 0
-  ==> (length . nub . map (length . unColumn) . flowCols cx) n == 1
+prop_flowCols_equalCols :: [LineItem] -> Positive Int -> Property
+prop_flowCols_equalCols cx (Positive n)
+  = label "flowCols always returns columns of equal length."
+  $ (length . nub . map (length . unColumn) . flowCols cx) n == 1
 
-prop_flowCols_no_leading_dividers :: [LineItem] -> Int -> Property
-prop_flowCols_no_leading_dividers cx n
-    = n > 0 && (not $ null cx)
-    ==> all (/= Divider) . map (head . unColumn) . flowCols cx $ n
+prop_flowCols_no_leading_dividers :: NonEmptyList LineItem -> Positive Int -> Property
+prop_flowCols_no_leading_dividers (NonEmpty cx) (Positive n)
+    = label ""
+    $ all (/= Divider) . map (head . unColumn) . flowCols cx $ n
 
 prop_name_and_fsn_produce_same_json :: Name -> Property
 prop_name_and_fsn_produce_same_json n = True ==> n' == fsn
@@ -86,34 +85,32 @@ prop_reflective_json x
 
 main :: IO ()
 main = do
-  putStrLn "flowCols: return # of columns requested." 
-  quickCheck prop_flowCols_numColumns
-  putStrLn "flowCols: return cols of equal length"
-  quickCheck prop_flowCols_equalCols
-  putStrLn "flowCols: Ensure that columns do not have a leading or trailing divider."
-  quickCheck prop_flowCols_no_leading_dividers
+--  putStrLn "flowCols: return # of columns requested." 
+--  quickCheckWith fewTests prop_flowCols_numColumns
+--  putStrLn "flowCols: return cols of equal length"
+--  quickCheckWith fewTests prop_flowCols_equalCols
+--  putStrLn "flowCols: Ensure that columns do not have a leading or trailing divider."
+--  quickCheckWith fewTests prop_flowCols_no_leading_dividers
 
-  putStrLn "Name: a Name and a FirstSortedName should both have \
-      \the same JSON representation."
-  quickCheck prop_name_and_fsn_produce_same_json
-  putStrLn "Name: Names should have reflective JSON instances."
-  quickCheck (prop_reflective_json :: Name -> Property)
-  putStrLn "Name: ignore first name when sorting a firstlast with a singlename"
-  test prop_name_compare_fl_sn_ignores_fn
-  putStrLn "FSN: ignore last name when sorting a firstlast with a singlename"
-  test prop_fsn_compare_fl_sn_ignores_ln
-  putStrLn "FirstSortedName: Paul should sort before Pauline"
-  quickCheck prop_fsn_paul_sorts_before_pauline
+    putStrLn "Name: a Name and a FirstSortedName should both have \
+        \the same JSON representation."
+    quickCheck prop_name_and_fsn_produce_same_json
+    putStrLn "Name: Names should have reflective JSON instances."
+    quickCheck (prop_reflective_json :: Name -> Property)
+    putStrLn "Name: ignore first name when sorting a firstlast with a singlename"
+    quickCheck prop_name_compare_fl_sn_ignores_fn
+    putStrLn "FSN: ignore last name when sorting a firstlast with a singlename"
+    quickCheck prop_fsn_compare_fl_sn_ignores_ln
+    putStrLn "FirstSortedName: Paul should sort before Pauline"
+    quickCheck prop_fsn_paul_sorts_before_pauline
 
-  putStrLn "Priority: should have reflective JSON instances."
-  quickCheck (prop_reflective_json :: Priority -> Property)
+    putStrLn "Priority: should have reflective JSON instances."
+    quickCheck (prop_reflective_json :: Priority -> Property)
 
-  putStrLn "ContactInfo: should have reflective JSON instances."
-  quickCheck (prop_reflective_json :: ContactInfo Name -> Property)
-
-instance Arbitrary Char where
-  arbitrary = chr `fmap` oneof [choose (65, 90), choose (97, 122)]
-  coarbitrary = undefined
+    putStrLn "ContactInfo: should have reflective JSON instances."
+    quickCheck (prop_reflective_json :: ContactInfo Name -> Property)
+--  where
+--    fewTests = stdArgs { maxSuccess = 50 }
 
 instance (Arbitrary a) => Arbitrary (ContactInfo a) where
     arbitrary = do
@@ -121,7 +118,7 @@ instance (Arbitrary a) => Arbitrary (ContactInfo a) where
         priority <- arbitrary
         phone <- arbitrary
         return $ ContactInfo priority name phone
-    coarbitrary = undefined
+    shrink = shrinkNothing
 
 instance Arbitrary LineItem where
     arbitrary = do
@@ -132,7 +129,7 @@ instance Arbitrary LineItem where
             [ return $ mkLabelValue indent left right
             , return Divider
             , return Blank ]
-    coarbitrary = undefined
+    shrink = shrinkNothing
 
 instance Arbitrary Name where
     arbitrary = oneof [firstLast, single]
@@ -144,9 +141,9 @@ instance Arbitrary Name where
         single = do
             nSingle <- arbitrary
             return $ SingleName nSingle
-    coarbitrary = undefined
+    shrink = shrinkNothing
 
 instance Arbitrary Priority where
     -- magic numbers save lots of typing.
     arbitrary = mkPriority `fmap` choose (0, 5)
-    coarbitrary = undefined
+    shrink = shrinkNothing
