@@ -21,23 +21,25 @@ module PageSetupGUI where
 import Graphics.UI.WX as WX
 
 import GUIConstants
+import qualified PageProperties as P
+import UnitConversion (unInches)
 
-mkPageSetupWindow :: Window a -> IO (Frame ())
-mkPageSetupWindow p = do
-    f <- frameTool [] p
+pageSetupDialog :: Window a -> P.PageProperties -> IO (Maybe P.PageProperties)
+pageSetupDialog p prop = do
+    f <- dialog p []
 
     -- stuff going into the main frame
     grpOrientation <- radioBox f Vertical ["Portrait", "Landscape"]
-        [WX.text := "Orientation"]
+        [WX.text := "Orientation", selection := fromEnum . P.layout $ prop]
     pMargin      <- panel f []
     btnOK        <- button f [WX.text := "OK"]
     btnCancel    <- button f [WX.text := "Cancel"]
 
     -- stuff going into the margins group
-    marginL <- entry pMargin []
-    marginR <- entry pMargin []
-    marginT <- entry pMargin []
-    marginB <- entry pMargin []
+    marginL <- entry pMargin [WX.text := show . unInches . P.leftMargin $ prop ]
+    marginR <- entry pMargin [WX.text := show . unInches . P.rightMargin $ prop ]
+    marginT <- entry pMargin [WX.text := show . unInches . P.topMargin $ prop   ]
+    marginB <- entry pMargin [WX.text := show . unInches . P.bottomMargin $ prop ]
     set pMargin
         [ layout := boxed "Margins (inches)" $ grid 4 2
             [ [ label "Left:", widget marginL, label "Right:", widget marginR ]
@@ -52,4 +54,6 @@ mkPageSetupWindow p = do
             , row ctrlPadding [hglue, widget btnOK, widget btnCancel]]
         ]
 
-    return f
+
+    result <- showModal f (\stop -> set btnOK [on command := stop (Just P.mkPageProperties)])
+    return result

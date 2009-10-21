@@ -283,7 +283,9 @@ mainWindow filename = do
   set iPage
       [ WX.text := "Page Setup..."
       , on command := trapError $ do
-          liftIO $ mkPageSetupWindow f
+          prop <- liftIO $ varGet properties
+          prop' <- liftIO $ PageSetupGUI.pageSetupDialog f prop
+          maybe (return ()) (liftIO . varSet properties) prop'
           return ()
       ]
 

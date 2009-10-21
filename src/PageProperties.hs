@@ -29,7 +29,7 @@ import Text.JSON.Pretty
 import UnitConversion
 
 data Layout = Portrait | Landscape
-    deriving (Eq, Read, Show)
+    deriving (Enum, Eq, Read, Show)
 
 instance JSON Layout where
     readJSON (JSString str) = return . read . fromJSString $ str
