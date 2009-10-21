@@ -32,6 +32,8 @@ import LineItem
 import Name
 import Priority
 
+import TestName
+
 prop_flowCols_numColumns :: [LineItem] -> Positive Int -> Bool
 prop_flowCols_numColumns cx (Positive n)
   = (length . flowCols cx) n == n
@@ -46,38 +48,6 @@ prop_flowCols_no_leading_dividers (NonEmpty cx) (Positive n)
     = label ""
     $ all (/= Divider) . map (head . unColumn) . flowCols cx $ n
 
-prop_name_and_fsn_produce_same_json :: Name -> Property
-prop_name_and_fsn_produce_same_json n = True ==> n' == fsn
-  where
-    n' = show . showJSON $ n
-    fsn = show . showJSON . FirstSortedName $ n
-
-prop_fsn_paul_sorts_before_pauline :: (String, String, String, String) -> Property
-prop_fsn_paul_sorts_before_pauline (f, suf, l1, l2)
-    = l1 /= "" && l2 /= "" && suf /= "" && f /= ""
-    ==> compare paul pauline == LT
-  where
-    paul = FirstSortedName $ mkName f l1
-    pauline = FirstSortedName $ mkName (f ++ suf) l2
-
-prop_fsn_compare_fl_sn_ignores_ln :: (String, String) -> Property
-prop_fsn_compare_fl_sn_ignores_ln (f, n)
-    = f /= "" && n /= ""
-    ==> (compare fl1 sn == compare fl2 sn)
-  where
-    fl1 = FirstSortedName $ mkName f "aaa"
-    fl2 = FirstSortedName $ mkName f "zzz"
-    sn  = FirstSortedName $ SingleName n
-
-prop_name_compare_fl_sn_ignores_fn :: (String, String) -> Property
-prop_name_compare_fl_sn_ignores_fn (l, n)
-    = l /= "" && n /= ""
-    ==> (compare fl1 sn == compare fl2 sn)
-  where
-    fl1 = mkName "aaa" l
-    fl2 = mkName "zzz" l
-    sn  = SingleName n
-
 prop_reflective_json :: (JSON x, Eq x) => x -> Property
 prop_reflective_json x
     = True
@@ -91,18 +61,6 @@ main = do
 --  quickCheckWith fewTests prop_flowCols_equalCols
 --  putStrLn "flowCols: Ensure that columns do not have a leading or trailing divider."
 --  quickCheckWith fewTests prop_flowCols_no_leading_dividers
-
-    putStrLn "Name: a Name and a FirstSortedName should both have \
-        \the same JSON representation."
-    quickCheck prop_name_and_fsn_produce_same_json
-    putStrLn "Name: Names should have reflective JSON instances."
-    quickCheck (prop_reflective_json :: Name -> Property)
-    putStrLn "Name: ignore first name when sorting a firstlast with a singlename"
-    quickCheck prop_name_compare_fl_sn_ignores_fn
-    putStrLn "FSN: ignore last name when sorting a firstlast with a singlename"
-    quickCheck prop_fsn_compare_fl_sn_ignores_ln
-    putStrLn "FirstSortedName: Paul should sort before Pauline"
-    quickCheck prop_fsn_paul_sorts_before_pauline
 
     putStrLn "Priority: should have reflective JSON instances."
     quickCheck (prop_reflective_json :: Priority -> Property)
@@ -129,18 +87,6 @@ instance Arbitrary LineItem where
             [ return $ mkLabelValue indent left right
             , return Divider
             , return Blank ]
-    shrink = shrinkNothing
-
-instance Arbitrary Name where
-    arbitrary = oneof [firstLast, single]
-      where
-        firstLast = do
-            nFirst <- arbitrary
-            nLast <- arbitrary
-            return $ FirstLast nFirst nLast
-        single = do
-            nSingle <- arbitrary
-            return $ SingleName nSingle
     shrink = shrinkNothing
 
 instance Arbitrary Priority where
