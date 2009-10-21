@@ -27,12 +27,8 @@ import Test.QuickCheck
 import Text.JSON
 import Text.Regex.Posix
 
-import ContactInfo
 import LineItem
-import Name
 import Priority
-
-import TestName
 
 prop_flowCols_numColumns :: [LineItem] -> Positive Int -> Bool
 prop_flowCols_numColumns cx (Positive n)
@@ -64,19 +60,8 @@ main = do
 
     putStrLn "Priority: should have reflective JSON instances."
     quickCheck (prop_reflective_json :: Priority -> Property)
-
-    putStrLn "ContactInfo: should have reflective JSON instances."
-    quickCheck (prop_reflective_json :: ContactInfo Name -> Property)
 --  where
 --    fewTests = stdArgs { maxSuccess = 50 }
-
-instance (Arbitrary a) => Arbitrary (ContactInfo a) where
-    arbitrary = do
-        name <- arbitrary
-        priority <- arbitrary
-        phone <- arbitrary
-        return $ ContactInfo priority name phone
-    shrink = shrinkNothing
 
 instance Arbitrary LineItem where
     arbitrary = do
