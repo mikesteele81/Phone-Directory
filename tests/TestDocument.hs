@@ -15,25 +15,24 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-module TestPageProperties where
+module TestDocument where
 
 import Control.Applicative
 import Test.QuickCheck
 import Text.JSON
 
-import PageProperties
+import Document
+import Name (Name)
+
 import TestJSON
+import TestOrganization ()
+import TestPageProperties ()
 import TestUnitConversion ()
 
 main :: IO ()
 main = do
-  putStrLn "PageProperties: Reflective JSON instance."
-  quickCheck (prop_reflective_json_instance :: PageProperties -> Bool)
+  putStrLn "Document: Reflective JSON instance."
+  quickCheck (prop_reflective_json_instance :: Document Name -> Bool)
 
-instance Arbitrary Layout where
-    arbitrary = oneof [return Portrait, return Landscape]
-    shrink = shrinkNothing
-
-instance Arbitrary PageProperties where
-    arbitrary = PageProperties <$> arbitrary <*> arbitrary
-        <*> arbitrary <*> arbitrary <*> arbitrary
+instance Arbitrary a => Arbitrary (Document a) where
+    arbitrary = Document <$> arbitrary <*> arbitrary <*> arbitrary

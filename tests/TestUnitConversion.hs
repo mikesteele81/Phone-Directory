@@ -21,16 +21,12 @@ import Test.QuickCheck
 import Text.JSON
 
 import UnitConversion
+import TestJSON
 
 prop_reflective_inch_pdf_conversion :: Inches -> Bool
 prop_reflective_inch_pdf_conversion i = abs(i' - i) < 0.0001
   where
     i' = asInches . asPDFUnits . asInches . asPDFUnits $ i
-
-prop_reflective_json_instance :: (Eq a, JSON a) => a -> Bool
-prop_reflective_json_instance i = i' == i
-  where
-    (Ok i') = readJSON . showJSON $ i
 
 main :: IO ()
 main = do
