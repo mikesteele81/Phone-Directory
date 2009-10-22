@@ -105,8 +105,8 @@ dateRise p = titleRise p - (PDFUnits $ getHeight fontSubtitle)
 modeRise :: PageProperties -> PDFUnits
 modeRise p = dateRise p
 
-gridRise :: PDFUnits
-gridRise = asPDFUnits . Inches $ 10.25
+gridRise :: PageProperties -> PDFUnits
+gridRise p = dateRise p - asPDFUnits sixteenthInch
 
 -- |Convenient way to make a Document.
 mkDocument :: Document a
@@ -137,12 +137,12 @@ renderDoc d lbl=
     in do
       p <- addPage Nothing
       drawWithPage p $ do
-         drawText $ text fontTitle (unPDFUnits titleInset) (unPDFUnits $ titleRise prop)
-             titleString
+         drawText $ text fontTitle (unPDFUnits titleInset)
+             (unPDFUnits $ titleRise prop) titleString
          drawText $ text fontSubtitle (unPDFUnits . dateInset $ prop)
              (unPDFUnits . dateRise $ prop)  revised
          drawText $ text fontSubtitle (unPDFUnits lblInset)
              (unPDFUnits . modeRise $ prop) lbl'
          foldM_ draw
              ((unPDFUnits . asPDFUnits . leftMargin $ prop)
-             :+ unPDFUnits gridRise) columns
+             :+ (unPDFUnits . gridRise $ prop)) columns
