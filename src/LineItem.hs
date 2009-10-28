@@ -17,7 +17,7 @@
 
 module LineItem where
 
-import Control.Monad (foldM)
+import Control.Monad.Reader
 import Data.List
 import Graphics.PDF
 
@@ -27,14 +27,12 @@ import UnitConversion
 font_normal :: PDFFont
 font_normal    = PDFFont Helvetica 8
 
-line_item_width, line_item_indent, line_item_leading :: PDFUnits
+line_item_indent, line_item_leading :: PDFUnits
 -- 1 7/8"
-line_item_width   = col_width - (PDFUnits 2.0) * col_padding
 line_item_indent  = asPDFUnits . Inches $ 1 / 8
 line_item_leading = asPDFUnits . Inches $ 1 / 7
 
-col_width, col_padding :: PDFUnits
-col_width = asPDFUnits . Inches $ 2
+col_padding :: PDFUnits
 col_padding = asPDFUnits . Inches $ 1 / 16
 
 -- | A single line making up part of a column.
@@ -75,38 +73,44 @@ mkLabelValue :: Bool     -- ^Indent?
              -> LineItem
 mkLabelValue i l r = LineItem (toPDFString l) (toPDFString r) i
 
-instance Drawable LineItem where
-    draw (x :+ y) (LineItem l r i) = do
-        drawText $ do
-            textStart (x + unPDFUnits col_padding) y'
-            setFont font_normal
-            textStart (unPDFUnits offset) 0
-            displayText l
-            textStart ( unPDFUnits $ line_item_width
-                      - (PDFUnits $ textWidth font_normal r) - offset) 0
-            displayText r
-            textStart ( unPDFUnits $ (PDFUnits $ textWidth font_normal r)
-                      - line_item_width) 0
-        return (x :+ y')
-      where
-        offset = if i then line_item_indent else PDFUnits 0.0
-        y'     = y - unPDFUnits line_item_leading
-
-    draw (x :+ y) Divider = do
-        stroke (Line x y' (x + unPDFUnits col_width) y')
-        return $ x :+ y'
-      where
+-- |Draw a LineItem at the given point.  The Reader monad supplies the width
+-- of the line item.  Return the suggested point to draw another LineItem,
+-- which is directly below this one.
+drawLineItem :: Point -> LineItem -> ReaderT PDFUnits Draw Point
+drawLineItem (x :+ y) (LineItem  l r i) = do
+    colWidth <- asks unPDFUnits
+    let lineItemWidth = colWidth - 2 * colPadding
         y' = y - unPDFUnits line_item_leading
-
-    draw (x :+ y) Blank = return $ x :+ (y - unPDFUnits line_item_leading)
+    lift . drawText $ do
+        textStart (x + colPadding) y'
+        setFont font_normal
+        textStart offset 0
+        displayText l
+        textStart (lineItemWidth - textWidth font_normal r - offset) 0
+        displayText r
+        textStart (textWidth font_normal r - lineItemWidth) 0
+    return (x :+ y')
+  where
+    lineItemIndent = unPDFUnits line_item_indent
+    colPadding = unPDFUnits col_padding
+    offset = if i then lineItemIndent else 0.0
+drawLineItem (x :+ y) Divider = do
+    width <- asks unPDFUnits
+    lift $ stroke (Line x y' (x + width) y')
+    return $ x :+ y'
+  where
+    y' = y - unPDFUnits line_item_leading
+drawLineItem (x :+ y) Blank = do
+    return $ x :+ (y - unPDFUnits line_item_leading)
 
 instance Drawable Column where
     draw p@(x :+ y) (Column lx) = do
-        (_ :+ y') <- foldM draw p $ columnHeading ++ lx ++ [Blank]
+        (_ :+ y') <- runReaderT (foldM drawLineItem p $ columnHeading ++ lx ++ [Blank]) colWidth
         stroke $ Rectangle p (x' :+ y')
         return (x' :+ y)
       where
-        x' = x + unPDFUnits col_width
+        colWidth = asPDFUnits . Inches $ 2
+        x' = x + unPDFUnits colWidth
 
 -- |This gets prepended to every Column before being drawn.
 columnHeading :: [LineItem]

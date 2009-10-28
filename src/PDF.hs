@@ -17,7 +17,10 @@
 
 module PDF where
 
+import Control.Monad.Reader
 import Graphics.PDF
+
+import PageProperties
 
 -- |Draw a LineItem so that whatever Point is in the monad sits on the
 -- upper-left corner of the bounding box of what's drawn.
@@ -27,5 +30,4 @@ class Drawable a where
         -> Draw Point -- ^Suggested location to draw the next Drawable. This
                       -- will be the lower-left corner of the current column.
 
-
-
+type DrawDoc a = ReaderT PageProperties Draw a
