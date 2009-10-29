@@ -17,7 +17,7 @@
 
 module LineItem where
 
-import Control.Monad.Reader
+import Control.Monad
 import Data.List
 import Graphics.PDF
 
@@ -35,7 +35,7 @@ col_padding :: PDFUnits
 col_padding = asPDFUnits . Inches $ 1 / 16
 
 -- | A single line making up part of a column.
-data LineItem 
+data LineItem
   -- | Contact or column heading.
   = LineItem { -- |Left-justified text.
                left   :: PDFString
@@ -52,7 +52,7 @@ data LineItem
   | Blank
   deriving (Eq, Show)
 
--- |Each page contains 4 columns of equal length.              
+-- |Each page contains 4 columns of equal length.
 newtype Column = Column {unColumn :: [LineItem]}
     deriving (Show)
 
@@ -75,12 +75,9 @@ mkLabelValue i l r = LineItem (toPDFString l) (toPDFString r) i
 -- |Draw a LineItem at the given point.  The Reader monad supplies the width
 -- of the line item.  Return the suggested point to draw another LineItem,
 -- which is directly below this one.
-drawLineItem :: Point -> LineItem -> ReaderT PDFUnits Draw Point
-drawLineItem (x :+ y) (LineItem  l r i) = do
-    colWidth <- asks unPDFUnits
-    let lineItemWidth = colWidth - 2 * colPadding
-        y' = y - unPDFUnits line_item_leading
-    lift . drawText $ do
+drawLineItem :: PDFUnits -> Point -> LineItem -> Draw Point
+drawLineItem colWidth (x :+ y) (LineItem  l r i) = do
+    drawText $ do
         textStart (x + colPadding) y'
         setFont font_normal
         textStart offset 0
@@ -91,20 +88,21 @@ drawLineItem (x :+ y) (LineItem  l r i) = do
     return (x :+ y')
   where
     lineItemIndent = unPDFUnits line_item_indent
+    lineItemWidth = unPDFUnits colWidth - 2 * colPadding
     colPadding = unPDFUnits col_padding
     offset = if i then lineItemIndent else 0.0
-drawLineItem (x :+ y) Divider = do
-    width <- asks unPDFUnits
-    lift $ stroke (Line x y' (x + width) y')
+    y' = y - unPDFUnits line_item_leading
+drawLineItem colWidth (x :+ y) Divider = do
+    stroke (Line x y' (x + unPDFUnits colWidth) y')
     return $ x :+ y'
   where
     y' = y - unPDFUnits line_item_leading
-drawLineItem (x :+ y) Blank = do
+drawLineItem _ (x :+ y) Blank = do
     return $ x :+ (y - unPDFUnits line_item_leading)
 
 drawColumn :: PDFUnits -> Point -> Column -> Draw Point
 drawColumn colWidth p@(x :+ y) (Column lx) = do
-    (_ :+ y') <- runReaderT (foldM drawLineItem p $ columnHeading ++ lx ++ [Blank]) colWidth
+    (_ :+ y') <- foldM (drawLineItem colWidth) p $ columnHeading ++ lx ++ [Blank]
     stroke $ Rectangle p (x' :+ y')
     return (x' :+ y)
   where
