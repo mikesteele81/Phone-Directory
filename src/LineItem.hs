@@ -21,7 +21,6 @@ import Control.Monad.Reader
 import Data.List
 import Graphics.PDF
 
-import PDF
 import UnitConversion
 
 font_normal :: PDFFont
@@ -103,14 +102,13 @@ drawLineItem (x :+ y) Divider = do
 drawLineItem (x :+ y) Blank = do
     return $ x :+ (y - unPDFUnits line_item_leading)
 
-instance Drawable Column where
-    draw p@(x :+ y) (Column lx) = do
-        (_ :+ y') <- runReaderT (foldM drawLineItem p $ columnHeading ++ lx ++ [Blank]) colWidth
-        stroke $ Rectangle p (x' :+ y')
-        return (x' :+ y)
-      where
-        colWidth = asPDFUnits . Inches $ 2
-        x' = x + unPDFUnits colWidth
+drawColumn :: PDFUnits -> Point -> Column -> Draw Point
+drawColumn colWidth p@(x :+ y) (Column lx) = do
+    (_ :+ y') <- runReaderT (foldM drawLineItem p $ columnHeading ++ lx ++ [Blank]) colWidth
+    stroke $ Rectangle p (x' :+ y')
+    return (x' :+ y)
+  where
+    x' = x + unPDFUnits colWidth
 
 -- |This gets prepended to every Column before being drawn.
 columnHeading :: [LineItem]

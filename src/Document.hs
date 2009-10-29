@@ -31,7 +31,6 @@ import Text.JSON
 import LineItem
 import Organization
 import PageProperties
-import PDF
 import UnitConversion
 
 -- |A Document contains a revision date and organizations to display.
@@ -134,6 +133,7 @@ renderDoc d lbl=
         lbl' = toPDFString lbl
         lblInset = (pageWidth - (PDFUnits $ textWidth fontSubtitle lbl')) / 2.0
         prop = pageProperties d
+        colWidth = asPDFUnits . Inches $ 2
     in do
       p <- addPage Nothing
       drawWithPage p $ do
@@ -143,6 +143,6 @@ renderDoc d lbl=
              (unPDFUnits . dateRise $ prop)  revised
          drawText $ text fontSubtitle (unPDFUnits lblInset)
              (unPDFUnits . modeRise $ prop) lbl'
-         foldM_ draw
+         foldM_ (drawColumn colWidth)
              ((unPDFUnits . asPDFUnits . leftMargin $ prop)
              :+ (unPDFUnits . gridRise $ prop)) columns
