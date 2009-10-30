@@ -285,7 +285,9 @@ mainWindow filename = do
       , on command := trapError $ do
           prop <- liftIO $ varGet properties
           prop' <- liftIO $ PageSetupGUI.pageSetupDialog f prop
-          maybe (return ()) (liftIO . varSet properties) prop'
+          maybe (return ()) (\p -> if prop == p then return () else liftIO $ do
+              varSet properties p
+              setModified True) prop'
           return ()
       ]
 
