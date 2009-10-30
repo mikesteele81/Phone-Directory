@@ -38,10 +38,10 @@ pageSetupDialog p prop = do
     btnCancel    <- button f [WX.text := "Cancel"]
 
     -- stuff going into the margins group
-    marginL <- entry pMargin [WX.text := show . unInches . P.leftMargin $ prop ]
-    marginR <- entry pMargin [WX.text := show . unInches . P.rightMargin $ prop ]
-    marginT <- entry pMargin [WX.text := show . unInches . P.topMargin $ prop   ]
-    marginB <- entry pMargin [WX.text := show . unInches . P.bottomMargin $ prop ]
+    marginL <- entry pMargin [WX.text := show . unInches . P.leftMargin   $ prop]
+    marginR <- entry pMargin [WX.text := show . unInches . P.rightMargin  $ prop]
+    marginT <- entry pMargin [WX.text := show . unInches . P.topMargin    $ prop]
+    marginB <- entry pMargin [WX.text := show . unInches . P.bottomMargin $ prop]
     set pMargin
         [ layout := boxed "Margins (inches)" $ grid 4 2
             [ [ label "Left:", widget marginL, label "Right:", widget marginR ]

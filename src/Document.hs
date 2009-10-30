@@ -109,7 +109,7 @@ renderDoc d lbl=
         lbl' = toPDFString lbl
         lblInset = (width - (PDFUnits $ textWidth fontSubtitle lbl')) / 2.0
         prop = pageProperties d
-        colWidth = asPDFUnits . Inches $ 2
+        colWidth = asPDFUnits $ (pageWidth prop - leftMargin prop - rightMargin prop) / 4.0
         titleInset = (width - titleWidth) / 2.0
         titleRise = height - (asPDFUnits . topMargin $ prop)
             - (PDFUnits $ getHeight fontTitle)
