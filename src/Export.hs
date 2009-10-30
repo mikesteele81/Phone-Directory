@@ -38,13 +38,12 @@ generate
   -> WXError ()
 generate file doc =
     liftIO $ runPdf file standardDocInfo
-    (PDFRect 0 0 (floor . unPDFUnits $ pageWidth) (floor . unPDFUnits $ pageHeight))
+    (PDFRect 0 0 (floor . unPDFUnits . asPDFUnits . pageWidth  . pageProperties $ doc)
+                 (floor . unPDFUnits . asPDFUnits . pageHeight . pageProperties $ doc))
     $ do
         renderDoc page1 "(Sorted by Location and then Last Name)"
         renderDoc page2 "(Sorted by Location and then First Name)"
   where
     page1 = sortDoc doc
     page2 = sortDoc $ fmap (fmap FirstSortedName) doc
-    (pageWidth, pageHeight) = if (layout . pageProperties $ doc) == Portrait
-        then (asPDFUnits $ Inches 8.5 , asPDFUnits $ Inches 11.0)
-        else (asPDFUnits $ Inches 11.0, asPDFUnits $ Inches 8.5)
+

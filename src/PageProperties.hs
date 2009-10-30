@@ -16,8 +16,7 @@
 -}
 
 module PageProperties
-    ( Layout (..)
-    , PageProperties (..)
+    ( PageProperties (..)
     , mkPageProperties
     ) where
 
@@ -28,17 +27,9 @@ import Text.JSON.Pretty
 
 import UnitConversion
 
-data Layout = Portrait | Landscape
-    deriving (Enum, Eq, Read, Show)
-
-instance JSON Layout where
-    readJSON (JSString str) = return . read . fromJSString $ str
-    readJSON v = Error $ "Expected JSString, but " ++ (show . pp_value) v
-        ++ " found while parsing a contact information."
-    showJSON l = showJSON . show $ l
-
 data PageProperties = PageProperties
-    { layout       :: Layout
+    { pageWidth    :: Inches
+    , pageHeight   :: Inches
     , leftMargin   :: Inches
     , rightMargin  :: Inches
     , topMargin    :: Inches
@@ -47,16 +38,18 @@ data PageProperties = PageProperties
 
 instance JSON PageProperties where
     readJSON (JSObject o) = do
-        l  <- (valFromObj "layout"       o <|> return Portrait)
+        pw <- (valFromObj "pageWidth"    o <|> (return . Inches) 8.5)
+        ph <- (valFromObj "pageHeight"   o <|> (return . Inches) 11.0)
         lm <- (valFromObj "leftMargin"   o <|> return quarterInch)
         rm <- (valFromObj "rightMargin"  o <|> return quarterInch)
         tm <- (valFromObj "topMargin"    o <|> return quarterInch)
         bm <- (valFromObj "bottomMargin" o <|> return quarterInch)
-        return $ PageProperties l lm rm tm bm
+        return $ PageProperties pw ph lm rm tm bm
     readJSON v = Error $ "Expected JSObject, but " ++ (show . pp_value) v
         ++ " found while parsing a contact information."
     showJSON pp = makeObj
-        [ ("layout"      , showJSON . layout       $ pp)
+        [ ("pageWidth"   , showJSON . pageWidth    $ pp)
+        , ("pageHeight"  , showJSON . pageHeight   $ pp)
         , ("leftMargin"  , showJSON . leftMargin   $ pp)
         , ("rightMargin" , showJSON . rightMargin  $ pp)
         , ("topMargin"   , showJSON . topMargin    $ pp)
@@ -64,7 +57,8 @@ instance JSON PageProperties where
 
 mkPageProperties :: PageProperties
 mkPageProperties = PageProperties
-    { layout       = Portrait
+    { pageWidth    = Inches 8.5
+    , pageHeight   = Inches 11.0
     , leftMargin   = quarterInch
     , rightMargin  = quarterInch
     , topMargin    = quarterInch

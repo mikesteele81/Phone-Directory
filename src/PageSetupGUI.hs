@@ -22,7 +22,7 @@ import Control.Monad (liftM)
 import Graphics.UI.WX as WX
 
 import GUIConstants
-import qualified PageProperties as P
+import PageProperties as P
 import UnitConversion
 
 pageSetupDialog :: Window a -> P.PageProperties -> IO (Maybe P.PageProperties)
@@ -31,7 +31,8 @@ pageSetupDialog p prop = do
 
     -- stuff going into the main frame
     grpOrientation <- radioBox f Vertical ["Portrait", "Landscape"]
-        [WX.text := "Orientation", selection := fromEnum . P.layout $ prop]
+        [WX.text := "Orientation", selection :=
+            if pageHeight prop > pageWidth prop then 0 else 1]
     pMargin      <- panel f []
     btnOK        <- button f [WX.text := "OK"]
     btnCancel    <- button f [WX.text := "Cancel"]
@@ -62,11 +63,15 @@ pageSetupDialog p prop = do
             r <- liftM (Inches . read) $ get marginR WX.text
             t <- liftM (Inches . read) $ get marginT WX.text
             b <- liftM (Inches . read) $ get marginB WX.text
-            o <- liftM toEnum $ get grpOrientation WX.selection
-            return $ P.PageProperties o l r t b
+            (w, h) <- liftM orient2dim $ get grpOrientation WX.selection
+            return $ P.PageProperties w h l r t b
 
     showModal f (\final -> do
         set btnOK [ on command := do
             prop' <- parse
             final (Just prop')]
         set btnCancel [on command := final Nothing])
+
+orient2dim :: Int -> (Inches, Inches)
+orient2dim 0 = (Inches 8.5, Inches 11.0)
+orient2dim _ = (Inches 11.0, Inches 8.5)

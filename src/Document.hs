@@ -70,21 +70,6 @@ fontTitle    = PDFFont Times_Bold 18
 fontSubtitle :: PDFFont
 fontSubtitle = PDFFont Helvetica 10
 
-pageWidth :: PDFUnits
-pageWidth = asPDFUnits . Inches $ 8.5
-
-pageHeight :: PDFUnits
-pageHeight = asPDFUnits . Inches $ 11.0
-
--- |Distance from left edge to draw the title.
-titleInset :: PDFUnits
-titleInset = (pageWidth - titleWidth) / 2.0
-
--- |Distance from bottom edge to draw the title.
-titleRise :: PageProperties -> PDFUnits
-titleRise p = pageHeight - (asPDFUnits . topMargin $ p)
-    - (PDFUnits $ getHeight fontTitle)
-
 titleString :: PDFString
 titleString = toPDFString "PHONE DIRECTORY"
 
@@ -94,18 +79,6 @@ titleWidth = PDFUnits $ textWidth fontTitle titleString
 -- |Distance from left edge to draw the date string.
 dateInset :: PageProperties -> PDFUnits
 dateInset p = asPDFUnits $ leftMargin p + Inches (1 / 16)
-
--- |Distance from bottom edge to draw the date string.
-dateRise :: PageProperties -> PDFUnits
-dateRise p = titleRise p - (PDFUnits $ getHeight fontSubtitle)
-    - asPDFUnits sixteenthInch
-
--- |Distance from bottom edge to draw the sort specifier.
-modeRise :: PageProperties -> PDFUnits
-modeRise p = dateRise p
-
-gridRise :: PageProperties -> PDFUnits
-gridRise p = dateRise p - asPDFUnits sixteenthInch
 
 -- |Convenient way to make a Document.
 mkDocument :: Document a
@@ -130,19 +103,27 @@ renderDoc :: (ShowLineItems a, Ord a)
 renderDoc d lbl= 
     let revised = toPDFString $ "Revised: " ++ dRevised d
         columns = flowCols (showLineItems $ dOrganizations d) 4
+        dateRise = titleRise - (PDFUnits $ getHeight fontSubtitle)
+            - asPDFUnits sixteenthInch
+        gridRise = dateRise - asPDFUnits sixteenthInch
         lbl' = toPDFString lbl
-        lblInset = (pageWidth - (PDFUnits $ textWidth fontSubtitle lbl')) / 2.0
+        lblInset = (width - (PDFUnits $ textWidth fontSubtitle lbl')) / 2.0
         prop = pageProperties d
         colWidth = asPDFUnits . Inches $ 2
+        titleInset = (width - titleWidth) / 2.0
+        titleRise = height - (asPDFUnits . topMargin $ prop)
+            - (PDFUnits $ getHeight fontTitle)
+        width = asPDFUnits . pageWidth $ prop
+        height = asPDFUnits . pageHeight $ prop
     in do
       p <- addPage Nothing
       drawWithPage p $ do
          drawText $ text fontTitle (unPDFUnits titleInset)
-             (unPDFUnits $ titleRise prop) titleString
+             (unPDFUnits titleRise) titleString
          drawText $ text fontSubtitle (unPDFUnits . dateInset $ prop)
-             (unPDFUnits . dateRise $ prop)  revised
+             (unPDFUnits dateRise)  revised
          drawText $ text fontSubtitle (unPDFUnits lblInset)
-             (unPDFUnits . modeRise $ prop) lbl'
+             (unPDFUnits dateRise) lbl'
          foldM_ (drawColumn colWidth)
              ((unPDFUnits . asPDFUnits . leftMargin $ prop)
-             :+ (unPDFUnits . gridRise $ prop)) columns
+             :+ (unPDFUnits gridRise)) columns
