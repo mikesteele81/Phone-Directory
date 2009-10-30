@@ -304,7 +304,8 @@ mainWindow filename = do
             Nothing -> return ()
       ]
 
-  set iQuit  [ on command := trapError $ checkConfirmUnsaved $ liftIO $ close f ]
+  -- The 'closing' event handler checks for unsaved changes.
+  set iQuit  [ on command := close f ]
   set iAbout [ on command := infoDialog f "About Phone Directory" aboutTxt ]
 
   set eFirst    [ processEnter := True
@@ -330,7 +331,9 @@ mainWindow filename = do
 
   set tc [ on treeEvent := onTreeEvent ]
 
-  set f [ menuBar    := [mFile, mHelp]
+  set f [ on closing := trapError . checkConfirmUnsaved . liftIO
+            $ windowDestroy f >> return ()
+        , menuBar    := [mFile, mHelp]
         , picture    := "data/images/pdirectory.ico"
         , layout     := WX.fill $ margin winPadding $ vsplit sw winPadding 200
                         (widget pLeft) (widget pRight)
