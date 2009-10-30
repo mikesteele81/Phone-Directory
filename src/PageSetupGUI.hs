@@ -18,11 +18,12 @@
 
 module PageSetupGUI where
 
+import Control.Monad (liftM)
 import Graphics.UI.WX as WX
 
 import GUIConstants
 import qualified PageProperties as P
-import UnitConversion (unInches)
+import UnitConversion
 
 pageSetupDialog :: Window a -> P.PageProperties -> IO (Maybe P.PageProperties)
 pageSetupDialog p prop = do
@@ -54,6 +55,18 @@ pageSetupDialog p prop = do
             , row ctrlPadding [hglue, widget btnOK, widget btnCancel]]
         ]
 
+    let
+        parse :: IO P.PageProperties
+        parse = do
+            l <- liftM (Inches . read) $ get marginL WX.text
+            r <- liftM (Inches . read) $ get marginR WX.text
+            t <- liftM (Inches . read) $ get marginT WX.text
+            b <- liftM (Inches . read) $ get marginB WX.text
+            o <- liftM toEnum $ get grpOrientation WX.selection
+            return $ P.PageProperties o l r t b
 
-    result <- showModal f (\stop -> set btnOK [on command := stop (Just P.mkPageProperties)])
-    return result
+    showModal f (\final -> do
+        set btnOK [ on command := do
+            prop' <- parse
+            final (Just prop')]
+        set btnCancel [on command := final Nothing])
