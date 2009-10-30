@@ -25,12 +25,9 @@ import Graphics.PDF
 import ContactInfo
 import Document
 import Name
+import PageProperties
 import UnitConversion
 import WXError
-
-pageWidth, pageHeight :: PDFUnits
-pageWidth     = asPDFUnits (Inches 8.5)
-pageHeight    = asPDFUnits (Inches 11)
 
 -- |Create a 2-page .pdf file.  The first page sorts by last name and
 -- the second sorts by first name.
@@ -40,12 +37,14 @@ generate
                                  -- automatically resorted.
   -> WXError ()
 generate file doc =
-  let
-    page1 = sortDoc doc
-    page2 = sortDoc $ fmap (fmap FirstSortedName) doc
-  in
     liftIO $ runPdf file standardDocInfo
     (PDFRect 0 0 (floor . unPDFUnits $ pageWidth) (floor . unPDFUnits $ pageHeight))
     $ do
         renderDoc page1 "(Sorted by Location and then Last Name)"
         renderDoc page2 "(Sorted by Location and then First Name)"
+  where
+    page1 = sortDoc doc
+    page2 = sortDoc $ fmap (fmap FirstSortedName) doc
+    (pageWidth, pageHeight) = if (layout . pageProperties $ doc) == Portrait
+        then (asPDFUnits $ Inches 8.5 , asPDFUnits $ Inches 11.0)
+        else (asPDFUnits $ Inches 11.0, asPDFUnits $ Inches 8.5)
