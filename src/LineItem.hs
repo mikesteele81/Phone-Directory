@@ -87,10 +87,9 @@ drawLineItem colWidth (x :+ y) (LineItem  l r i) = do
         textStart (textWidth font_normal r - lineItemWidth) 0
     return (x :+ y')
   where
-    lineItemIndent = unPDFUnits line_item_indent
     lineItemWidth = unPDFUnits colWidth - 2 * colPadding
     colPadding = unPDFUnits col_padding
-    offset = if i then lineItemIndent else 0.0
+    offset = if i then unPDFUnits line_item_indent else 0.0
     y' = y - unPDFUnits line_item_leading
 drawLineItem colWidth (x :+ y) Divider = do
     stroke (Line x y' (x + unPDFUnits colWidth) y')
