@@ -22,10 +22,10 @@ import Control.Monad (liftM)
 import Graphics.UI.WX as WX
 
 import GUIConstants
-import PageProperties as P
+import PageProperties
 import UnitConversion
 
-pageSetupDialog :: Window a -> P.PageProperties -> IO (Maybe P.PageProperties)
+pageSetupDialog :: Window a -> PageProperties -> IO (Maybe PageProperties)
 pageSetupDialog p prop = do
     f <- dialog p []
 
@@ -38,10 +38,10 @@ pageSetupDialog p prop = do
     btnCancel    <- button f [WX.text := "Cancel"]
 
     -- stuff going into the margins group
-    marginL <- entry pMargin [WX.text := show . unInches . P.leftMargin   $ prop]
-    marginR <- entry pMargin [WX.text := show . unInches . P.rightMargin  $ prop]
-    marginT <- entry pMargin [WX.text := show . unInches . P.topMargin    $ prop]
-    marginB <- entry pMargin [WX.text := show . unInches . P.bottomMargin $ prop]
+    marginL <- entry pMargin [WX.text := show . unInches . leftMargin   $ prop]
+    marginR <- entry pMargin [WX.text := show . unInches . rightMargin  $ prop]
+    marginT <- entry pMargin [WX.text := show . unInches . topMargin    $ prop]
+    marginB <- entry pMargin [WX.text := show . unInches . bottomMargin $ prop]
     set pMargin
         [ layout := boxed "Margins (inches)" $ grid 4 2
             [ [ label "Left:", widget marginL, label "Right:", widget marginR ]
@@ -57,14 +57,14 @@ pageSetupDialog p prop = do
         ]
 
     let
-        parse :: IO P.PageProperties
+        parse :: IO PageProperties
         parse = do
             l <- liftM (Inches . read) $ get marginL WX.text
             r <- liftM (Inches . read) $ get marginR WX.text
             t <- liftM (Inches . read) $ get marginT WX.text
             b <- liftM (Inches . read) $ get marginB WX.text
             (w, h) <- liftM orient2dim $ get grpOrientation WX.selection
-            return $ P.PageProperties w h l r t b
+            return $ PageProperties w h l r t b
 
     showModal f (\final -> do
         set btnOK [ on command := do
