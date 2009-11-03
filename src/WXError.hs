@@ -20,7 +20,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module WXError
-    ( WXError()
+    ( WXError ()
     , fromEither
     , fromJSONResult
     , fromMaybe

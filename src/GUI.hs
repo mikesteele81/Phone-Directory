@@ -451,4 +451,3 @@ updateNode tc itm ci = liftIO $ do
     M.when (root /= itm && treeItemIsOk itm) $ do
         treeCtrlSetItemClientData tc itm (return ()) ci
         treeCtrlSetItemText tc itm $ show ci
-

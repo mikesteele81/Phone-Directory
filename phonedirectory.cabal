@@ -26,6 +26,7 @@ Executable pdirectory
     HPDF >= 1.4,
     json >= 0.4,
     mtl,
+    safe,
     time,
     wx,
     wxcore

@@ -15,15 +15,21 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+{-# LANGUAGE ExistentialQuantification #-}
 
 module PageSetupGUI where
 
+import Control.Applicative
 import Control.Monad (liftM)
+import Control.Monad.Error
 import Graphics.UI.WX as WX
+import Graphics.UI.WXCore as WXCore
+import Safe
 
 import GUIConstants
 import PageProperties
 import UnitConversion
+import WXError
 
 pageSetupDialog :: Window a -> PageProperties -> IO (Maybe PageProperties)
 pageSetupDialog p prop = do
@@ -57,19 +63,29 @@ pageSetupDialog p prop = do
         ]
 
     let
-        parse :: IO PageProperties
+        parse :: WXError PageProperties
         parse = do
-            l <- liftM (Inches . read) $ get marginL WX.text
-            r <- liftM (Inches . read) $ get marginR WX.text
-            t <- liftM (Inches . read) $ get marginT WX.text
-            b <- liftM (Inches . read) $ get marginB WX.text
-            (w, h) <- liftM orient2dim $ get grpOrientation WX.selection
-            return $ PageProperties w h l r t b
+            l <- liftM (liftM Inches . readMay) $ liftIO $ get marginL WX.text
+            r <- liftM (liftM Inches . readMay) $ liftIO $ get marginR WX.text
+            t <- liftM (liftM Inches . readMay) $ liftIO $ get marginT WX.text
+            b <- liftM (liftM Inches . readMay) $ liftIO $ get marginB WX.text
+            (w, h) <- liftIO $ liftM orient2dim $ get grpOrientation WX.selection
+            maybe myError return (PageProperties w h <$> l <*> r <*> t <*> b)
+          where
+            myError = throwError
+                "I'm not able to parse one or more of the margin values."
+
+        trapError :: WXError a -> IO ()
+        trapError x = do
+            x' <- wxerror x
+            case x' of
+              Left y -> errorDialog f "error" y
+              Right _ -> return ()
 
     showModal f (\final -> do
-        set btnOK [ on command := do
+        set btnOK [ on command := trapError $ do
             prop' <- parse
-            final (Just prop')]
+            liftIO $ final (Just prop')]
         set btnCancel [on command := final Nothing])
 
 orient2dim :: Int -> (Inches, Inches)
