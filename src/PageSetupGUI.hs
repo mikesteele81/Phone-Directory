@@ -15,12 +15,9 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE ExistentialQuantification #-}
-
 module PageSetupGUI where
 
 import Control.Applicative
-import Control.Monad (liftM)
 import Control.Monad.Error
 import Graphics.UI.WX as WX
 import Graphics.UI.WXCore as WXCore
