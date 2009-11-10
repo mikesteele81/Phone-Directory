@@ -398,10 +398,11 @@ tree2Doc tc = do
             contacts <- liftIO $ treeCtrlWithChildren tc itm
                 $ wxerror . treeItem2CI tc
             fromEither $ Organization orgCI <$> sequence contacts
-    time <- liftIO getCurrentTime
-    let (year, month, day) = toGregorian $ utctDay time
-        date = show month ++ "/" ++ show day ++ "/" ++ show year
-    fromEither $ Document date <$> sequence orgs
+    (year, month, day) <- liftIO $ liftM
+        (toGregorian . localDay . zonedTimeToLocalTime) getZonedTime
+    fromEither $ Document
+        (show month ++ "/" ++ show day ++ "/" ++ show year)
+        <$> sequence orgs
 
 -- |Create a ContactInfo by pulling it from the tree heirarchy.  This is the
 -- only place where 'unsafeTreeCtrlGetItemClientData' should be called.
