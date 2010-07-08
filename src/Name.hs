@@ -84,7 +84,8 @@ instance JSON Name where
         FirstLast f l -> makeObj [ ("first", showJSON f), ("last" , showJSON l) ]
         SingleName sn -> showJSON sn
                    
--- |Convencience function to create a name from two strings.
+-- |Convencience function to create a name from two strings. This lets us pull
+-- user input directly from the GUI
 mkName :: String -- ^First name or blank.
     -> String    -- ^Last name or blank.
     -> Name
