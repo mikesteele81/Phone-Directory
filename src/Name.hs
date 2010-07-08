@@ -51,10 +51,8 @@ instance Show FirstSortedName where
           SingleName sn -> sn
     
 instance Show Name where
-    show n =
-        case n of
-          FirstLast f l -> l ++ ", " ++ f
-          SingleName sn -> sn
+  show (FirstLast f l) = l ++ ", " ++ f
+  show (SingleName n)  = n
 
 instance Ord Name where
     compare (FirstLast fl ll) (FirstLast fr lr) =
