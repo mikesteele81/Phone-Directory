@@ -45,10 +45,9 @@ newtype FirstSortedName = FirstSortedName { unFSN :: Name }
     deriving (Eq, JSON)
 
 instance Show FirstSortedName where
-    show (FirstSortedName n) =
-        case n of
-          FirstLast f l -> f ++ " " ++ l
-          SingleName sn -> sn
+  show (unFSN -> FirstLast f l) = f ++ " " ++ l
+  -- It must be a SingleName
+  show (unFSN -> n)             = show n
     
 instance Show Name where
   show (FirstLast f l) = l ++ ", " ++ f
