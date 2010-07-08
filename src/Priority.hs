@@ -25,8 +25,9 @@ module Priority
 import Control.Applicative
 import Control.Monad
 import Text.JSON
+import Text.JSON.Pretty (pp_value)
 
-newtype Priority = Priority Int
+newtype Priority = Priority { unP :: Int }
     -- the Show instance is only for QC properties
     deriving (Enum, Eq, Ord, Show)
 
@@ -35,9 +36,9 @@ instance Bounded Priority where
     maxBound = Priority 5
 
 instance JSON Priority where
-    readJSON x = liftM mkPriority (readJSON x)
-      <|> (Error $ "Could not parse " ++ show x ++ " as a value for a priority.")
-    showJSON (Priority p) = showJSON p
+  readJSON x = liftM mkPriority (readJSON x)
+      <|> Error ("Unable to parse priority: " ++ (show . pp_value) x)
+  showJSON = showJSON . unP
 
 -- |Makes a Priority from an int, automatically clipping the results to be
 -- within range.
