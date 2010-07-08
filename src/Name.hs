@@ -58,6 +58,7 @@ instance Show Name where
 instance Ord Name where
     compare (FirstLast fl ll) (FirstLast fr lr) =
        compare ll lr `mappend` compare fl fr
+    -- Bug? why are we ignoring the first name in comparisons?
     compare (FirstLast _ l) (SingleName n) = compare l n `mappend` GT
     compare (SingleName n) (FirstLast _ l) = compare n l `mappend` LT
     compare (SingleName l) (SingleName r) = compare l r
