@@ -16,7 +16,7 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, ViewPatterns #-}
 
 module Name
     ( Name            ( FirstLast, SingleName)
@@ -25,6 +25,7 @@ module Name
     ) where
 
 import Control.Applicative
+import Data.Function (on)
 import Data.Monoid
 import Text.JSON
 import Text.JSON.Pretty (pp_value)
@@ -40,7 +41,7 @@ data Name
   deriving (Eq)
 
 -- |This prints out 'First Last' and sorts by first name.
-newtype FirstSortedName = FirstSortedName Name
+newtype FirstSortedName = FirstSortedName { unFSN :: Name }
     deriving (Eq, JSON)
 
 instance Show FirstSortedName where
@@ -64,14 +65,14 @@ instance Ord Name where
     compare (SingleName l) (SingleName r) = compare l r
 
 instance Ord FirstSortedName where
-    compare (FirstSortedName (FirstLast fl ll)) (FirstSortedName (FirstLast fr lr)) =
-        compare fl fr `mappend` compare ll lr
-    compare (FirstSortedName (FirstLast f _)) (FirstSortedName (SingleName n)) =
-        compare f n `mappend` GT
-    compare (FirstSortedName (SingleName n)) (FirstSortedName (FirstLast f _)) =
-        compare n f `mappend` LT
-    compare (FirstSortedName (SingleName l)) (FirstSortedName (SingleName r)) =
-        compare l r
+  compare (unFSN -> FirstLast fl ll) (unFSN -> FirstLast fr lr) =
+      compare fl fr `mappend` compare ll lr
+  compare (unFSN -> FirstLast f _) (unFSN -> SingleName n) =
+      compare f n `mappend` GT
+  compare (unFSN -> SingleName n) (unFSN -> FirstLast f _) =
+      compare n f `mappend` LT
+  -- The only other possibility is SingleName to SingleName
+  compare l r = (compare `on` unFSN) l r
 
 instance JSON Name where
     readJSON v@(JSObject o) =
