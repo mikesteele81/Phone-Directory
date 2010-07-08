@@ -87,10 +87,8 @@ instance JSON Name where
 -- |Convencience function to create a name from two strings. This lets us pull
 -- user input directly from the GUI
 mkName :: String -- ^First name or blank.
-    -> String    -- ^Last name or blank.
-    -> Name
-mkName f l =
-    case (f, l) of
-        ("", n) -> SingleName n
-        (n, "") -> SingleName n
-        _       -> FirstLast f l
+       -> String -- ^Last name or blank.
+       -> Name
+mkName "" n = SingleName n
+mkName n "" = SingleName n
+mkName f l  = FirstLast f l
