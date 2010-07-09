@@ -16,7 +16,10 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE GeneralizedNewtypeDeriving, ViewPatterns #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Name
     ( Name            ( FirstLast, SingleName)
@@ -25,8 +28,13 @@ module Name
     ) where
 
 import Control.Applicative
+import Data.Attempt ()
+import Data.ByteString.Char8
 import Data.Function (on)
 import Data.Monoid
+import Data.Convertible.Base
+import Data.Object
+import qualified Data.Object.Json as J
 import Text.JSON
 import Text.JSON.Pretty (pp_value)
 
@@ -89,3 +97,17 @@ mkName :: String -- ^First name or blank.
 mkName "" n = SingleName n
 mkName n "" = SingleName n
 mkName f l  = FirstLast f l
+
+instance ConvertAttempt J.JsonObject Name where
+  convertAttempt j =
+      do m <- fromMapping j
+         f <- lookupScalar (pack "first") m
+         l <- lookupScalar (pack "last") m
+         return $ (mkName `on` J.fromJsonScalar) f l
+
+instance ConvertSuccess Name J.JsonObject where
+  convertSuccess (FirstLast f l) =
+      J.toJsonObject $ Mapping
+          [ ("first", Scalar f), ("last", Scalar l)]
+  convertSuccess (SingleName n) = (Scalar . J.JsonString . pack) n
+

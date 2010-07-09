@@ -15,11 +15,19 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+
 module Organization where
 
 import Control.Applicative
 import Control.Monad.Error
+import qualified Data.ByteString.Char8 as B
+import Data.Convertible.Base
 import Data.List (sort)
+import Data.Object
+import qualified Data.Object.Json as J
 import Text.JSON
 import Text.JSON.Pretty
 
@@ -49,6 +57,20 @@ instance (JSON a) => JSON (Organization a) where
                  [ ("info", showJSON $ oInfo o)
                  , ("contacts", showJSONs $ oContacts o)]
                  
+instance (ConvertAttempt J.JsonObject a)
+    => ConvertAttempt J.JsonObject (Organization a) where
+  convertAttempt j =
+      do m <- fromMapping j
+         i <- lookupObject (B.pack "info") m >>= convertAttempt
+         cx <- lookupSequence (B.pack "contacts") m >>= mapM convertAttempt
+         return $ Organization i cx
+
+instance (ConvertSuccess a J.JsonObject)
+    => ConvertSuccess (Organization a) J.JsonObject where
+  convertSuccess (Organization i cx) =
+      Mapping [ (B.pack "info", convertSuccess i)
+              , (B.pack "contacts", Sequence $ map convertSuccess cx)]
+
 instance (ShowLineItems a) => ShowLineItems (Organization a) where
     showLineItems (Organization o cx) = concat $ [header] : map showLineItems cx
         where header = (head $ showLineItems o) {indent = False}

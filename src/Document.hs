@@ -15,6 +15,10 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+
 module Document
     ( Document (..)
     , mkDocument
@@ -24,7 +28,11 @@ module Document
 
 import Control.Applicative
 import Control.Monad (foldM_)
+import qualified Data.ByteString.Char8 as B
+import Data.Convertible.Base
 import Data.List (sort)
+import Data.Object
+import qualified Data.Object.Json as J
 import Graphics.PDF
 import Text.JSON
 
@@ -57,6 +65,20 @@ instance (JSON a) => JSON (Document a) where
         [ ("revised", showJSON $ dRevised d)
         , ("organizations", showJSONs $ dOrganizations d)
         , ("pageProperties", showJSON . pageProperties $ d)]
+
+instance ConvertAttempt J.JsonObject a
+    => ConvertAttempt J.JsonObject (Document a) where
+ convertAttempt j =
+     do m <- fromMapping j
+        r <- J.fromJsonScalar <$> lookupScalar (B.pack "revised") m
+        ox <- lookupSequence (B.pack "organizations") m >>= mapM convertAttempt
+        return $ Document r ox
+
+instance (ConvertSuccess a J.JsonObject)
+    => ConvertSuccess (Document a) J.JsonObject where
+  convertSuccess (Document r ox) =
+      Mapping [ (B.pack "revised", Scalar $ J.toJsonScalar r)
+              , (B.pack "organizations", Sequence $ map convertSuccess ox)]
 
 -- Perform an operation on the name.  Is this an abuse of Functors?
 instance Functor Document where

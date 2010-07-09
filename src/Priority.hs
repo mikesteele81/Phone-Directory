@@ -15,7 +15,10 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module Priority
     ( Priority ()
@@ -24,6 +27,9 @@ module Priority
 
 import Control.Applicative
 import Control.Monad
+import Data.Attempt
+import Data.Convertible.Base
+import qualified Data.Object.Json as J
 import Text.JSON
 import Text.JSON.Pretty (pp_value)
 
@@ -44,3 +50,10 @@ instance JSON Priority where
 -- within range.
 mkPriority :: Int -> Priority
 mkPriority = min maxBound . max minBound . Priority
+
+instance ConvertSuccess Priority J.JsonScalar where
+  convertSuccess (Priority p) = J.JsonNumber (convertSuccess p)
+
+instance ConvertAttempt J.JsonScalar Priority where
+  convertAttempt (J.JsonNumber r)  = mkPriority <$> convertAttempt r
+  convertAttempt _ = failure NothingException

@@ -16,12 +16,22 @@
 -}
 
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+
 module ContactInfo
     ( ContactInfo (..)
     ) where
 
 import Control.Applicative
+import Data.Attempt ()
+import Data.ByteString.Char8
+import Data.Convertible.Base
 import Control.Monad.Error
+import Data.Object
+import qualified Data.Object.Json as J
 import Text.JSON
 import Text.JSON.Pretty
 
@@ -65,3 +75,19 @@ instance Functor ContactInfo where
 
 instance (Show a) => ShowLineItems (ContactInfo a) where
     showLineItems ci = [mkLabelValue True (show $ cName ci) (cPhone ci)]
+
+instance (ConvertAttempt J.JsonObject a)
+    => ConvertAttempt J.JsonObject (ContactInfo a) where
+  convertAttempt j =
+      do m <- fromMapping j
+         pr <- lookupScalar (pack "priority") m >>= convertAttempt
+         n  <- lookupObject (pack "name")     m >>= convertAttempt
+         p  <- J.fromJsonScalar <$> lookupScalar (pack "phone") m
+         return $ ContactInfo pr n p
+
+instance (ConvertSuccess a J.JsonObject)
+    => ConvertSuccess (ContactInfo a) J.JsonObject where
+  convertSuccess (ContactInfo pr n p) =
+      Mapping [ (pack "name", convertSuccess n)
+              , (pack "phone", Scalar $ J.toJsonScalar p)
+              , (pack "priority", Scalar $ convertSuccess pr)]
