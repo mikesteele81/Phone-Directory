@@ -44,6 +44,8 @@ instance (JSON a) => JSON (ContactInfo a) where
         ( ContactInfo <$> valFromObj "priority" o
           <*> valFromObj "name" o
           <*> (valFromObj "phone" o
+-- Error handling here uses catchError, and then displays the real JSON error
+-- message. Elsewhere I'm doing things differently. Which is best?          
                `catchError` (\e -> Error $ "failed on phone: " ++ e)))
         `catchError` (\e -> Error $ msg e)
       where
