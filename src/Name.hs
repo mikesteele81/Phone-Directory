@@ -27,16 +27,12 @@ module Name
     , mkName
     ) where
 
-import Control.Applicative
-import Data.Attempt ()
 import Data.ByteString.Char8
 import Data.Function (on)
 import Data.Monoid
 import Data.Convertible.Base
 import Data.Object
 import qualified Data.Object.Json as J
-import Text.JSON
-import Text.JSON.Pretty (pp_value)
 
 -- |A contact's name. This sorts by last name and prints out as 'Last,
 -- First'.
@@ -50,7 +46,7 @@ data Name
 
 -- |This prints out 'First Last' and sorts by first name.
 newtype FirstSortedName = FirstSortedName { unFSN :: Name }
-    deriving (Eq, JSON)
+    deriving (Eq)
 
 instance Show FirstSortedName where
   show (unFSN -> FirstLast f l) = f ++ " " ++ l
@@ -79,18 +75,7 @@ instance Ord FirstSortedName where
   -- The only other possibility is SingleName to SingleName
   compare l r = (compare `on` unFSN) l r
 
-instance JSON Name where
-    readJSON v@(JSObject o) =
-        (FirstLast <$> valFromObj "first" o <*> valFromObj "last" o)
-        <|> (Error $ "Unable to parse name: " ++ (show . pp_value) v)
-    readJSON (JSString s) = return . SingleName $ fromJSString s
-    readJSON v = Error $ "Unable to parse Name: " ++ (show . pp_value) v
-    showJSON n = case n of
-        FirstLast f l -> makeObj [ ("first", showJSON f), ("last" , showJSON l) ]
-        SingleName sn -> showJSON sn
-                   
--- |Convencience function to create a name from two strings. This lets us pull
--- user input directly from the GUI
+-- |Convencience function to create a name from two strings.
 mkName :: String -- ^First name or blank.
        -> String -- ^Last name or blank.
        -> Name

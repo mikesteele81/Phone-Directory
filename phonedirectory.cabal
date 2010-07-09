@@ -29,7 +29,6 @@ Executable pdirectory
     data-object-json >= 0.3,
     filepath,
     HPDF >= 1.4,
-    json >= 0.4,
     mtl,
     safe >= 0.2,
     time,

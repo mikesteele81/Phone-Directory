@@ -29,11 +29,8 @@ import Control.Applicative
 import Data.Attempt ()
 import Data.ByteString.Char8
 import Data.Convertible.Base
-import Control.Monad.Error
 import Data.Object
 import qualified Data.Object.Json as J
-import Text.JSON
-import Text.JSON.Pretty
 
 import LineItem
 import Priority
@@ -48,23 +45,6 @@ data ContactInfo a = ContactInfo
     -- |A phone number.  This ends up on the right of each line item.
   , cPhone    :: String
   } deriving (Eq, Ord)
-
-instance (JSON a) => JSON (ContactInfo a) where
-    readJSON (JSObject o) =
-        ( ContactInfo <$> valFromObj "priority" o
-          <*> valFromObj "name" o
-          <*> (valFromObj "phone" o
--- Error handling here uses catchError, and then displays the real JSON error
--- message. Elsewhere I'm doing things differently. Which is best?          
-               `catchError` (\e -> Error $ "failed on phone: " ++ e)))
-        `catchError` (\e -> Error $ msg e)
-      where
-        msg e = "Failed to parse contact information: " ++ e
-    readJSON v = Error $ "Expected JSObject, but " ++ (show . pp_value) v
-        ++ " found while parsing a contact information."
-    showJSON ci = makeObj
-        [ ("name", showJSON . cName $ ci), ("phone", showJSON . cPhone $ ci)
-        , ("priority", showJSON . cPriority $ ci) ]
 
 instance forall a. (Show a) => Show (ContactInfo a) where
     show = show . cName

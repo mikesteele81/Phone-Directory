@@ -26,12 +26,9 @@ module Priority
     ) where
 
 import Control.Applicative
-import Control.Monad
 import Data.Attempt
 import Data.Convertible.Base
-import qualified Data.Object.Json as J
-import Text.JSON
-import Text.JSON.Pretty (pp_value)
+import Data.Object.Json
 
 newtype Priority = Priority { unP :: Int }
     -- the Show instance is only for QC properties
@@ -41,19 +38,14 @@ instance Bounded Priority where
     minBound = Priority 0
     maxBound = Priority 5
 
-instance JSON Priority where
-  readJSON x = liftM mkPriority (readJSON x)
-      <|> Error ("Unable to parse priority: " ++ (show . pp_value) x)
-  showJSON = showJSON . unP
-
 -- |Makes a Priority from an int, automatically clipping the results to be
 -- within range.
 mkPriority :: Int -> Priority
 mkPriority = min maxBound . max minBound . Priority
 
-instance ConvertSuccess Priority J.JsonScalar where
-  convertSuccess (Priority p) = J.JsonNumber (convertSuccess p)
+instance ConvertSuccess Priority JsonScalar where
+  convertSuccess (Priority p) = JsonNumber (convertSuccess p)
 
-instance ConvertAttempt J.JsonScalar Priority where
-  convertAttempt (J.JsonNumber r)  = mkPriority <$> convertAttempt r
+instance ConvertAttempt JsonScalar Priority where
+  convertAttempt (JsonNumber r)  = mkPriority <$> convertAttempt r
   convertAttempt _ = failure NothingException

@@ -22,7 +22,6 @@
 module WXError
     ( WXError ()
     , fromEither
-    , fromJSONResult
     , fromMaybe
     , wxerror
     , module Control.Monad.Trans
@@ -30,7 +29,6 @@ module WXError
 
 import Control.Monad.Error
 import Control.Monad.Trans
-import Text.JSON
 import System.IO.Error (try)
 
 newtype WXError a = WXError { runWXError :: ErrorT String IO a }
@@ -51,9 +49,6 @@ instance MonadIO WXError where
 -- |Convenience function for getting out of the WXError monad
 wxerror :: WXError a -> IO (Either String a)
 wxerror = runErrorT . runWXError
-
-fromJSONResult :: Result a -> WXError a
-fromJSONResult = either throwError return . resultToEither
 
 fromMaybe
     :: String

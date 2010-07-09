@@ -15,13 +15,18 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+
 module UnitConversion where
 
+import Control.Applicative
 import Graphics.PDF (PDFFloat)
-import Text.JSON
-import Text.JSON.Pretty
+import Data.Attempt
+import Data.Convertible.Base
+import Data.Object.Json
 
 newtype Inches = Inches { unInches :: Double }
     deriving (Eq, Fractional, Num, Ord, Show)
@@ -30,18 +35,6 @@ newtype PDFUnits = PDFUnits { unPDFUnits :: PDFFloat }
 
 sixteenthInch :: Inches
 sixteenthInch = Inches $ 1 / 16.0
-
-instance JSON Inches where
-    readJSON (JSRational _ v) = return . Inches . fromRational $ v
-    readJSON v = Error $ "Expected JSString, but " ++ (show . pp_value) v
-        ++ " found while parsing a contact information."
-    showJSON = JSRational False . toRational . unInches
-
-instance JSON PDFUnits where
-    readJSON (JSRational _ v) = return . PDFUnits . fromRational $ v
-    readJSON v = Error $ "Expected JSString, but " ++ (show . pp_value) v
-        ++ " found while parsing a contact information."
-    showJSON = JSRational False . toRational . unPDFUnits
 
 class CInches a where
     asInches :: a -> Inches
@@ -56,3 +49,17 @@ instance CPDFUnits Inches where
 
 instance CInches PDFUnits where
     asInches (PDFUnits v) = Inches $ v / 72.0
+
+instance ConvertSuccess Inches JsonScalar where
+  convertSuccess (Inches i) = JsonNumber (convertSuccess i)
+
+instance ConvertAttempt JsonScalar Inches where
+  convertAttempt (JsonNumber i)  = Inches <$> convertAttempt i
+  convertAttempt _ = failure NothingException
+
+instance ConvertSuccess PDFUnits JsonScalar where
+  convertSuccess (PDFUnits i) = JsonNumber (convertSuccess i)
+
+instance ConvertAttempt JsonScalar PDFUnits where
+  convertAttempt (JsonNumber i)  = PDFUnits <$> convertAttempt i
+  convertAttempt _ = failure NothingException

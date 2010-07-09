@@ -22,16 +22,16 @@ module GUI
 import Control.Applicative
 import Control.Monad as M
 import Control.Monad.Error (catchError, throwError)
+import Data.Attempt
 import Data.Char
+import Data.Convertible.Text
 import qualified Data.Function as F (on)
 import Data.List
+import Data.Object.Json
 import Data.Time
 import Graphics.UI.WX as WX
 import Graphics.UI.WXCore hiding (Document)
 import System.FilePath
-import System.IO
-import Text.JSON
-import Text.JSON.Pretty
 
 import ContactInfo
 import Document
@@ -416,7 +416,7 @@ treeItem2CI tc itm = do
 -- |Save the supplied document to a file.
 saveDoc :: FilePath -> Document (ContactInfo Name) -> WXError ()
 saveDoc fp doc =
-    (liftIO . writeFile fp . show . pp_value . showJSON $ doc)
+    (liftIO $ encodeFile fp (convertSuccess doc :: JsonObject))
     `catchError` (throwError . (msg ++))
   where
     msg = "Failed to save directory to " ++ fp ++ ":\n"
@@ -424,8 +424,8 @@ saveDoc fp doc =
 -- |Attempt to load a document from the supplied file.
 loadDoc :: FilePath -> WXError (Document (ContactInfo Name))
 loadDoc fp = ( do
-        s <- liftIO $ readFile fp
-        fromJSONResult $ decodeStrict s >>= readJSON
+        json <- liftIO (decodeFile $ fp :: IO (Attempt JsonObject))
+        liftIO . fromAttempt $ json >>= convertAttempt
     ) `catchError` (throwError . (msg ++))
   where
     msg = "Failed to load " ++ fp ++ ":\n"

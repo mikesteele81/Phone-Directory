@@ -34,7 +34,6 @@ import Data.List (sort)
 import Data.Object
 import qualified Data.Object.Json as J
 import Graphics.PDF
-import Text.JSON
 
 import LineItem
 import Organization
@@ -53,26 +52,15 @@ data Document a
     , pageProperties :: PageProperties
     } deriving (Eq, Show)
       
-instance (JSON a) => JSON (Document a) where
-    readJSON (JSObject d) =
-        do revised <- valFromObj "revised" d
-           organizations <- valFromObj "organizations" d
-           prop <- valFromObj "pageProperties" d <|> return mkPageProperties
-           return $ Document revised organizations prop
-    readJSON _ = Error "Could not parse Document JSON object."
-    showJSON d =
-        showJSON $ toJSObject
-        [ ("revised", showJSON $ dRevised d)
-        , ("organizations", showJSONs $ dOrganizations d)
-        , ("pageProperties", showJSON . pageProperties $ d)]
-
 instance ConvertAttempt J.JsonObject a
     => ConvertAttempt J.JsonObject (Document a) where
  convertAttempt j =
-     do m <- fromMapping j
-        r <- J.fromJsonScalar <$> lookupScalar (B.pack "revised") m
+     do m  <- fromMapping j
+        r  <- J.fromJsonScalar <$> lookupScalar (B.pack "revised") m
         ox <- lookupSequence (B.pack "organizations") m >>= mapM convertAttempt
-        return $ Document r ox
+        p  <- lookupObject (B.pack "pageProperties") m >>= convertAttempt
+        
+        return $ Document r ox p
 
 instance (ConvertSuccess a J.JsonObject)
     => ConvertSuccess (Document a) J.JsonObject where
