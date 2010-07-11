@@ -32,13 +32,14 @@ import Data.Time
 import Graphics.UI.WX as WX
 import Graphics.UI.WXCore hiding (Document)
 import System.FilePath
+import qualified Text.CSV as CSV
 
 import ContactInfo
 import Document
 import Export
 import GUIConstants
 import Name
-import Organization
+import qualified Organization as O
 import PageProperties (mkPageProperties, PageProperties)
 import PageSetupGUI
 import Priority
@@ -47,7 +48,8 @@ import WXError
 -- |The application only exports to .pdf.  I could see other formats like
 -- .html being useful to.
 exportTypesSelection :: [(String, [String])]
-exportTypesSelection = [("PDF (*.pdf)", ["*.pdf"])]
+exportTypesSelection = [ ("PDF", ["*.pdf"])
+                       , ("Comma-Separated-Value", ["*.csv"])]
 
 -- |This is the format to be saved in.  It's a Shame that the Haskell YAML
 -- library was made available a week after I settled on this.
@@ -301,7 +303,16 @@ mainWindow filename = do
             Just name' -> trapError $ do
                 props <- liftIO $ varGet properties
                 op <- tree2Doc tc
-                generate name' (op props)
+                let ext = drop ((length name') - 3) (map toLower name')
+                if (ext == "pdf")
+                  then do
+                     generate name' (op props)
+                  else if (ext == "csv")
+                    then do
+                      liftIO $ writeFile name'
+                                 (CSV.printCSV . toCSVRecords $ op props)
+                    else do
+                      undefined
             Nothing -> return ()
       ]
 
@@ -379,8 +390,8 @@ populateTree tc doc =
         treeCtrlSetItemClientData tc tc' (return ()) itm
         return tc'
     populateOrg p org = do
-        orgTc <- addItem p $ oInfo org
-        mapM_ (addItem orgTc) $ oContacts org
+        orgTc <- addItem p $ O.oInfo org
+        mapM_ (addItem orgTc) $ O.oContacts org
 
 -- |Set the supplied frame's title bar based on the supplied file.
 title
@@ -398,7 +409,7 @@ tree2Doc tc = do
             orgCI <- treeItem2CI tc itm
             contacts <- liftIO $ treeCtrlWithChildren tc itm
                 $ wxerror . treeItem2CI tc
-            fromEither $ Organization orgCI <$> sequence contacts
+            fromEither $ O.Organization orgCI <$> sequence contacts
     (year, month, day) <- liftIO $ liftM
         (toGregorian . localDay . zonedTimeToLocalTime) getZonedTime
     fromEither $ Document
