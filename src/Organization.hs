@@ -26,7 +26,9 @@ import Data.Convertible.Base
 import Data.List (sort)
 import Data.Object
 import Data.Object.Json
+import Text.CSV (Record)
 
+import qualified ContactInfo as C
 import LineItem
 
 -- |An organization has its own contact information and 0 or more
@@ -65,3 +67,8 @@ sortOrg o = o { oContacts = sort (oContacts o) }
 -- Perform an operation on the name.  Is this an abuse of Functors?
 instance Functor Organization where
     f `fmap` o = o { oInfo = f $ oInfo o, oContacts = map f $ oContacts o}
+
+toCSVRecords :: Show a => Organization (C.ContactInfo a) -> [Record]
+toCSVRecords (Organization i cx) = map (C.toCSVRecord ir) cx
+  where
+    ir = C.toCSVRecord [] i

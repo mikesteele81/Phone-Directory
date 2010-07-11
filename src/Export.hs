@@ -46,4 +46,3 @@ generate file doc =
   where
     page1 = sortDoc doc
     page2 = sortDoc $ fmap (fmap FirstSortedName) doc
-

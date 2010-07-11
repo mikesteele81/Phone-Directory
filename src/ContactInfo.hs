@@ -23,6 +23,7 @@
 
 module ContactInfo
     ( ContactInfo (..)
+    , toCSVRecord
     ) where
 
 import Control.Applicative
@@ -31,6 +32,7 @@ import Data.ByteString.Char8
 import Data.Convertible.Base
 import Data.Object
 import qualified Data.Object.Json as J
+import Text.CSV (Record, Field)
 
 import LineItem
 import Priority
@@ -71,3 +73,7 @@ instance (ConvertSuccess a J.JsonObject)
       Mapping [ (pack "name", convertSuccess n)
               , (pack "phone", Scalar $ J.toJsonScalar p)
               , (pack "priority", convertSuccess pr)]
+
+toCSVRecord :: Show a => Record -> ContactInfo a -> Record
+toCSVRecord org (ContactInfo _ n p) = org ++ [show n, p]
+

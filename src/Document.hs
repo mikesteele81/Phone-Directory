@@ -24,6 +24,7 @@ module Document
     , mkDocument
     , renderDoc
     , sortDoc
+    , toCSVRecords
     ) where
 
 import Control.Applicative
@@ -34,9 +35,11 @@ import Data.List (sort)
 import Data.Object
 import qualified Data.Object.Json as J
 import Graphics.PDF
+import Text.CSV (Record)
 
+import ContactInfo
 import LineItem
-import Organization
+import qualified Organization as O
 import PageProperties
 import UnitConversion
 
@@ -48,7 +51,7 @@ data Document a
       -- point.
       dRevised :: String
       -- |Organizations to print.
-    , dOrganizations :: [Organization a]
+    , dOrganizations :: [O.Organization a]
     , pageProperties :: PageProperties
     } deriving (Eq, Show)
       
@@ -72,6 +75,9 @@ instance (ConvertSuccess a J.JsonObject)
 -- Perform an operation on the name.  Is this an abuse of Functors?
 instance Functor Document where
     f `fmap` d = d { dOrganizations = map (fmap f) $ dOrganizations d }
+
+toCSVRecords :: Show a => Document (ContactInfo a) -> [Record]
+toCSVRecords (Document _ ox _) = concatMap O.toCSVRecords ox
 
 -- |Font used only for the title.
 fontTitle :: PDFFont
@@ -104,7 +110,7 @@ sortDoc :: (Ord a)
   -> Document a -- ^An identical Document that has possibly been
                 -- rearranged.
 sortDoc d =
-    d { dOrganizations = map sortOrg $ sort (dOrganizations d) }
+    d { dOrganizations = map O.sortOrg $ sort (dOrganizations d) }
         
 -- | Draw a Document on its own page.
 renderDoc :: (ShowLineItems a, Ord a)
