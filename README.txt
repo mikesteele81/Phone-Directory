@@ -17,6 +17,15 @@ Please send questions and suggestions to:
 
 Michael Steele <mikesteele81@gmail.com>
 
+Change Log
+==========
+
+Version 0.4
+-----------
+* new page setup screen allows you to print horizontally or vertically and
+  define page margins.
+* Updated versions of WxWidgets, GHC runtime etc.
+
 Installation instructions for the Phone Directory application
 =============================================================
 
