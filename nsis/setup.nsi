@@ -65,7 +65,7 @@ Section "-Main Program" SecMain
   File "pdirectory.exe"
   File "..\LICENSE.txt"
   File "..\README.txt"
-  File "dlls\wxc-msw2.8.10-0.11.1.2.dll"
+  File "dlls\wxmsw28ud_gcc_custom.dll"
 
   SetOutPath "$INSTDIR\data\images\"
 
@@ -117,7 +117,7 @@ Section "Uninstall"
   Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\README.txt"
   Delete "$INSTDIR\Uninstall.exe"
-  Delete "$INSTDIR\wxc-msw2.8.10-0.11.1.2.dll"
+  Delete "$INSTDIR\wxmsw28ud_gcc_custom.dll"
 
   Delete "$INSTDIR\data\images\pdirectory.ico"
 
