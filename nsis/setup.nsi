@@ -65,7 +65,8 @@ Section "-Main Program" SecMain
   File "pdirectory.exe"
   File "..\LICENSE.txt"
   File "..\README.txt"
-  File "dlls\wxmsw28ud_gcc_custom.dll"
+  File "dlls\wxmsw28u_gcc_custom.dll"
+  File "dlls\mingwm10.dll"
 
   SetOutPath "$INSTDIR\data\images\"
 
@@ -117,7 +118,8 @@ Section "Uninstall"
   Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\README.txt"
   Delete "$INSTDIR\Uninstall.exe"
-  Delete "$INSTDIR\wxmsw28ud_gcc_custom.dll"
+  Delete "$INSTDIR\wxmsw28u_gcc_custom.dll"
+  Delete "$INSTDIR\mingwm10.dll"
 
   Delete "$INSTDIR\data\images\pdirectory.ico"
 
