@@ -1,5 +1,5 @@
 Name:           PhoneDirectory
-Version:        0.1
+Version:        0.4
 Cabal-Version:  >=1.6
 Build-Type:     Simple
 License:        GPL
@@ -26,7 +26,7 @@ Executable pdirectory
     HPDF >= 1.4,
     json >= 0.4,
     mtl,
-    safe,
+    safe >= 0.2,
     time,
     wx,
     wxcore
