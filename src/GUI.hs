@@ -62,9 +62,10 @@ defaultFile = "untitled.pdir"
 -- |Text blurb that goes in the about box.
 aboutTxt :: String
 aboutTxt =
-    "PhoneDirectory Copyright (C) 2009 Michael Steele\n\n\
+    "PhoneDirectory 0.4\n\
+    \Copyright (C) 2009 Michael Steele\n\n\
     \This program comes with ABSOLUTELY NO WARRANTY; for\n\
-    \details go to http://www.michaelsteele.us/phonedirectory/.\n\n\
+    \details go to http://github.com/mikesteele81/Phone-Directory/.\n\n\
     \This is free software, and you are welcome to\n\
     \redistribute it under certain conditions; read the\n\
     \included license file for details."
