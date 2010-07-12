@@ -25,6 +25,13 @@ Version 0.4
 * new page setup screen allows you to print horizontally or vertically and
   define page margins.
 * Updated versions of WxWidgets, GHC runtime etc.
+* BUG FIX: now using local time rather than UTC time to determine date.
+
+Version 0.3
+* File association with *.pdir in the Windows binary.
+* Adjustments to formatting of generated .pdf file.
+* BUG FIX: Full names were not sorting with singular names correctly.
+* BUG FIX: Fixed a few minor GUI rendering problems.
 
 Installation instructions for the Phone Directory application
 =============================================================
