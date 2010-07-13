@@ -1,7 +1,7 @@
 Name:           PhoneDirectory
 Version:        0.4
 Cabal-Version:  >=1.6
-Build-Type:     Simple
+Build-Type:     Custom
 License:        GPL
 License-file:   LICENSE.txt
 Copyright:      (C) 2009 Michael Steele
@@ -18,6 +18,10 @@ Description:
   easy.
 Category:       Utils
 Data-Files:     data/images/*.ico
+
+flag test
+  description: Build test program.
+  default:     False
 
 Executable pdirectory
   Build-Depends:
@@ -37,3 +41,12 @@ Executable pdirectory
   Main-Is:        Main.hs
   hs-source-dirs: src
   ghc-options:    -Wall -O2
+
+Executable test
+  build-depends:
+    base,
+    QuickCheck >= 2.1
+  hs-source-dirs: src, tests
+  main-is:        TestMain.hs
+  if !flag(test)
+    buildable:    False
