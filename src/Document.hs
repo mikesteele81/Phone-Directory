@@ -64,9 +64,10 @@ instance ConvertAttempt J.JsonObject a
 
 instance (ConvertSuccess a J.JsonObject)
     => ConvertSuccess (Document a) J.JsonObject where
-  convertSuccess (Document r ox) =
+  convertSuccess (Document r ox pp) =
       Mapping [ (B.pack "revised", Scalar $ J.toJsonScalar r)
-              , (B.pack "organizations", Sequence $ map convertSuccess ox)]
+              , (B.pack "organizations", Sequence $ map convertSuccess ox)
+              , (B.pack "pageProperties", convertSuccess pp)]
 
 -- Perform an operation on the name.  Is this an abuse of Functors?
 instance Functor Document where
