@@ -18,8 +18,8 @@
 module TestName where
 
 import Control.Applicative
+import Data.Convertible.Text
 import Test.QuickCheck
-import Text.JSON
 
 import Name
 
@@ -29,21 +29,12 @@ main :: IO ()
 main = do
     putStrLn "Name: Reflective JSON instance."
     quickCheck (prop_reflective_json_instance :: Name -> Bool)
-    putStrLn "Name: a Name and a FirstSortedName should both have \
-        \the same JSON representation."
-    quickCheck prop_name_and_fsn_produce_same_json
     putStrLn "Name: ignore first name when sorting a firstlast with a singlename"
     quickCheck prop_name_compare_fl_sn_ignores_fn
     putStrLn "FSN: ignore last name when sorting a firstlast with a singlename"
     quickCheck prop_fsn_compare_fl_sn_ignores_ln
     putStrLn "FirstSortedName: Paul should sort before Pauline"
     quickCheck prop_fsn_paul_sorts_before_pauline
-
-prop_name_and_fsn_produce_same_json :: Name -> Property
-prop_name_and_fsn_produce_same_json n = True ==> n' == fsn
-  where
-    n' = show . showJSON $ n
-    fsn = show . showJSON . FirstSortedName $ n
 
 prop_fsn_paul_sorts_before_pauline :: (String, String, String, String) -> Property
 prop_fsn_paul_sorts_before_pauline (f, suf, l1, l2)

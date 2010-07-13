@@ -15,13 +15,18 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+{-# LANGUAGE FlexibleContexts #-}
+
 module TestJSON where
 
+import Control.Applicative
+import Data.Attempt
+import Data.Convertible.Base
+import Data.Object.Json
 import Test.QuickCheck
-import Text.JSON
 
-prop_reflective_json_instance :: (Eq a, JSON a) => a -> Bool
-prop_reflective_json_instance i = i' == i
-  where
-    (Ok i') = readJSON . showJSON $ i
-
+prop_reflective_json_instance
+    :: (Eq a, ConvertAttempt JsonObject a, ConvertSuccess a JsonObject)
+    => a -> Bool
+prop_reflective_json_instance i = attempt (\e -> False) (==i) $ do
+    convertAttempt (convertSuccess i :: JsonObject)
