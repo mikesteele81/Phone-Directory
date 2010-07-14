@@ -19,7 +19,6 @@ module TestPageProperties where
 
 import Control.Applicative
 import Test.QuickCheck
-import Text.JSON
 
 import PageProperties
 import TestJSON
@@ -30,10 +29,6 @@ main = do
   putStrLn "PageProperties: Reflective JSON instance."
   quickCheck (prop_reflective_json_instance :: PageProperties -> Bool)
 
-instance Arbitrary Layout where
-    arbitrary = oneof [return Portrait, return Landscape]
-    shrink = shrinkNothing
-
 instance Arbitrary PageProperties where
-    arbitrary = PageProperties <$> arbitrary <*> arbitrary
-        <*> arbitrary <*> arbitrary <*> arbitrary
+  arbitrary = PageProperties <$> arbitrary <*> arbitrary
+              <*> arbitrary  <*> arbitrary <*> arbitrary <*> arbitrary
