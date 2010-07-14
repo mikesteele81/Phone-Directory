@@ -19,7 +19,6 @@ module TestOrganization where
 
 import Control.Applicative
 import Test.QuickCheck
-import Text.JSON
 
 import Name (Name)
 import Organization
