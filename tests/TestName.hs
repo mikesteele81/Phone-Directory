@@ -19,6 +19,7 @@ module TestName where
 
 import Control.Applicative
 import Data.Convertible.Text
+import Data.Char
 import Test.QuickCheck
 
 import Name
@@ -66,11 +67,15 @@ instance Arbitrary Name where
     arbitrary = oneof [firstLast, single]
       where
         firstLast = do
-            nFirst <- arbitrary
-            nLast <- arbitrary
+            nFirst <- userString
+            nLast <- userString
             return $ FirstLast nFirst nLast
         single = do
-            nSingle <- arbitrary
+            nSingle <- userString
             return $ SingleName nSingle
+        name = listOf . choose $ (chr 0, chr 127)
     shrink = shrinkNothing
 
+userString :: Gen String
+userString = listOf . elements $
+    [' '..'~'] ++ map chr [9]

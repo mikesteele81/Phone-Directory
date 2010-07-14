@@ -27,6 +27,8 @@ module Name
     , mkName
     ) where
 
+import Control.Applicative
+import Data.Attempt
 import Data.ByteString.Char8
 import Data.Function (on)
 import Data.Monoid
@@ -79,16 +81,19 @@ instance Ord FirstSortedName where
 mkName :: String -- ^First name or blank.
        -> String -- ^Last name or blank.
        -> Name
-mkName "" n = SingleName n
-mkName n "" = SingleName n
+mkName "" n | n /= "" = SingleName n
+mkName n "" | n /= "" = SingleName n
 mkName f l  = FirstLast f l
 
 instance ConvertAttempt J.JsonObject Name where
   convertAttempt j =
-      do m <- fromMapping j
-         f <- lookupScalar (pack "first") m
-         l <- lookupScalar (pack "last") m
-         return $ (mkName `on` J.fromJsonScalar) f l
+      maybe (Failure NothingException) Success $
+      fromAttempt ( do m <- fromMapping j
+                       f <- lookupScalar (pack "first") m
+                       l <- lookupScalar (pack "last") m
+                       return $ (mkName `on` J.fromJsonScalar) f l
+                  )
+      <|> fromAttempt (SingleName. J.fromJsonScalar <$> fromScalar j)
 
 instance ConvertSuccess Name J.JsonObject where
   convertSuccess (FirstLast f l) =
