@@ -24,11 +24,12 @@ import Data.Function (on)
 import Data.List (nub)
 import Graphics.PDF
 import Test.QuickCheck
-import Text.JSON
 import Text.Regex.Posix
 
 import LineItem
-import Priority
+
+import TestJSON
+import TestPriority
 
 prop_flowCols_numColumns :: [LineItem] -> Positive Int -> Bool
 prop_flowCols_numColumns cx (Positive n)
@@ -44,24 +45,16 @@ prop_flowCols_no_leading_dividers (NonEmpty cx) (Positive n)
     = label ""
     $ all (/= Divider) . map (head . unColumn) . flowCols cx $ n
 
-prop_reflective_json :: (JSON x, Eq x) => x -> Property
-prop_reflective_json x
-    = True
-    ==> (readJSON . showJSON $ x) == return x
-
 main :: IO ()
-main = do
+main = return ()
 --  putStrLn "flowCols: return # of columns requested." 
 --  quickCheckWith fewTests prop_flowCols_numColumns
 --  putStrLn "flowCols: return cols of equal length"
 --  quickCheckWith fewTests prop_flowCols_equalCols
 --  putStrLn "flowCols: Ensure that columns do not have a leading or trailing divider."
 --  quickCheckWith fewTests prop_flowCols_no_leading_dividers
-
-    putStrLn "Priority: should have reflective JSON instances."
-    quickCheck (prop_reflective_json :: Priority -> Property)
---  where
---    fewTests = stdArgs { maxSuccess = 50 }
+  where
+    fewTests = stdArgs { maxSuccess = 50 }
 
 instance Arbitrary LineItem where
     arbitrary = do
@@ -72,9 +65,4 @@ instance Arbitrary LineItem where
             [ return $ mkLabelValue indent left right
             , return Divider
             , return Blank ]
-    shrink = shrinkNothing
-
-instance Arbitrary Priority where
-    -- magic numbers save lots of typing.
-    arbitrary = mkPriority `fmap` choose (0, 5)
     shrink = shrinkNothing

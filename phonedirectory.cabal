@@ -45,6 +45,7 @@ Executable pdirectory
 Executable test
   build-depends:
     base,
+    regex-posix >= 0.94,
     QuickCheck >= 2.1
   hs-source-dirs: src, tests
   main-is:        TestMain.hs
