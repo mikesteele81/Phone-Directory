@@ -19,7 +19,6 @@ module TestDocument where
 
 import Control.Applicative
 import Test.QuickCheck
-import Text.JSON
 
 import Document
 import Name (Name)

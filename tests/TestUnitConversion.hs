@@ -17,11 +17,10 @@
 
 module TestUnitConversion where
 
+import Control.Applicative
 import Test.QuickCheck
-import Text.JSON
 
 import UnitConversion
-import TestJSON
 
 prop_reflective_inch_pdf_conversion :: Inches -> Bool
 prop_reflective_inch_pdf_conversion i = abs(i' - i) < 0.0001
@@ -30,17 +29,13 @@ prop_reflective_inch_pdf_conversion i = abs(i' - i) < 0.0001
 
 main :: IO ()
 main = do
-    putStrLn "Inches: Reflective JSON instance."
-    quickCheck (prop_reflective_json_instance :: Inches -> Bool)
-    putStrLn "PDFUnits: Reflective JSON instance."
-    quickCheck (prop_reflective_json_instance :: PDFUnits -> Bool)
     putStrLn "Inches & PDFUnits: Reflective conversion."
     quickCheck prop_reflective_inch_pdf_conversion
 
 instance Arbitrary Inches where
-    arbitrary = arbitrary >>= (return . Inches)
+    arbitrary = Inches <$> arbitrary
     shrink (Inches x) = map Inches (shrink x)
 
 instance Arbitrary PDFUnits where
-    arbitrary = arbitrary >>= (return . PDFUnits)
+    arbitrary = PDFUnits <$> arbitrary
     shrink (PDFUnits x) = map PDFUnits (shrink x)
