@@ -3,7 +3,7 @@ Version:        0.4
 Cabal-Version:  >=1.6
 Build-Type:     Custom
 License:        GPL
-License-file:   LICENSE.txt
+License-File:   LICENSE.txt
 Copyright:      (C) 2009 Michael Steele
 Author:			Michael Steele <mikesteele81@gmail.com>
 Maintainer:		Michael Steele <mikesteele81@gmail.com>
@@ -19,14 +19,14 @@ Description:
 Category:       Utils
 Data-Files:     data/images/*.ico
 
-flag test
+Flag test
   description: Build test program.
   default:     False
 
 Executable pdirectory
   Build-Depends:
     attempt >= 0.3,
-    base,
+    base < 5,
     bytestring >= 0.9,
     convertible-text >= 0.3,
     data-object >= 0.3,
@@ -40,7 +40,10 @@ Executable pdirectory
     wxcore
   Main-Is:        Main.hs
   hs-source-dirs: src
-  ghc-options:    -Wall -O2
+  if os(windows)
+    ghc-options: -Wall -O2 -optl-mwindows
+  else
+    ghc-options:    -Wall -O2
 
 Executable test
   build-depends:
