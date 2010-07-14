@@ -60,7 +60,7 @@ instance (ConvertAttempt J.JsonObject a)
     => ConvertAttempt J.JsonObject (ContactInfo a) where
   convertAttempt j =
       do m <- fromMapping j
-         pr <- lookupScalar (pack "priority") m >>= convertAttempt
+         pr <- lookupObject (pack "priority") m >>= convertAttempt
          n  <- lookupObject (pack "name")     m >>= convertAttempt
          p  <- J.fromJsonScalar <$> lookupScalar (pack "phone") m
          return $ ContactInfo pr n p
@@ -70,4 +70,4 @@ instance (ConvertSuccess a J.JsonObject)
   convertSuccess (ContactInfo pr n p) =
       Mapping [ (pack "name", convertSuccess n)
               , (pack "phone", Scalar $ J.toJsonScalar p)
-              , (pack "priority", Scalar $ convertSuccess pr)]
+              , (pack "priority", convertSuccess pr)]

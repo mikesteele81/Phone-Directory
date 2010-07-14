@@ -28,9 +28,10 @@ module Priority
 import Control.Applicative
 import Data.Attempt
 import Data.Convertible.Base
+import Data.Object
 import Data.Object.Json
 
-newtype Priority = Priority { unP :: Int }
+newtype Priority = Priority Int
     -- the Show instance is only for QC properties
     deriving (Enum, Eq, Ord, Show)
 
@@ -43,9 +44,10 @@ instance Bounded Priority where
 mkPriority :: Int -> Priority
 mkPriority = min maxBound . max minBound . Priority
 
-instance ConvertSuccess Priority JsonScalar where
-  convertSuccess (Priority p) = JsonNumber (convertSuccess p)
+instance ConvertSuccess Priority JsonObject where
+  convertSuccess (Priority p) = return . JsonNumber . convertSuccess $ p
 
-instance ConvertAttempt JsonScalar Priority where
-  convertAttempt (JsonNumber r)  = mkPriority <$> convertAttempt r
+instance ConvertAttempt JsonObject Priority where
+  convertAttempt (Scalar (JsonNumber r))  =
+      mkPriority <$> convertAttempt r
   convertAttempt _ = failure NothingException

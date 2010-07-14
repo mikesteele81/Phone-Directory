@@ -15,18 +15,20 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE FlexibleContexts #-}
+module TestPriority where
 
-module TestJSON where
-
-import Data.Attempt (attempt)
-import Data.Convertible.Base
-import Data.Object.Json
+import Control.Applicative
 import Test.QuickCheck
 
-prop_reflective_json_instance
-    :: (Eq a, ConvertAttempt JsonObject a, ConvertSuccess a JsonObject) => a
-    -> Bool
-prop_reflective_json_instance i =
-    attempt (\e -> False) (==i)
-    (convertAttempt (convertSuccess i :: JsonObject))
+import Priority
+
+import TestJSON
+
+main :: IO ()
+main = do
+    putStrLn "ContactInfo: Reflective JSON instance."
+    quickCheck (prop_reflective_json_instance :: Priority -> Bool)
+
+instance Arbitrary Priority where
+  arbitrary = mkPriority <$> arbitrary
+  shrink = shrinkNothing

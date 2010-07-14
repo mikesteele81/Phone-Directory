@@ -17,15 +17,15 @@
 
 module TestContactInfo where
 
+import Control.Applicative
 import Test.QuickCheck
-import Text.JSON
 
 import ContactInfo
 import Name (Name)
 
 import TestJSON
 import TestName ()
-import TestLineItem ()
+import TestPriority ()
 
 main :: IO ()
 main = do
@@ -33,10 +33,6 @@ main = do
     quickCheck (prop_reflective_json_instance :: ContactInfo Name -> Bool)
 
 instance (Arbitrary a) => Arbitrary (ContactInfo a) where
-    arbitrary = do
-        name <- arbitrary
-        priority <- arbitrary
-        phone <- arbitrary
-        return $ ContactInfo priority name phone
-    shrink = shrinkNothing
+  arbitrary = ContactInfo <$> arbitrary <*> arbitrary <*> arbitrary
+  shrink = shrinkNothing
 
