@@ -64,17 +64,13 @@ prop_name_compare_fl_sn_ignores_fn (l, n)
     sn  = SingleName n
 
 instance Arbitrary Name where
-    arbitrary = oneof [firstLast, single]
-      where
-        firstLast = do
-            nFirst <- userString
-            nLast <- userString
-            return $ FirstLast nFirst nLast
-        single = do
-            nSingle <- userString
-            return $ SingleName nSingle
-        name = listOf . choose $ (chr 0, chr 127)
-    shrink = shrinkNothing
+  arbitrary = do
+      nFirst <- userString
+      nLast <- userString
+      return $ mkName nFirst nLast
+    where
+      name = listOf . choose $ (chr 0, chr 127)
+  shrink = shrinkNothing
 
 userString :: Gen String
 userString = listOf . elements $

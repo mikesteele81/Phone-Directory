@@ -81,8 +81,8 @@ instance Ord FirstSortedName where
 mkName :: String -- ^First name or blank.
        -> String -- ^Last name or blank.
        -> Name
-mkName "" n | n /= "" = SingleName n
-mkName n "" | n /= "" = SingleName n
+mkName "" n = SingleName n
+mkName n "" = SingleName n
 mkName f l  = FirstLast f l
 
 instance ConvertAttempt J.JsonObject Name where
