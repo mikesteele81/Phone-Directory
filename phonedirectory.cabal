@@ -5,8 +5,8 @@ Build-Type:     Custom
 License:        GPL
 License-File:   LICENSE.txt
 Copyright:      (C) 2009 Michael Steele
-Author:			Michael Steele <mikesteele81@gmail.com>
-Maintainer:		Michael Steele <mikesteele81@gmail.com>
+Author:         Michael Steele <mikesteele81@gmail.com>
+Maintainer:     Michael Steele <mikesteele81@gmail.com>
 Stability:      provisional
 Homepage:       http://www.michaelsteele.us/phonedirectory/
 Bug-Reports:    http://github.com/mikesteele81/Phone-Directory/issues/
