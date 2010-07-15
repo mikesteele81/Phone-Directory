@@ -77,7 +77,7 @@ instance Functor Document where
     f `fmap` d = d { dOrganizations = map (fmap f) $ dOrganizations d }
 
 toCSVRecords :: Show a => Document (ContactInfo a) -> [Record]
-toCSVRecords (Document _ ox _) = concatMap O.toCSVRecords ox
+toCSVRecords (Document _ ox _) = concatMap O.toCSV ox
 
 -- |Font used only for the title.
 fontTitle :: PDFFont

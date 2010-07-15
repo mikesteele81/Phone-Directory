@@ -74,6 +74,6 @@ instance (ConvertSuccess a J.JsonObject)
               , (pack "phone", Scalar $ J.toJsonScalar p)
               , (pack "priority", convertSuccess pr)]
 
-toCSVRecord :: Show a => Record -> ContactInfo a -> Record
-toCSVRecord org (ContactInfo _ n p) = org ++ [show n, p]
+toCSVRecord :: Show a => ContactInfo a -> Record
+toCSVRecord (ContactInfo _ n p) = [show n, p]
 

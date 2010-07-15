@@ -16,10 +16,13 @@
 -}
 
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module TestOrganization where
 
 import Control.Applicative
+import Control.Monad (liftM)
+import Data.Attempt
 import Test.QuickCheck
 
 import ContactInfo
@@ -38,14 +41,16 @@ main = do
   putStrLn "Organization: Merging two organizations with the same info should\
            \result in a single merged organization."
   quickCheck prop_merging_like_orgs
-  putStrLn "Organization: Merging two organizations with the same info should \
-           \result in a single merged organization."
+  putStrLn "Organization: Merging two organizations with the different should \
+           \result in a arguments tupled."
   quickCheck prop_merging_unlike_orgs
   putStrLn "Organization: Merging a list of Organizations with itself results \
            \in a list the same length with double the number of contacts."
   quickCheck prop_orgs_merged_with_self
   putStrLn "Organization: When merging an org with a list of orgs..."
   quickCheck prop_org_merged_with_orgs
+  putStrLn "Organization: CSV conversion."
+  quickCheck prop_reflective_csv_conversion
 
 instance (Arbitrary a) => Arbitrary (Organization a) where
     arbitrary = Organization <$> arbitrary <*> arbitrary
@@ -61,7 +66,7 @@ prop_merging_like_orgs (oi, cx, cx2) =
       (Just _, _) -> False
   where
     o1 = Organization oi cx
-    o2 = Organization oi cx
+    o2 = Organization oi cx2
 
 prop_merging_unlike_orgs
   :: (ContactInfo Name, ContactInfo Name
@@ -89,7 +94,7 @@ prop_orgs_merged_with_self ox
 prop_org_merged_with_orgs :: [Organization Name] -> Bool
 prop_org_merged_with_orgs [] = True
 prop_org_merged_with_orgs [_] = True
-prop_org_merged_with_orgs (o:ox) =
+prop_org_merged_with_orgs (mergeOrgs -> (o:ox)) =
     case ox' of
       [] -> False
       [o'] -> length ox == 1
@@ -98,3 +103,12 @@ prop_org_merged_with_orgs (o:ox) =
                 | otherwise -> length (union (o:ox) (o':ox'')) == length (o:ox) + 1
   where
     ox' = mergeOrg o ox
+
+-- | going to CSV and back again does _not_ produce the original 
+--   organization. However, going from Org to CSV to org to CSV is the same 
+--   asgoing from Org to CSV.
+prop_reflective_csv_conversion :: Organization (ContactInfo Name) -> Bool
+prop_reflective_csv_conversion o = attempt (const False) (==o') ao
+  where
+    ao = liftM (sort . concatMap toCSV . mergeOrgs) . fromCSV . toCSV $ o
+    o' = sort . toCSV $ o

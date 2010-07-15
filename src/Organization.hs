@@ -22,16 +22,19 @@
 module Organization where
 
 import qualified Data.ByteString.Char8 as B
+import Data.Attempt
 import Data.Convertible.Base
 import Data.Function(on)
 import Data.List
 import Data.Maybe
 import Data.Object
 import Data.Object.Json
-import Text.CSV (Record)
+import Text.CSV
 
 import qualified ContactInfo as C
 import LineItem
+import Name
+import Priority
 
 -- |An organization has its own contact information and 0 or more
 -- contacts that are a part of it.
@@ -70,10 +73,22 @@ sortOrg o = o { oContacts = sort (oContacts o) }
 instance Functor Organization where
     f `fmap` o = o { oInfo = f $ oInfo o, oContacts = map f $ oContacts o}
 
-toCSVRecords :: Show a => Organization (C.ContactInfo a) -> [Record]
-toCSVRecords (Organization i cx) = map (C.toCSVRecord ir) cx
+toCSV :: Show a => Organization (C.ContactInfo a) -> CSV
+toCSV (Organization i []) = return $ C.toCSVRecord i ++ ["", ""]
+toCSV (Organization i cx) = map (\c -> ir ++ C.toCSVRecord c) cx
   where
-    ir = C.toCSVRecord [] i
+    ir = C.toCSVRecord i
+
+fromCSV :: CSV -> Attempt [Organization (C.ContactInfo Name)]
+fromCSV = sequence . map fromCSVRecord
+
+fromCSVRecord :: Record -> Attempt (Organization (C.ContactInfo Name))
+fromCSVRecord [orgN, op, cn, cp] = Success $
+    Organization (C.ContactInfo pr (mkName orgN "") op)
+    [C.ContactInfo pr (mkName cn "") cp]
+  where pr = mkPriority 2
+fromCSVRecord r = Failure . StringException
+                  $ "Expected record of 4 fields: " ++ show r
 
 -- |Attempt to merge every member of the list together.
 mergeOrgs :: Eq a => [Organization a] -> [Organization a]
