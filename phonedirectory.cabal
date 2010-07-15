@@ -51,7 +51,7 @@ Executable test
     base,
     regex-posix >= 0.94,
     QuickCheck >= 2.1
-  hs-source-dirs: src, tests
+  hs-source-dirs: src
   main-is:        TestMain.hs
   if !flag(test)
     buildable:    False
