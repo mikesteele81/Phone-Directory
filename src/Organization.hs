@@ -23,7 +23,9 @@ module Organization where
 
 import qualified Data.ByteString.Char8 as B
 import Data.Convertible.Base
-import Data.List (sort)
+import Data.Function(on)
+import Data.List
+import Data.Maybe
 import Data.Object
 import Data.Object.Json
 import Text.CSV (Record)
@@ -72,3 +74,26 @@ toCSVRecords :: Show a => Organization (C.ContactInfo a) -> [Record]
 toCSVRecords (Organization i cx) = map (C.toCSVRecord ir) cx
   where
     ir = C.toCSVRecord [] i
+
+-- |Attempt to merge every member of the list together.
+mergeOrgs :: Eq a => [Organization a] -> [Organization a]
+mergeOrgs ox = foldl (flip mergeOrg) [] ox
+
+-- |Attempt to merge the first argument with one of the elements in the 
+--  second argument. If this isn't possible, add the first argument to the 
+--  head of the list.
+mergeOrg :: Eq a => Organization a -> [Organization a] -> [Organization a]
+mergeOrg o ox = if isNothing found then ox' else o:ox'
+  where
+    (found, ox') = mapAccumL mergeOp (Just o) ox
+
+-- |Possibly merge two organizations together. If a merge is made return 
+--  Nothing tupled with the merged Organization.  If a merge is not 
+--  possible, return the original two arguments tupled.
+mergeOp :: Eq a => Maybe (Organization a) -> Organization a
+    -> (Maybe (Organization a), Organization a)
+mergeOp (Just o) x
+    | oInfo o == oInfo x = ( Nothing
+                           , x {oContacts = ((++) `on` oContacts) o x})
+    | otherwise = (Just o, x)
+mergeOp Nothing x = (Nothing, x)

@@ -34,5 +34,4 @@ main = do
 
 instance (Arbitrary a) => Arbitrary (ContactInfo a) where
   arbitrary = ContactInfo <$> arbitrary <*> arbitrary <*> arbitrary
-  shrink = shrinkNothing
-
+  shrink (ContactInfo a b c) = ContactInfo <$> shrink a <*> shrink b <*> shrink c

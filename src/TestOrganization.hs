@@ -15,11 +15,15 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+{-# LANGUAGE FlexibleInstances #-}
+
 module TestOrganization where
 
 import Control.Applicative
 import Test.QuickCheck
 
+import ContactInfo
+import Data.List
 import Name (Name)
 import Organization
 
@@ -31,6 +35,66 @@ main :: IO ()
 main = do
   putStrLn "Organization: Reflective JSON instance."
   quickCheck (prop_reflective_json_instance :: Organization Name -> Bool)
+  putStrLn "Organization: Merging two organizations with the same info should\
+           \result in a single merged organization."
+  quickCheck prop_merging_like_orgs
+  putStrLn "Organization: Merging two organizations with the same info should \
+           \result in a single merged organization."
+  quickCheck prop_merging_unlike_orgs
+  putStrLn "Organization: Merging a list of Organizations with itself results \
+           \in a list the same length with double the number of contacts."
+  quickCheck prop_orgs_merged_with_self
+  putStrLn "Organization: When merging an org with a list of orgs..."
+  quickCheck prop_org_merged_with_orgs
 
 instance (Arbitrary a) => Arbitrary (Organization a) where
     arbitrary = Organization <$> arbitrary <*> arbitrary
+    shrink (Organization i cx) = [Organization x cx' | x <- shrink i]
+      where cx' = if null cx then [] else tail cx
+
+prop_merging_like_orgs :: ( ContactInfo Name, [ContactInfo Name]
+                          , [ContactInfo Name]) -> Bool
+prop_merging_like_orgs (oi, cx, cx2) =
+    case mergeOp (Just o1) o2 of
+      (Nothing, Organization _ cx3) -> sort cx3 == sort (cx ++ cx2)
+      --o1 and o2 have the same info, so this shouldn't happen
+      (Just _, _) -> False
+  where
+    o1 = Organization oi cx
+    o2 = Organization oi cx
+
+prop_merging_unlike_orgs
+  :: (ContactInfo Name, ContactInfo Name
+     ,[ContactInfo Name], [ContactInfo Name]) -> Property
+prop_merging_unlike_orgs (oi1, oi2, cx1, cx2) =
+    oi1 /= oi2 ==>
+    case mergeOp (Just o1) o2 of
+      --these orgs should not merge
+      (Nothing, _) -> False
+      (Just o1', o2') -> o1' == o1 && o2' == o2
+  where
+    o1 = Organization oi1 cx1
+    o2 = Organization oi2 cx2
+
+prop_orgs_merged_with_self :: [Organization Name] -> Bool
+prop_orgs_merged_with_self ox
+    =  length ox' == length ox''
+    && 2 * length (contacts ox') == length (contacts ox'')
+  where
+    -- do this in case the generated orgs has duplicates.
+    ox' = mergeOrgs ox
+    ox'' = mergeOrgs (ox' ++ ox')
+    contacts = concatMap oContacts
+
+prop_org_merged_with_orgs :: [Organization Name] -> Bool
+prop_org_merged_with_orgs [] = True
+prop_org_merged_with_orgs [_] = True
+prop_org_merged_with_orgs (o:ox) =
+    case ox' of
+      [] -> False
+      [o'] -> length ox == 1
+              && sort (oContacts o') == sort (concatMap oContacts (o:ox))
+      (o':ox'') | o' == o -> ox == ox''
+                | otherwise -> length (union (o:ox) (o':ox'')) == length (o:ox) + 1
+  where
+    ox' = mergeOrg o ox
