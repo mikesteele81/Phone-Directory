@@ -51,10 +51,15 @@ exportTypesSelection :: [(String, [String])]
 exportTypesSelection = [ ("PDF", ["*.pdf"])
                        , ("Comma-Separated-Value", ["*.csv"])]
 
+-- |The application only exports to .pdf.  I could see other formats like
+-- .html being useful to.
+importTypesSelection :: [(String, [String])]
+importTypesSelection = [ ("Comma-Separated-Value", ["*.csv"])]
+
 -- |This is the format to be saved in.  It's a Shame that the Haskell YAML
 -- library was made available a week after I settled on this.
-fileTypesSelection :: [(String, [String])]
-fileTypesSelection = [("Phone Directory (*.pdir)", ["*.pdir"])]
+openSaveTypesSelection :: [(String, [String])]
+openSaveTypesSelection = [("Phone Directory (*.pdir)", ["*.pdir"])]
 
 -- |When you first start the application this is the filename chosen to save
 -- to.
@@ -267,7 +272,7 @@ mainWindow filename = do
       [ WX.text := "&Open..."
       , on command := trapError $ checkConfirmUnsaved $ do
           name <- liftIO $ fileOpenDialog f True True "Open phone directory"
-              fileTypesSelection "" ""
+              openSaveTypesSelection "" ""
           maybe (return ()) open name
       ]
 
@@ -279,7 +284,7 @@ mainWindow filename = do
       [ WX.text := "Save &As..."
       , on command := trapError $ do
           name <- liftIO $ fileSaveDialog f True True "Save phone directory"
-              fileTypesSelection "" ""
+              openSaveTypesSelection "" ""
           maybe (return ()) save name
       ]
 
