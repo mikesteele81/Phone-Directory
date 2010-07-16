@@ -239,7 +239,17 @@ mainWindow filename = do
               windowSetFocus tc
 
       importFile :: FilePath -> WXError ()
-      importFile fp = undefined
+      importFile fp = do
+          doc <- importCSV fp
+          -- this prevents events from firing.
+          clearDisableDetails
+          populateTree tc doc
+          liftIO $ do
+              --importing doesn't imply that you can 'save' to the same file.
+              varSet file defaultFile
+              --importing implies that the source had incomplete information.
+              setModified True
+              varSet properties (pageProperties doc)
 
       open :: FilePath -> WXError ()
       open fp = do
@@ -327,8 +337,7 @@ mainWindow filename = do
                     then do
                       liftIO $ writeFile name'
                                  (CSV.printCSV . toCSVRecords $ op props)
-                    else do
-                      undefined
+                    else return ()
             Nothing -> return ()
       ]
 
@@ -453,6 +462,19 @@ loadDoc :: FilePath -> WXError (Document (ContactInfo Name))
 loadDoc fp = ( do
         json <- liftIO (decodeFile $ fp :: IO (Attempt JsonObject))
         liftIO . fromAttempt $ json >>= convertAttempt
+    ) `catchError` (throwError . (msg ++))
+  where
+    msg = "Failed to load " ++ fp ++ ":\n"
+
+-- |Attempt to load a document from the supplied file.
+importCSV :: FilePath -> WXError (Document (ContactInfo Name))
+importCSV fp = ( do
+        eCsv <- liftIO . CSV.parseCSVFromFile $ fp
+        case eCsv of
+          Left e    -> throwError . show $ e
+          Right csv -> do
+              orgs <- liftIO . fromAttempt . O.fromCSV $ csv
+              return $ mkDocument {dOrganizations = orgs}
     ) `catchError` (throwError . (msg ++))
   where
     msg = "Failed to load " ++ fp ++ ":\n"
