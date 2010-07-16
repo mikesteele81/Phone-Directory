@@ -86,10 +86,10 @@ mainWindow filename = do
 
   f  <- frame            []
   sw <- splitterWindow f []
-  
+
   pLeft   <- panel    sw     []
   pRight  <- panel    sw     []
-  
+
   mFile   <- menuPane        []
   iNew    <- menuItem mFile  []
   iOpen   <- menuItem mFile  []
@@ -97,13 +97,14 @@ mainWindow filename = do
   iSaveAs <- menuItem mFile  []
   menuLine mFile
   iPage   <- menuItem mFile  []
+  iImport <- menuItem mFile  []
   iExport <- menuItem mFile  []
   menuLine mFile
   iQuit   <- menuQuit mFile  []
 
   mHelp   <- menuHelp        []
   iAbout  <- menuAbout mHelp []
-  
+
   eFirst    <- entry pRight []
   eLast     <- entry pRight []
   ePhone    <- entry pRight []
@@ -111,7 +112,7 @@ mainWindow filename = do
                                (fromEnum (maxBound :: Priority)) []
 
   tc <- treeCtrl pLeft []
-  
+
   let
       onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' =
           trapError $ do
@@ -122,7 +123,7 @@ mainWindow filename = do
                   case show ci of
                       "" -> liftIO $ treeCtrlDelete tc itm
                       _  -> return ()
- 
+
               if root == itm' then clearDisableDetails
                 else treeItem2CI tc itm' >>= updateDetails
 
@@ -150,7 +151,6 @@ mainWindow filename = do
           _         -> return ()
         propagateEvent
       onTreeEvent _ = propagateEvent
-      
       setModified m = varSet modified m >> updateTitle
 
       updateTitle = do
@@ -238,6 +238,9 @@ mainWindow filename = do
               setModified False
               windowSetFocus tc
 
+      importFile :: FilePath -> WXError ()
+      importFile fp = undefined
+
       open :: FilePath -> WXError ()
       open fp = do
           doc <- loadDoc fp
@@ -297,6 +300,14 @@ mainWindow filename = do
               varSet properties p
               setModified True) prop'
           return ()
+      ]
+
+  set iImport
+      [ WX.text := "&Import..."
+      , on command := trapError $ checkConfirmUnsaved $ do
+          name <- liftIO $ fileOpenDialog f True True "Import phone directory"
+              importTypesSelection "" ""
+          maybe (return ()) importFile name
       ]
 
   set iExport
