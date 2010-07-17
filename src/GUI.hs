@@ -474,7 +474,7 @@ importCSV fp = ( do
           Left e    -> throwError . show $ e
           Right csv -> do
               orgs <- liftIO . fromAttempt . O.fromCSV $ csv
-              return $ mkDocument {dOrganizations = orgs}
+              return $ mkDocument {dOrganizations = O.mergeOrgs orgs}
     ) `catchError` (throwError . (msg ++))
   where
     msg = "Failed to load " ++ fp ++ ":\n"
