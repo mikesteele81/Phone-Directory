@@ -81,6 +81,8 @@ toCSV (Organization i cx) = map (\c -> ir ++ C.toCSVRecord c) cx
 
 fromCSV :: CSV -> Attempt [Organization (C.ContactInfo Name)]
 fromCSV = sequence . map fromCSVRecord
+          -- the 'csv' package parses an empty line as a blank record.
+          . takeWhile (/=[""])
 
 fromCSVRecord :: Record -> Attempt (Organization (C.ContactInfo Name))
 fromCSVRecord [orgN, op, cn, cp] = Success $
