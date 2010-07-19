@@ -77,19 +77,28 @@ mkLabelValue i l r = LineItem (toPDFString l) (toPDFString r) i
 -- which is directly below this one.
 drawLineItem :: PDFUnits -> Point -> LineItem -> Draw Point
 drawLineItem colWidth (x :+ y) (LineItem  l r i) = do
+    setDash $ DashPattern [1.0, 4.0] 1.0
+    strokeColor (Rgb 0.5 0.5 0.5)
+    stroke (Line (x + colPadding + xOffsetL + textWidth font_normal l)
+                 (y' + dashHeight)
+                 (x + colPadding + xOffsetL + xOffsetR) (y' + dashHeight))
+    strokeColor black
+    setNoDash
     drawText $ do
         textStart (x + colPadding) y'
         setFont font_normal
-        textStart offset 0
+        textStart xOffsetL 0
         displayText l
-        textStart (lineItemWidth - textWidth font_normal r - offset) 0
+        textStart xOffsetR 0
         displayText r
         textStart (textWidth font_normal r - lineItemWidth) 0
     return (x :+ y')
   where
+    dashHeight = getHeight font_normal / 4.0
     lineItemWidth = unPDFUnits colWidth - 2 * colPadding
     colPadding = unPDFUnits col_padding
-    offset = if i then unPDFUnits line_item_indent else 0.0
+    xOffsetL = if i then unPDFUnits line_item_indent else 0.0
+    xOffsetR = lineItemWidth - textWidth font_normal r - xOffsetL
     y' = y - unPDFUnits line_item_leading
 drawLineItem colWidth (x :+ y) Divider = do
     stroke (Line x y' (x + unPDFUnits colWidth) y')
