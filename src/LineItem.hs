@@ -18,6 +18,7 @@
 module LineItem where
 
 import Control.Monad
+import Data.Function (on)
 import Data.List
 import Graphics.PDF
 
@@ -45,6 +46,10 @@ data LineItem
                -- This is so group membership can be made obvious.
              , indent :: Bool
              }
+  | Header
+      { left :: PDFString
+      , right :: PDFString
+      }
   -- | Horizontal line
   | Divider
   -- | Empty area.  This is used at the end to force columns to be of
@@ -72,18 +77,16 @@ mkLabelValue :: Bool     -- ^Indent?
              -> LineItem
 mkLabelValue i l r = LineItem (toPDFString l) (toPDFString r) i
 
+mkHeader :: String -> String -> LineItem
+mkHeader = (Header `on` toPDFString)
+
 -- |Draw a LineItem at the given point.  The Reader monad supplies the width
 -- of the line item.  Return the suggested point to draw another LineItem,
 -- which is directly below this one.
 drawLineItem :: PDFUnits -> Point -> LineItem -> Draw Point
 drawLineItem colWidth (x :+ y) (LineItem  l r i) = do
-    setDash $ DashPattern [1.0, 4.0] 1.0
-    strokeColor (Rgb 0.5 0.5 0.5)
-    stroke (Line (x + colPadding + xOffsetL + textWidth font_normal l)
-                 (y' + dashHeight)
-                 (x + colPadding + xOffsetL + xOffsetR) (y' + dashHeight))
-    strokeColor black
-    setNoDash
+    dashPattern (x + colPadding + xOffsetL + textWidth font_normal l)
+       (y' + dashHeight) (xOffsetR - textWidth font_normal l) black
     drawText $ do
         textStart (x + colPadding) y'
         setFont font_normal
@@ -100,6 +103,23 @@ drawLineItem colWidth (x :+ y) (LineItem  l r i) = do
     xOffsetL = if i then unPDFUnits line_item_indent else 0.0
     xOffsetR = lineItemWidth - textWidth font_normal r - xOffsetL
     y' = y - unPDFUnits line_item_leading
+drawLineItem colWidth (x :+ y) (Header  l r) = do
+    drawText $ do
+        textStart (x + colPadding) y'
+        setFont font_normal
+        textStart xOffsetL 0
+        displayText l
+        textStart xOffsetR 0
+        displayText r
+        textStart (textWidth font_normal r - lineItemWidth) 0
+    return (x :+ y')
+  where
+    lineItemWidth = unPDFUnits colWidth - 2 * colPadding
+    colPadding = unPDFUnits col_padding
+    xOffsetL = unPDFUnits line_item_indent
+    xOffsetR = lineItemWidth - textWidth font_normal r - xOffsetL
+    y' = y - unPDFUnits line_item_leading
+
 drawLineItem colWidth (x :+ y) Divider = do
     stroke (Line x y' (x + unPDFUnits colWidth) y')
     return $ x :+ y'
@@ -116,9 +136,17 @@ drawColumn colWidth p@(x :+ y) (Column lx) = do
   where
     x' = x + unPDFUnits colWidth
 
+dashPattern :: PDFFloat -> PDFFloat -> PDFFloat -> Color -> Draw ()
+dashPattern x y w c = do
+    setDash $ DashPattern [1.0, 4.0] 1.0
+    strokeColor (Rgb 0.5 0.5 0.5)
+    stroke $ Line x y (x + w) y
+    strokeColor c
+    setNoDash
+
 -- |This gets prepended to every Column before being drawn.
 columnHeading :: [LineItem]
-columnHeading = [mkLabelValue True "Name" "Phone Number", Divider]
+columnHeading = [mkHeader "Name" "Phone Number", Divider]
 
 -- | Flow a single column into multiple columns of equal height.  This
 -- certainly has bugs in it.
