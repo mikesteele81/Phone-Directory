@@ -20,6 +20,15 @@ Michael Steele <mikesteele81@gmail.com>
 Change Log
 ==========
 
+Version 0.5
+* Exporting to CSV is now supported. Each line contains the organization name
+  and number followed by the contact name and number.
+* Importing from CSV is now supported. Each imported contact will be
+  distinct.  Organizations get merged with others that have an identical name
+  and number.
+* The generated .pdf file contains gray dashes between each name and number
+  mapping.
+
 Version 0.4
 -----------
 * new page setup screen allows you to print horizontally or vertically and
