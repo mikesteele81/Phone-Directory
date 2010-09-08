@@ -26,7 +26,7 @@ import Graphics.PDF
 import Test.QuickCheck
 import Text.Regex.Posix
 
-import LineItem
+import IntLineItem
 
 import TestJSON
 import TestPriority
