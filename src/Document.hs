@@ -31,7 +31,7 @@ import Control.Applicative
 import Control.Monad (foldM_)
 import qualified Data.ByteString.Char8 as B
 import Data.Convertible.Base
-import Data.List (sort)
+import Data.List (intercalate, sort)
 import Data.Object
 import qualified Data.Object.Json as J
 import Graphics.PDF
@@ -113,13 +113,13 @@ sortDoc d =
     d { dOrganizations = map O.sortOrg $ sort (dOrganizations d) }
         
 -- | Draw a Document on its own page.
-renderDoc :: (ShowLineItems a, Ord a)
-  => Document a -- ^Document to append a page for.
+renderDoc :: (Ord a, Show a)
+  => Document (ContactInfo a) -- ^Document to append a page for.
   -> String     -- ^Subtitle
   -> PDF()
 renderDoc d lbl= 
     let revised = toPDFString $ "Revised: " ++ dRevised d
-        columns = flowCols (showLineItems $ dOrganizations d) 4
+        columns = flowCols (intercalate [Divider] . map O.toLineItems $ dOrganizations d) 4
         dateRise = titleRise - (PDFUnits $ getHeight fontSubtitle)
             - asPDFUnits sixteenthInch
         gridRise = dateRise - asPDFUnits sixteenthInch

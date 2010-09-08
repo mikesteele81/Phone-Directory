@@ -16,10 +16,10 @@
 -}
 
 module LineItem
-  ( ShowLineItems
+  ( LineItem (Divider, Indent)
+  , ShowLineItems
   , drawColumn
   , flowCols
-  , isIndented
   , mkLabelValue
   , showLineItems
   ) where

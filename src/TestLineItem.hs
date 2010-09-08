@@ -58,11 +58,10 @@ main = return ()
 
 instance Arbitrary LineItem where
     arbitrary = do
-        indent <- arbitrary
         left   <- arbitrary
         right  <- arbitrary
         oneof
-            [ return $ mkLabelValue indent left right
+            [ return $ mkLabelValue left right
             , return Divider
             , return Blank ]
     shrink = shrinkNothing

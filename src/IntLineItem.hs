@@ -42,9 +42,6 @@ data LineItem
                left   :: PDFString
                -- |Right-justified text.
              , right  :: PDFString
-               -- |Should 'left' be indented a little?
-               -- This is so group membership can be made obvious.
-             , isIndented :: Bool
              }
   | Header
       { left :: PDFString
@@ -54,6 +51,7 @@ data LineItem
   | Divider
   -- | Empty area.  This is used at the end to force columns to be of
   -- equal length.
+  | Indent
   | Blank
   deriving (Eq, Show)
 
@@ -71,11 +69,10 @@ instance (ShowLineItems a) => ShowLineItems [a] where
 
 -- |Use this to conveniently create LineItems without having to import
 -- Graphics.PDF.
-mkLabelValue :: Bool     -- ^Indent?
-             -> String   -- ^Left
+mkLabelValue :: String   -- ^Left
              -> String   -- ^Right
              -> LineItem
-mkLabelValue i l r = LineItem (toPDFString l) (toPDFString r) i
+mkLabelValue l r = LineItem (toPDFString l) (toPDFString r)
 
 mkHeader :: String -> String -> LineItem
 mkHeader = Header `on` toPDFString
@@ -83,30 +80,31 @@ mkHeader = Header `on` toPDFString
 -- |Draw a LineItem at the given point.  The Reader monad supplies the width
 -- of the line item.  Return the suggested point to draw another LineItem,
 -- which is directly below this one.
-drawLineItem :: PDFUnits -> Point -> LineItem -> Draw Point
-drawLineItem colWidth (x :+ y) (LineItem l r i) = do
+drawLineItem :: (PDFUnits, PDFUnits, Point) -> LineItem
+  -> Draw (PDFUnits, PDFUnits, Point)
+drawLineItem (colWidth, widthRemaining, x :+ y) (LineItem l r) = do
     when (wRight > 0.0) $
         dashPattern dashStart (y' + dashHeight) dashWidth dashOffset black
     drawText $ do
-        textStart (x + wLeftPadding) y'
+        textStart (x + wPadding) y'
         setFont font
         displayText l
         textStart (wLeft + wCenter) 0
         displayText r
-    return (x :+ y')
+    return (colWidth, colWidth, x' :+ y')
   where
     dashHeight = getHeight font / 4.0
     dashWidth = max 0 $ dashEnd - dashStart
-    dashStart = x + wLeftPadding + wLeft + 5.0
+    dashStart = x + wPadding + wLeft + 5.0
     dashOffset = dashStart - x
-    dashEnd = x + unPDFUnits colWidth - wRightPadding - wRight - 5.0
-    wLeftPadding = unPDFUnits $ col_padding + if i then indent else 0.0
-    wRightPadding = unPDFUnits col_padding
+    dashEnd = x + unPDFUnits widthRemaining - wPadding - wRight - 5.0
+    wPadding = unPDFUnits col_padding
     wLeft = textWidth font l
-    wCenter = unPDFUnits colWidth - wLeft - wRight - wLeftPadding - wRightPadding
+    wCenter = unPDFUnits widthRemaining - wLeft - wRight - 2 * wPadding
     wRight = textWidth font r
+    x' = x - unPDFUnits (colWidth - widthRemaining)
     y' = y - unPDFUnits leading
-drawLineItem colWidth (x :+ y) (Header l r) = do
+drawLineItem  (colWidth, widthRemaining, x :+ y) (Header l r) = do
     drawText $ do
         textStart (x + colPadding) y'
         setFont font
@@ -115,25 +113,33 @@ drawLineItem colWidth (x :+ y) (Header l r) = do
         textStart xOffsetR 0
         displayText r
         textStart (textWidth font r - lineItemWidth) 0
-    return (x :+ y')
+    return (colWidth, colWidth, x' :+ y')
   where
-    lineItemWidth = unPDFUnits colWidth - 2 * colPadding
+    lineItemWidth = unPDFUnits widthRemaining - 2 * colPadding
     colPadding = unPDFUnits col_padding
     xOffsetL = unPDFUnits indent
     xOffsetR = lineItemWidth - textWidth font r - xOffsetL
+    x' = x - unPDFUnits (colWidth - widthRemaining)
     y' = y - unPDFUnits leading
 
-drawLineItem colWidth (x :+ y) Divider = do
+drawLineItem (colWidth, widthRemaining, x :+ y) Divider = do
     stroke (Line x y' (x + unPDFUnits colWidth) y')
-    return $ x :+ y'
+    return (colWidth, colWidth, x' :+ y')
   where
+    x' = x - unPDFUnits (colWidth - widthRemaining)
     y' = y - unPDFUnits leading
-drawLineItem _ (x :+ y) Blank =
-    return $ x :+ (y - unPDFUnits leading)
+drawLineItem (colWidth, widthRemaining, x :+ y) Indent =
+    return (colWidth, widthRemaining - indent, (x + unPDFUnits indent) :+ y)
+drawLineItem (w, widthRemaining, x :+ y) Blank =
+    return (w, w, x' :+ y')
+  where
+    x' = x - unPDFUnits (w - widthRemaining)
+    y' = y - unPDFUnits leading
 
 drawColumn :: PDFUnits -> Point -> Column -> Draw Point
 drawColumn colWidth p@(x :+ y) (Column lx) = do
-    (_ :+ y') <- foldM (drawLineItem colWidth) p $ columnHeading ++ lx ++ [Blank]
+    (_, _, _ :+ y') <- foldM drawLineItem (colWidth, colWidth, p)
+        $ columnHeading ++ lx ++ [Blank]
     stroke $ Rectangle p (x' :+ y')
     return (x' :+ y)
   where
@@ -169,7 +175,7 @@ flowCols lx n =
   where
     (cx, lx') = foldl (flow len) ([], []) lx
     cx' = reverse $ Column (reverse lx') : cx
-    len = let (d, m) = length lx `divMod` n in d + if m /= 0 then 1 else 0
+    len = let (d, m) = numLines lx `divMod` n in d + if m /= 0 then 1 else 0
 
 padColumns :: Int -> [Column] -> [Column]
 padColumns n cx =
@@ -177,16 +183,23 @@ padColumns n cx =
 
 padColumn :: Int -> Column -> Column
 padColumn n (Column lx) =
-    Column $ lx ++ replicate (max 0 $ n - length lx) Blank
+    Column $ lx ++ replicate (max 0 $ n - numLines lx) Blank
 
 flow :: Int -> ([Column], [LineItem]) -> LineItem -> ([Column], [LineItem])
 -- no leading dividers
 flow _ r@(_, []) Divider = r
 flow _ r@(_, []) Blank   = r 
 flow len (cx, lx) l
-    | len > length lx    = (cx, l:lx)
+    | len > numLines lx    = (cx, l:lx)
     | otherwise          = case l of
         -- no trailing dividers
         Divider -> ((Column $ reverse lx) : cx, [])
         Blank   -> ((Column $ reverse lx) : cx, [])
         _       -> flow len ((Column $ reverse lx) : cx, []) l
+
+numLines :: [LineItem] -> Int
+numLines lx = foldl' (+) 0 $ map score lx
+  where
+    score li = case li of
+      Indent -> 0
+      _      -> 1

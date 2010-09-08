@@ -24,6 +24,7 @@
 module ContactInfo
     ( ContactInfo (..)
     , toCSVRecord
+    , toLineItem
     ) where
 
 import Control.Applicative
@@ -55,8 +56,8 @@ instance forall a. (Show a) => Show (ContactInfo a) where
 instance Functor ContactInfo where
     f `fmap` x = x { cName = (f . cName) x }
 
-instance (Show a) => ShowLineItems (ContactInfo a) where
-    showLineItems ci = [mkLabelValue True (show $ cName ci) (cPhone ci)]
+toLineItem :: Show a => ContactInfo a -> LineItem
+toLineItem ci = mkLabelValue (show $ cName ci) (cPhone ci)
 
 instance (ConvertAttempt J.JsonObject a)
     => ConvertAttempt J.JsonObject (ContactInfo a) where

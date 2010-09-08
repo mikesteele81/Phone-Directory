@@ -61,9 +61,8 @@ instance (ConvertSuccess a JsonObject)
       Mapping [ (B.pack "info", convertSuccess i)
               , (B.pack "contacts", Sequence $ map convertSuccess cx)]
 
-instance (ShowLineItems a) => ShowLineItems (Organization a) where
-    showLineItems (Organization o cx) = concat $ [header] : map showLineItems cx
-        where header = (head $ showLineItems o) {isIndented = False}
+toLineItems :: Show a => Organization (C.ContactInfo a) -> [LineItem]
+toLineItems (Organization o cx) = intersperse Indent . map C.toLineItem $ o : cx
 
 -- |Sort all the contacts.
 sortOrg :: (Ord a) => Organization a -> Organization a
