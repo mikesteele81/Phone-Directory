@@ -84,29 +84,29 @@ mkHeader = Header `on` toPDFString
 -- of the line item.  Return the suggested point to draw another LineItem,
 -- which is directly below this one.
 drawLineItem :: PDFUnits -> Point -> LineItem -> Draw Point
-drawLineItem colWidth (x :+ y) (LineItem  l r i) = do
-    dashPattern dashStart (y' + dashHeight) dashWidth dashOffset black
+drawLineItem colWidth (x :+ y) (LineItem l r i) = do
+    when (wRight > 0.0) $
+        dashPattern dashStart (y' + dashHeight) dashWidth dashOffset black
     drawText $ do
-        textStart (x + colPadding) y'
+        textStart (x + wLeftPadding) y'
         setFont font
-        textStart xOffsetL 0
         displayText l
-        textStart xOffsetR 0
+        textStart (wLeft + wCenter) 0
         displayText r
-        textStart (textWidth font r - lineItemWidth) 0
     return (x :+ y')
   where
     dashHeight = getHeight font / 4.0
     dashWidth = max 0 $ dashEnd - dashStart
-    dashStart = x + colPadding + xOffsetL + textWidth font l + 5.0
+    dashStart = x + wLeftPadding + wLeft + 5.0
     dashOffset = dashStart - x
-    dashEnd = x + lineItemWidth - textWidth font r
-    lineItemWidth = unPDFUnits colWidth - 2 * colPadding
-    colPadding = unPDFUnits col_padding
-    xOffsetL = if i then unPDFUnits indent else 0.0
-    xOffsetR = lineItemWidth - textWidth font r - xOffsetL
+    dashEnd = x + unPDFUnits colWidth - wRightPadding - wRight - 5.0
+    wLeftPadding = unPDFUnits $ col_padding + if i then indent else 0.0
+    wRightPadding = unPDFUnits col_padding
+    wLeft = textWidth font l
+    wCenter = unPDFUnits colWidth - wLeft - wRight - wLeftPadding - wRightPadding
+    wRight = textWidth font r
     y' = y - unPDFUnits leading
-drawLineItem colWidth (x :+ y) (Header  l r) = do
+drawLineItem colWidth (x :+ y) (Header l r) = do
     drawText $ do
         textStart (x + colPadding) y'
         setFont font
