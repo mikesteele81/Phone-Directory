@@ -85,8 +85,7 @@ mkHeader = Header `on` toPDFString
 -- which is directly below this one.
 drawLineItem :: PDFUnits -> Point -> LineItem -> Draw Point
 drawLineItem colWidth (x :+ y) (LineItem  l r i) = do
-    dashPattern (x + colPadding + xOffsetL + textWidth font l)
-       (y' + dashHeight) dashWidth black
+    dashPattern dashStart (y' + dashHeight) dashWidth dashOffset black
     drawText $ do
         textStart (x + colPadding) y'
         setFont font
@@ -98,7 +97,10 @@ drawLineItem colWidth (x :+ y) (LineItem  l r i) = do
     return (x :+ y')
   where
     dashHeight = getHeight font / 4.0
-    dashWidth = max 0 $ truncateToMultipleOf 5 (xOffsetR - textWidth font l - 5.0)
+    dashWidth = max 0 $ dashEnd - dashStart
+    dashStart = x + colPadding + xOffsetL + textWidth font l + 5.0
+    dashOffset = dashStart - x
+    dashEnd = x + lineItemWidth - textWidth font r
     lineItemWidth = unPDFUnits colWidth - 2 * colPadding
     colPadding = unPDFUnits col_padding
     xOffsetL = if i then unPDFUnits indent else 0.0
@@ -143,10 +145,11 @@ truncateToMultipleOf multiple number = multiple * times
     times :: PDFFloat
     times = fromIntegral (truncate (number / multiple) :: Int)
 
-dashPattern :: PDFFloat -> PDFFloat -> PDFFloat -> Color -> Draw ()
-dashPattern x y w c = do
-    setDash $ DashPattern [1.0, 4.0] 1.0
-    strokeColor (Rgb 0.5 0.5 0.5)
+dashPattern :: PDFFloat -> PDFFloat -> PDFFloat -> PDFFloat -> Color -> Draw ()
+dashPattern x y w off c = do
+    setDash $ DashPattern [2.0, 4.0] off
+    setLineCap RoundCap
+    strokeColor (Rgb 0.3 0.3 0.3)
     stroke $ Line x y (x + w) y
     strokeColor c
     setNoDash
