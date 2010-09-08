@@ -63,7 +63,7 @@ instance (ConvertSuccess a JsonObject)
 
 instance (ShowLineItems a) => ShowLineItems (Organization a) where
     showLineItems (Organization o cx) = concat $ [header] : map showLineItems cx
-        where header = (head $ showLineItems o) {indent = False}
+        where header = (head $ showLineItems o) {isIndented = False}
 
 -- |Sort all the contacts.
 sortOrg :: (Ord a) => Organization a -> Organization a

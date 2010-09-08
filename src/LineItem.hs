@@ -19,7 +19,7 @@ module LineItem
   ( ShowLineItems
   , drawColumn
   , flowCols
-  , indent
+  , isIndented
   , mkLabelValue
   , showLineItems
   ) where

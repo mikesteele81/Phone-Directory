@@ -20,17 +20,17 @@ module IntLineItem where
 import Control.Monad
 import Data.Function (on)
 import Data.List
-import Graphics.PDF
+import Graphics.PDF hiding (leading)
 
 import UnitConversion
 
-font_normal :: PDFFont
-font_normal    = PDFFont Helvetica 8
+font :: PDFFont
+font    = PDFFont Helvetica 8
 
-line_item_indent, line_item_leading :: PDFUnits
+indent, leading :: PDFUnits
 -- 1 7/8"
-line_item_indent  = asPDFUnits . Inches $ 1 / 8
-line_item_leading = asPDFUnits . Inches $ 1 / 7
+indent  = asPDFUnits . Inches $ 1 / 8
+leading = asPDFUnits . Inches $ 1 / 7
 
 col_padding :: PDFUnits
 col_padding = asPDFUnits . Inches $ 1 / 16
@@ -44,7 +44,7 @@ data LineItem
              , right  :: PDFString
                -- |Should 'left' be indented a little?
                -- This is so group membership can be made obvious.
-             , indent :: Bool
+             , isIndented :: Bool
              }
   | Header
       { left :: PDFString
@@ -85,48 +85,48 @@ mkHeader = Header `on` toPDFString
 -- which is directly below this one.
 drawLineItem :: PDFUnits -> Point -> LineItem -> Draw Point
 drawLineItem colWidth (x :+ y) (LineItem  l r i) = do
-    dashPattern (x + colPadding + xOffsetL + textWidth font_normal l)
-       (y' + dashHeight) (xOffsetR - textWidth font_normal l) black
+    dashPattern (x + colPadding + xOffsetL + textWidth font l)
+       (y' + dashHeight) (xOffsetR - textWidth font l) black
     drawText $ do
         textStart (x + colPadding) y'
-        setFont font_normal
+        setFont font
         textStart xOffsetL 0
         displayText l
         textStart xOffsetR 0
         displayText r
-        textStart (textWidth font_normal r - lineItemWidth) 0
+        textStart (textWidth font r - lineItemWidth) 0
     return (x :+ y')
   where
-    dashHeight = getHeight font_normal / 4.0
+    dashHeight = getHeight font / 4.0
     lineItemWidth = unPDFUnits colWidth - 2 * colPadding
     colPadding = unPDFUnits col_padding
-    xOffsetL = if i then unPDFUnits line_item_indent else 0.0
-    xOffsetR = lineItemWidth - textWidth font_normal r - xOffsetL
-    y' = y - unPDFUnits line_item_leading
+    xOffsetL = if i then unPDFUnits indent else 0.0
+    xOffsetR = lineItemWidth - textWidth font r - xOffsetL
+    y' = y - unPDFUnits leading
 drawLineItem colWidth (x :+ y) (Header  l r) = do
     drawText $ do
         textStart (x + colPadding) y'
-        setFont font_normal
+        setFont font
         textStart xOffsetL 0
         displayText l
         textStart xOffsetR 0
         displayText r
-        textStart (textWidth font_normal r - lineItemWidth) 0
+        textStart (textWidth font r - lineItemWidth) 0
     return (x :+ y')
   where
     lineItemWidth = unPDFUnits colWidth - 2 * colPadding
     colPadding = unPDFUnits col_padding
-    xOffsetL = unPDFUnits line_item_indent
-    xOffsetR = lineItemWidth - textWidth font_normal r - xOffsetL
-    y' = y - unPDFUnits line_item_leading
+    xOffsetL = unPDFUnits indent
+    xOffsetR = lineItemWidth - textWidth font r - xOffsetL
+    y' = y - unPDFUnits leading
 
 drawLineItem colWidth (x :+ y) Divider = do
     stroke (Line x y' (x + unPDFUnits colWidth) y')
     return $ x :+ y'
   where
-    y' = y - unPDFUnits line_item_leading
+    y' = y - unPDFUnits leading
 drawLineItem _ (x :+ y) Blank =
-    return $ x :+ (y - unPDFUnits line_item_leading)
+    return $ x :+ (y - unPDFUnits leading)
 
 drawColumn :: PDFUnits -> Point -> Column -> Draw Point
 drawColumn colWidth p@(x :+ y) (Column lx) = do
