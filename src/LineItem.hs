@@ -78,7 +78,7 @@ mkLabelValue :: Bool     -- ^Indent?
 mkLabelValue i l r = LineItem (toPDFString l) (toPDFString r) i
 
 mkHeader :: String -> String -> LineItem
-mkHeader = (Header `on` toPDFString)
+mkHeader = Header `on` toPDFString
 
 -- |Draw a LineItem at the given point.  The Reader monad supplies the width
 -- of the line item.  Return the suggested point to draw another LineItem,
@@ -125,7 +125,7 @@ drawLineItem colWidth (x :+ y) Divider = do
     return $ x :+ y'
   where
     y' = y - unPDFUnits line_item_leading
-drawLineItem _ (x :+ y) Blank = do
+drawLineItem _ (x :+ y) Blank =
     return $ x :+ (y - unPDFUnits line_item_leading)
 
 drawColumn :: PDFUnits -> Point -> Column -> Draw Point
