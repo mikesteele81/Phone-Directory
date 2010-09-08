@@ -86,7 +86,7 @@ mkHeader = Header `on` toPDFString
 drawLineItem :: PDFUnits -> Point -> LineItem -> Draw Point
 drawLineItem colWidth (x :+ y) (LineItem  l r i) = do
     dashPattern (x + colPadding + xOffsetL + textWidth font l)
-       (y' + dashHeight) (xOffsetR - textWidth font l) black
+       (y' + dashHeight) dashWidth black
     drawText $ do
         textStart (x + colPadding) y'
         setFont font
@@ -98,6 +98,7 @@ drawLineItem colWidth (x :+ y) (LineItem  l r i) = do
     return (x :+ y')
   where
     dashHeight = getHeight font / 4.0
+    dashWidth = max 0 $ truncateToMultipleOf 5 (xOffsetR - textWidth font l - 5.0)
     lineItemWidth = unPDFUnits colWidth - 2 * colPadding
     colPadding = unPDFUnits col_padding
     xOffsetL = if i then unPDFUnits indent else 0.0
@@ -135,6 +136,12 @@ drawColumn colWidth p@(x :+ y) (Column lx) = do
     return (x' :+ y)
   where
     x' = x + unPDFUnits colWidth
+
+truncateToMultipleOf :: PDFFloat -> PDFFloat -> PDFFloat
+truncateToMultipleOf multiple number = multiple * times
+  where
+    times :: PDFFloat
+    times = fromIntegral (truncate (number / multiple) :: Int)
 
 dashPattern :: PDFFloat -> PDFFloat -> PDFFloat -> Color -> Draw ()
 dashPattern x y w c = do
