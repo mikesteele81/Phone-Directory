@@ -56,11 +56,11 @@ newtype Column = Column {unColumn :: [LineItem]}
     deriving (Show)
 
 -- |Use this to conveniently create LineItems without having to import
--- Graphics.PDF.
+-- Graphics.PDF. Dashes are set if the right-hand string exists.
 mkLabelValue :: String   -- ^Left
              -> String   -- ^Right
              -> LineItem
-mkLabelValue l r = LineItem (toPDFString l) (toPDFString r) True
+mkLabelValue l r = LineItem (toPDFString l) (toPDFString r) (not . null $ r)
 
 -- |mkLabelValue sets dashing enabled by default.  Use this to change it.
 setDashed :: Bool -> LineItem -> LineItem
@@ -76,7 +76,7 @@ mkHeader l r = setDashed False $ mkLabelValue l r
 drawLineItem :: (PDFUnits, PDFUnits, Point) -> LineItem
   -> Draw (PDFUnits, PDFUnits, Point)
 drawLineItem (colWidth, widthRemaining, x :+ y) (LineItem l r d) = do
-    when (d && wRight > 0.0) $
+    when d $
         dashPattern dashStart (y' + dashHeight) dashWidth dashOffset black
     drawText $ do
         textStart (x + wPadding) y'
