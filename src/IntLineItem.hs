@@ -43,10 +43,6 @@ data LineItem
              , right  :: PDFString
              , isDashed :: Bool
              }
-  | Header
-      { left :: PDFString
-      , right :: PDFString
-      }
   -- | Horizontal line
   | Divider
   -- | Empty area.  This is used at the end to force columns to be of
@@ -99,23 +95,6 @@ drawLineItem (colWidth, widthRemaining, x :+ y) (LineItem l r d) = do
     wLeft = textWidth font l
     wCenter = unPDFUnits widthRemaining - wLeft - wRight - 2 * wPadding
     wRight = textWidth font r
-    x' = x - unPDFUnits (colWidth - widthRemaining)
-    y' = y - unPDFUnits leading
-drawLineItem  (colWidth, widthRemaining, x :+ y) (Header l r) = do
-    drawText $ do
-        textStart (x + colPadding) y'
-        setFont font
-        textStart xOffsetL 0
-        displayText l
-        textStart xOffsetR 0
-        displayText r
-        textStart (textWidth font r - lineItemWidth) 0
-    return (colWidth, colWidth, x' :+ y')
-  where
-    lineItemWidth = unPDFUnits widthRemaining - 2 * colPadding
-    colPadding = unPDFUnits col_padding
-    xOffsetL = unPDFUnits indent
-    xOffsetR = lineItemWidth - textWidth font r - xOffsetL
     x' = x - unPDFUnits (colWidth - widthRemaining)
     y' = y - unPDFUnits leading
 
