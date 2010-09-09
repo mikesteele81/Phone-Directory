@@ -17,11 +17,9 @@
 
 module LineItem
   ( LineItem (Divider, Indent)
-  , ShowLineItems
   , drawColumn
   , flowCols
   , mkLabelValue
-  , showLineItems
   ) where
 
 import IntLineItem

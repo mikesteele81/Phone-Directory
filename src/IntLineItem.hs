@@ -59,14 +59,6 @@ data LineItem
 newtype Column = Column {unColumn :: [LineItem]}
     deriving (Show)
 
--- |Things which can be converted to lists of LineItems.  This
--- includes ContactInfo and Organization.
-class ShowLineItems a where
-    showLineItems :: a -> [LineItem]
-
-instance (ShowLineItems a) => ShowLineItems [a] where
-    showLineItems = intercalate [Divider] . map showLineItems
-
 -- |Use this to conveniently create LineItems without having to import
 -- Graphics.PDF.
 mkLabelValue :: String   -- ^Left
