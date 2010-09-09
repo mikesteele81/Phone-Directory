@@ -306,7 +306,7 @@ mainWindow filename = do
       , on command := trapError $ do
           prop <- liftIO $ varGet properties
           prop' <- liftIO $ PageSetupGUI.pageSetupDialog f prop
-          maybe (return ()) (\p -> if prop == p then return () else liftIO $ do
+          maybe (return ()) (\p -> unless (prop == p) . liftIO $ do
               varSet properties p
               setModified True) prop'
           return ()
@@ -329,15 +329,11 @@ mainWindow filename = do
             Just name' -> trapError $ do
                 props <- liftIO $ varGet properties
                 op <- tree2Doc tc
-                let ext = drop ((length name') - 3) (map toLower name')
-                if (ext == "pdf")
-                  then do
-                     generate name' (op props)
-                  else if (ext == "csv")
-                    then do
-                      liftIO $ writeFile name'
-                                 (CSV.printCSV . toCSVRecords $ op props)
-                    else return ()
+                let ext = drop (length name' - 3) (map toLower name')
+                if ext == "pdf"
+                  then generate name' (op props)
+                  else M.when (ext == "csv") . liftIO $ writeFile name'
+                           (CSV.printCSV . toCSVRecords $ op props)
             Nothing -> return ()
       ]
 
@@ -452,7 +448,7 @@ treeItem2CI tc itm = do
 -- |Save the supplied document to a file.
 saveDoc :: FilePath -> Document -> WXError ()
 saveDoc fp doc =
-    (liftIO $ encodeFile fp (convertSuccess doc :: JsonObject))
+    liftIO (encodeFile fp (convertSuccess doc :: JsonObject))
     `catchError` (throwError . (msg ++))
   where
     msg = "Failed to save directory to " ++ fp ++ ":\n"
@@ -460,7 +456,7 @@ saveDoc fp doc =
 -- |Attempt to load a document from the supplied file.
 loadDoc :: FilePath -> WXError Document
 loadDoc fp = ( do
-        json <- liftIO (decodeFile $ fp :: IO (Attempt JsonObject))
+        json <- liftIO (decodeFile fp :: IO (Attempt JsonObject))
         liftIO . fromAttempt $ json >>= convertAttempt
     ) `catchError` (throwError . (msg ++))
   where
