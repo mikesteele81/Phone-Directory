@@ -18,7 +18,6 @@
 module IntLineItem where
 
 import Control.Monad
-import Data.List
 import Graphics.PDF hiding (leading)
 
 import UnitConversion
@@ -38,13 +37,8 @@ col_padding = asPDFUnits . Inches $ 1 / 16
 
 -- | A single line making up part of a column.
 data LineItem
-  -- | Contact or column heading.
-  = LineItem { -- |Left-justified text.
-               left   :: PDFString
-               -- |Right-justified text.
-             , right  :: PDFString
-             , isDashed :: Bool
-             }
+  -- | Contact or column heading. LineItem left right isDashed
+  = LineItem PDFString PDFString Bool
   -- | Horizontal line
   | Divider
   -- | Empty area.  This is used at the end to force columns to be of
@@ -54,8 +48,7 @@ data LineItem
   deriving (Eq, Show)
 
 -- |Each page contains 4 columns of equal length.
-newtype Column = Column {unColumn :: [LineItem]}
-    deriving (Show)
+newtype Column = Column { unColumn :: [LineItem]} deriving (Show)
 
 -- |Use this to conveniently create LineItems without having to import
 -- Graphics.PDF. Dashes are set if the right-hand string exists.
@@ -139,31 +132,26 @@ flowCols lx n =
   where
     (cx, lx') = foldl (flow len) ([], []) lx
     cx' = reverse $ Column (reverse lx') : cx
-    len = let (d, m) = numLines lx `divMod` n in d + if m /= 0 then 1 else 0
+    len = let (d, m) = numLines (Column lx) `divMod` n in d + if m /= 0 then 1 else 0
 
 padColumns :: Int -> [Column] -> [Column]
 padColumns n cx =
     cx ++ replicate (max 0 $ n - length cx) (Column [])
 
 padColumn :: Int -> Column -> Column
-padColumn n (Column lx) =
-    Column $ lx ++ replicate (max 0 $ n - numLines lx) Blank
+padColumn n c = Column $ unColumn c ++ replicate (max 0 $ n - numLines c) Blank
 
 flow :: Int -> ([Column], [LineItem]) -> LineItem -> ([Column], [LineItem])
 -- no leading dividers
 flow _ r@(_, []) Divider = r
 flow _ r@(_, []) Blank   = r 
 flow len (cx, lx) l
-    | len > numLines lx    = (cx, l:lx)
+    | len > numLines (Column lx) = (cx, l:lx)
     | otherwise          = case l of
         -- no trailing dividers
         Divider -> ((Column $ reverse lx) : cx, [])
         Blank   -> ((Column $ reverse lx) : cx, [])
         _       -> flow len ((Column $ reverse lx) : cx, []) l
 
-numLines :: [LineItem] -> Int
-numLines lx = foldl' (+) 0 $ map score lx
-  where
-    score li = case li of
-      Indent -> 0
-      _      -> 1
+numLines :: Column -> Int
+numLines (Column lx) = length . filter (/= Indent) $ lx
