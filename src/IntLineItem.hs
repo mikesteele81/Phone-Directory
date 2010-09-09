@@ -24,7 +24,9 @@ import Graphics.PDF hiding (leading)
 import UnitConversion
 
 font :: PDFFont
-font    = PDFFont Helvetica 8
+font = PDFFont Helvetica 8
+dashHeight :: PDFFloat
+dashHeight  = getHeight font / 4.0
 
 indent, leading :: PDFUnits
 -- 1 7/8"
@@ -75,42 +77,34 @@ mkHeader l r = setDashed False $ mkLabelValue l r
 -- which is directly below this one.
 drawLineItem :: (PDFUnits, PDFUnits, Point) -> LineItem
   -> Draw (PDFUnits, PDFUnits, Point)
-drawLineItem (colWidth, widthRemaining, x :+ y) (LineItem l r d) = do
-    when d $
-        dashPattern dashStart (y' + dashHeight) dashWidth dashOffset black
-    drawText $ do
-        textStart (x + wPadding) y'
-        setFont font
-        displayText l
-        textStart (wLeft + wCenter) 0
-        displayText r
-    return (colWidth, colWidth, x' :+ y')
-  where
-    dashHeight = getHeight font / 4.0
-    dashWidth = max 0 $ dashEnd - dashStart
-    dashStart = x + wPadding + wLeft + 5.0
-    dashOffset = dashStart - x
-    dashEnd = x + unPDFUnits widthRemaining - wPadding - wRight - 5.0
-    wPadding = unPDFUnits col_padding
-    wLeft = textWidth font l
-    wCenter = unPDFUnits widthRemaining - wLeft - wRight - 2 * wPadding
-    wRight = textWidth font r
-    x' = x - unPDFUnits (colWidth - widthRemaining)
-    y' = y - unPDFUnits leading
-
-drawLineItem (colWidth, widthRemaining, x :+ y) Divider = do
-    stroke (Line x y' (x + unPDFUnits colWidth) y')
-    return (colWidth, colWidth, x' :+ y')
-  where
-    x' = x - unPDFUnits (colWidth - widthRemaining)
-    y' = y - unPDFUnits leading
 drawLineItem (colWidth, widthRemaining, x :+ y) Indent =
     return (colWidth, widthRemaining - indent, (x + unPDFUnits indent) :+ y)
-drawLineItem (w, widthRemaining, x :+ y) Blank =
-    return (w, w, x' :+ y')
+drawLineItem (colWidth, widthRemaining, x :+ y) li = do
+    case li of
+      LineItem l r d -> do
+          when d $ dashPattern dStart (y' + dashHeight) dWidth dOffset black
+          drawText $ do
+              textStart (x + wPadding) y'
+              setFont font
+              displayText l
+              textStart (wLeft + wCenter) 0
+              displayText r
+        where
+          dEnd    = x + unPDFUnits widthRemaining - wPadding - wRight - 5.0
+          dWidth  = max 0 $ dEnd - dStart
+          dOffset = dStart - x
+          dStart  = x + wPadding + wLeft + 5.0
+          wCenter = unPDFUnits widthRemaining - wLeft - wRight - 2 * wPadding
+          wRight  = textWidth font r
+          wLeft   = textWidth font l
+      Divider -> stroke (Line x y' (x + unPDFUnits colWidth) y')
+      Blank -> return ()
+      Indent -> error "Can't get here"
+    return (colWidth, colWidth, x' :+ y')
   where
-    x' = x - unPDFUnits (w - widthRemaining)
-    y' = y - unPDFUnits leading
+    wPadding = unPDFUnits col_padding
+    x'       = x - unPDFUnits (colWidth - widthRemaining)
+    y'       = y - unPDFUnits leading
 
 drawColumn :: PDFUnits -> Point -> Column -> Draw Point
 drawColumn colWidth p@(x :+ y) (Column lx) = do
