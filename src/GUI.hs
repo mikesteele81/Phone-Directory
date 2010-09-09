@@ -184,12 +184,12 @@ mainWindow filename = do
       updateDetails :: ContactInfo Name -> WXError ()
       updateDetails ci = liftIO $ do
         case cName ci of
-          FirstLast first l -> do
-            set eFirst [ enabled := True, WX.text := first ]
-            set eLast  [ enabled := True, WX.text := l     ]
           SingleName n -> do
             set eFirst [ enabled := True, WX.text := n  ]
             set eLast  [ enabled := True, WX.text := "" ]
+          n -> do
+            set eFirst [ enabled := True, WX.text := given n ]
+            set eLast  [ enabled := True, WX.text := sur n   ]
         set ePhone     [ enabled := True, WX.text := cPhone ci ]
         set ePriority  [ enabled := True, WX.selection := fromEnum $ cPriority ci ]
 

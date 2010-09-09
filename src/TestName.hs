@@ -42,17 +42,17 @@ prop_fsn_paul_sorts_before_pauline (f, suf, l1, l2)
     = l1 /= "" && l2 /= "" && suf /= "" && f /= ""
     ==> compare paul pauline == LT
   where
-    paul = FirstSortedName $ mkName f l1
-    pauline = FirstSortedName $ mkName (f ++ suf) l2
+    paul = toFirstSorted $ mkName f l1
+    pauline = toFirstSorted $ mkName (f ++ suf) l2
 
 prop_fsn_compare_fl_sn_ignores_ln :: (String, String) -> Property
 prop_fsn_compare_fl_sn_ignores_ln (f, n)
     = f /= "" && n /= ""
     ==> (compare fl1 sn == compare fl2 sn)
   where
-    fl1 = FirstSortedName $ mkName f "aaa"
-    fl2 = FirstSortedName $ mkName f "zzz"
-    sn  = FirstSortedName $ SingleName n
+    fl1 = toFirstSorted $ mkName f "aaa"
+    fl2 = toFirstSorted $ mkName f "zzz"
+    sn  = SingleName n
 
 prop_name_compare_fl_sn_ignores_fn :: (String, String) -> Property
 prop_name_compare_fl_sn_ignores_fn (l, n)

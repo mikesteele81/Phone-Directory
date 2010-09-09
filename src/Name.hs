@@ -23,15 +23,17 @@
 
 module Name
     ( Name            ( FirstLast, SingleName)
-    , FirstSortedName ( FirstSortedName )
+    , sur
+    , given
     , mkName
+    , toFirstSorted
+    , toLastSorted
     ) where
 
 import Control.Applicative
 import Data.Attempt
 import Data.ByteString.Char8
 import Data.Function (on)
-import Data.Monoid
 import Data.Convertible.Base
 import Data.Object
 import qualified Data.Object.Json as J
@@ -39,43 +41,19 @@ import qualified Data.Object.Json as J
 -- |A contact's name. This sorts by last name and prints out as 'Last,
 -- First'.
 data Name
-  -- |FirstLast first last
-  = FirstLast String String
+  = FirstLast { given :: String
+              , sur :: String }
+  | LastFirst { sur :: String
+              , given :: String }
   -- |Use this whenever you want a contact to always sort and print the
   -- same way.
   | SingleName String
-  deriving (Eq)
+  deriving (Eq, Ord)
 
--- |This prints out 'First Last' and sorts by first name.
-newtype FirstSortedName = FirstSortedName { unFSN :: Name }
-    deriving (Eq)
-
-instance Show FirstSortedName where
-  show (unFSN -> FirstLast f l) = f ++ " " ++ l
-  -- It must be a SingleName
-  show (unFSN -> n)             = show n
-    
 instance Show Name where
-  show (FirstLast f l) = l ++ ", " ++ f
+  show (FirstLast f l) = f ++ " " ++ l
+  show (LastFirst l f) = l ++ ", " ++ f
   show (SingleName n)  = n
-
-instance Ord Name where
-    compare (FirstLast fl ll) (FirstLast fr lr) =
-       compare ll lr `mappend` compare fl fr
-    -- Bug? why are we ignoring the first name in comparisons?
-    compare (FirstLast _ l) (SingleName n) = compare l n `mappend` GT
-    compare (SingleName n) (FirstLast _ l) = compare n l `mappend` LT
-    compare (SingleName l) (SingleName r) = compare l r
-
-instance Ord FirstSortedName where
-  compare (unFSN -> FirstLast fl ll) (unFSN -> FirstLast fr lr) =
-      compare fl fr `mappend` compare ll lr
-  compare (unFSN -> FirstLast f _) (unFSN -> SingleName n) =
-      compare f n `mappend` GT
-  compare (unFSN -> SingleName n) (unFSN -> FirstLast f _) =
-      compare n f `mappend` LT
-  -- The only other possibility is SingleName to SingleName
-  compare l r = (compare `on` unFSN) l r
 
 -- |Convencience function to create a name from two strings.
 mkName :: String -- ^First name or blank.
@@ -83,7 +61,7 @@ mkName :: String -- ^First name or blank.
        -> Name
 mkName "" n = SingleName n
 mkName n "" = SingleName n
-mkName f l  = FirstLast f l
+mkName f l  = LastFirst l f
 
 instance ConvertAttempt J.JsonObject Name where
   convertAttempt j =
@@ -96,8 +74,15 @@ instance ConvertAttempt J.JsonObject Name where
       <|> fromAttempt (SingleName. J.fromJsonScalar <$> fromScalar j)
 
 instance ConvertSuccess Name J.JsonObject where
-  convertSuccess (FirstLast f l) =
+    convertSuccess (SingleName n) = (Scalar . J.JsonString . pack) n
+    convertSuccess n  =
       J.toJsonObject $ Mapping
-          [ ("first", Scalar f), ("last", Scalar l)]
-  convertSuccess (SingleName n) = (Scalar . J.JsonString . pack) n
+          [ ("first", Scalar . given $ n), ("last", Scalar . sur $ n)]
 
+toFirstSorted :: Name -> Name
+toFirstSorted (LastFirst l f) = FirstLast f l
+toFirstSorted n = n
+
+toLastSorted :: Name -> Name
+toLastSorted (FirstLast f l) = LastFirst l f
+toLastSorted n = n

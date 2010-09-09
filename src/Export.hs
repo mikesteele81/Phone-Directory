@@ -45,4 +45,4 @@ generate file doc =
         renderDoc page2 "(Sorted by Location and then First Name)"
   where
     page1 = sortDoc doc
-    page2 = sortDoc $ fmap (fmap FirstSortedName) doc
+    page2 = sortDoc $ fmap (fmap toFirstSorted) doc
