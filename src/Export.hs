@@ -22,9 +22,7 @@ module Export
 
 import Graphics.PDF
 
-import ContactInfo
 import Document
-import Name
 import PageProperties
 import UnitConversion
 import WXError
@@ -32,9 +30,8 @@ import WXError
 -- |Create a 2-page .pdf file.  The first page sorts by last name and
 -- the second sorts by first name.
 generate
-  :: FilePath                    -- ^Filename to save to.
-  -> Document (ContactInfo Name) -- ^Document to print.  It will be
-                                 -- automatically resorted.
+  :: FilePath -- ^Filename to save to.
+  -> Document -- ^Document to print.  It will be automatically resorted.
   -> WXError ()
 generate file doc =
     liftIO $ runPdf file standardDocInfo
@@ -45,4 +42,4 @@ generate file doc =
         renderDoc page2 "(Sorted by Location and then First Name)"
   where
     page1 = sortDoc doc
-    page2 = sortDoc $ fmap (fmap toFirstSorted) doc
+    page2 = sortDoc . toFirstSorted $ doc

@@ -27,7 +27,6 @@ module Name
     , given
     , mkName
     , toFirstSorted
-    , toLastSorted
     ) where
 
 import Control.Applicative
@@ -82,7 +81,3 @@ instance ConvertSuccess Name J.JsonObject where
 toFirstSorted :: Name -> Name
 toFirstSorted (LastFirst l f) = FirstLast f l
 toFirstSorted n = n
-
-toLastSorted :: Name -> Name
-toLastSorted (FirstLast f l) = LastFirst l f
-toLastSorted n = n

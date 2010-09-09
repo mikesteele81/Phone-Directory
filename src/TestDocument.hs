@@ -21,7 +21,6 @@ import Control.Applicative
 import Test.QuickCheck
 
 import Document
-import Name (Name)
 
 import TestJSON
 import TestOrganization ()
@@ -31,7 +30,7 @@ import TestUnitConversion ()
 main :: IO ()
 main = do
   putStrLn "Document: Reflective JSON instance."
-  quickCheck (prop_reflective_json_instance :: Document Name -> Bool)
+  quickCheck (prop_reflective_json_instance :: Document -> Bool)
 
-instance Arbitrary a => Arbitrary (Document a) where
+instance Arbitrary Document where
     arbitrary = Document <$> arbitrary <*> arbitrary <*> arbitrary

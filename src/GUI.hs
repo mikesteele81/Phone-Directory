@@ -170,7 +170,7 @@ mainWindow filename = do
           caption = "Unsaved Changes"
           msg = "You have unsaved changes.  Are you sure you want to continue?"
 
-      right2CI :: WXError (ContactInfo Name)
+      right2CI :: WXError ContactInfo
       right2CI = liftIO $ do
           firstName <- get eFirst    WX.text
           lastName  <- get eLast     WX.text
@@ -181,7 +181,7 @@ mainWindow filename = do
               , cPhone    = phone
               , cPriority = mkPriority priority }
 
-      updateDetails :: ContactInfo Name -> WXError ()
+      updateDetails :: ContactInfo -> WXError ()
       updateDetails ci = liftIO $ do
         case cName ci of
           SingleName n -> do
@@ -232,7 +232,7 @@ mainWindow filename = do
       new = do
           -- this prevents events from firing.
           clearDisableDetails
-          populateTree tc (mkDocument :: Document Name)
+          populateTree tc mkDocument
           liftIO $ do
               varSet file defaultFile
               setModified False
@@ -396,7 +396,7 @@ mainWindow filename = do
 
 -- |Scrap and rebuild the heirarchical tree.  Once this is done, expand it and
 -- select the first non-root node.
-populateTree :: (Show b) => TreeCtrl a -> Document b -> WXError ()
+populateTree :: TreeCtrl a -> Document -> WXError ()
 populateTree tc doc =
     liftIO $ do
         treeCtrlDeleteAllItems tc
@@ -426,7 +426,7 @@ title
 title m = (if m then ("* " ++) else id) . (++ " - Phone Directory") . takeBaseName
 
 -- |Create a Document object based on the tree heirarchy.
-tree2Doc :: TreeCtrl a -> WXError (PageProperties -> Document (ContactInfo Name))
+tree2Doc :: TreeCtrl a -> WXError (PageProperties -> Document)
 tree2Doc tc = do
     root <- liftIO $ treeCtrlGetRootItem tc
     orgs <- liftIO $ treeCtrlWithChildren tc root $ \itm ->
@@ -443,14 +443,14 @@ tree2Doc tc = do
 
 -- |Create a ContactInfo by pulling it from the tree heirarchy.  This is the
 -- only place where 'unsafeTreeCtrlGetItemClientData' should be called.
-treeItem2CI :: TreeCtrl a -> TreeItem -> WXError (ContactInfo Name)
+treeItem2CI :: TreeCtrl a -> TreeItem -> WXError ContactInfo
 treeItem2CI tc itm = do
     -- If this fails, it will probably raise a segmentation fault.
     ci <- liftIO $ unsafeTreeCtrlGetItemClientData tc itm
     fromMaybe "Tree node does not contain contact information" ci
 
 -- |Save the supplied document to a file.
-saveDoc :: FilePath -> Document (ContactInfo Name) -> WXError ()
+saveDoc :: FilePath -> Document -> WXError ()
 saveDoc fp doc =
     (liftIO $ encodeFile fp (convertSuccess doc :: JsonObject))
     `catchError` (throwError . (msg ++))
@@ -458,7 +458,7 @@ saveDoc fp doc =
     msg = "Failed to save directory to " ++ fp ++ ":\n"
 
 -- |Attempt to load a document from the supplied file.
-loadDoc :: FilePath -> WXError (Document (ContactInfo Name))
+loadDoc :: FilePath -> WXError Document
 loadDoc fp = ( do
         json <- liftIO (decodeFile $ fp :: IO (Attempt JsonObject))
         liftIO . fromAttempt $ json >>= convertAttempt
@@ -467,7 +467,7 @@ loadDoc fp = ( do
     msg = "Failed to load " ++ fp ++ ":\n"
 
 -- |Attempt to load a document from the supplied file.
-importCSV :: FilePath -> WXError (Document (ContactInfo Name))
+importCSV :: FilePath -> WXError Document
 importCSV fp = ( do
         eCsv <- liftIO . CSV.parseCSVFromFile $ fp
         case eCsv of
@@ -491,11 +491,10 @@ unpad s = case tail . groupBy ((==) `F.on` isSpace) . (" " ++) . (++ " ") $ s of
             s' -> join . init $ s'
 
 -- | update left side to match what's entered on right
-updateNode :: (Show b)
-    => TreeCtrl a
-    -> TreeItem
-    -> ContactInfo b
-    -> WXError ()
+updateNode :: TreeCtrl a
+           -> TreeItem
+           -> ContactInfo
+           -> WXError ()
 updateNode tc itm ci = liftIO $ do
     -- Never update the root node.
     root <- treeCtrlGetRootItem tc

@@ -38,52 +38,50 @@ import Priority
 
 -- |An organization has its own contact information and 0 or more
 -- contacts that are a part of it.
-data Organization c = Organization
+data Organization = Organization
   { -- |Contact information for the organization itself.  This gets
     -- turned into a non-indented line item.
-    oInfo :: c
+    oInfo :: C.ContactInfo
     -- |Contacts that make up the organization.  These all get turned
     -- into indented line items on the contact sheet.
-  , oContacts :: [c]
+  , oContacts :: [C.ContactInfo]
   } deriving (Eq, Ord, Show)
 
-instance (ConvertAttempt JsonObject a)
-    => ConvertAttempt JsonObject (Organization a) where
+instance ConvertAttempt JsonObject Organization where
   convertAttempt j =
       do m <- fromMapping j
          i <- lookupObject (B.pack "info") m >>= convertAttempt
          cx <- lookupSequence (B.pack "contacts") m >>= mapM convertAttempt
          return $ Organization i cx
 
-instance (ConvertSuccess a JsonObject)
-    => ConvertSuccess (Organization a) JsonObject where
+instance ConvertSuccess Organization JsonObject where
   convertSuccess (Organization i cx) =
       Mapping [ (B.pack "info", convertSuccess i)
               , (B.pack "contacts", Sequence $ map convertSuccess cx)]
 
-toLineItems :: Show a => Organization (C.ContactInfo a) -> [LineItem]
+toFirstSorted :: Organization -> Organization
+toFirstSorted o@(Organization i cx) =
+    Organization (C.toFirstSorted i) (map C.toFirstSorted cx)
+
+toLineItems :: Organization -> [LineItem]
 toLineItems (Organization o cx) = intersperse Indent . map C.toLineItem $ o : cx
 
 -- |Sort all the contacts.
-sortOrg :: (Ord a) => Organization a -> Organization a
+sortOrg :: Organization -> Organization
 sortOrg o = o { oContacts = sort (oContacts o) }
 
--- Perform an operation on the name.  Is this an abuse of Functors?
-instance Functor Organization where
-    f `fmap` o = o { oInfo = f $ oInfo o, oContacts = map f $ oContacts o}
-
-toCSV :: Show a => Organization (C.ContactInfo a) -> CSV
+toCSV :: Organization -> CSV
 toCSV (Organization i []) = return $ C.toCSVRecord i ++ ["", ""]
 toCSV (Organization i cx) = map (\c -> ir ++ C.toCSVRecord c) cx
   where
     ir = C.toCSVRecord i
 
-fromCSV :: CSV -> Attempt [Organization (C.ContactInfo Name)]
+fromCSV :: CSV -> Attempt [Organization]
 fromCSV = sequence . map fromCSVRecord
           -- the 'csv' package parses an empty line as a blank record.
           . takeWhile (/=[""])
 
-fromCSVRecord :: Record -> Attempt (Organization (C.ContactInfo Name))
+fromCSVRecord :: Record -> Attempt Organization
 fromCSVRecord [orgN, op, cn, cp] = Success $
     Organization (C.ContactInfo pr (mkName orgN "") op)
     [C.ContactInfo pr (mkName cn "") cp]
@@ -92,13 +90,13 @@ fromCSVRecord r = Failure . StringException
                   $ "Expected record of 4 fields: " ++ show r
 
 -- |Attempt to merge every member of the list together.
-mergeOrgs :: Eq a => [Organization a] -> [Organization a]
+mergeOrgs :: [Organization] -> [Organization]
 mergeOrgs ox = foldl (flip mergeOrg) [] ox
 
 -- |Attempt to merge the first argument with one of the elements in the 
 --  second argument. If this isn't possible, add the first argument to the 
 --  head of the list.
-mergeOrg :: Eq a => Organization a -> [Organization a] -> [Organization a]
+mergeOrg :: Organization -> [Organization] -> [Organization]
 mergeOrg o ox = if isNothing found then ox' else o:ox'
   where
     (found, ox') = mapAccumL mergeOp (Just o) ox
@@ -106,8 +104,7 @@ mergeOrg o ox = if isNothing found then ox' else o:ox'
 -- |Possibly merge two organizations together. If a merge is made return 
 --  Nothing tupled with the merged Organization.  If a merge is not 
 --  possible, return the original two arguments tupled.
-mergeOp :: Eq a => Maybe (Organization a) -> Organization a
-    -> (Maybe (Organization a), Organization a)
+mergeOp :: Maybe Organization -> Organization -> (Maybe Organization, Organization)
 mergeOp (Just o) x
     | oInfo o == oInfo x = ( Nothing
                            , x {oContacts = ((++) `on` oContacts) o x})

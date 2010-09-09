@@ -25,6 +25,7 @@ module Document
     , renderDoc
     , sortDoc
     , toCSVRecords
+    , toFirstSorted
     ) where
 
 import Control.Applicative
@@ -37,26 +38,24 @@ import qualified Data.Object.Json as J
 import Graphics.PDF
 import Text.CSV (Record)
 
-import ContactInfo
 import LineItem
 import qualified Organization as O
 import PageProperties
 import UnitConversion
 
 -- |A Document contains a revision date and organizations to display.
-data Document a
+data Document
   = Document
     { -- |This gets set whenever the document is ready to be
       -- printed. Because of this, it's not really necessary at this
       -- point.
       dRevised :: String
       -- |Organizations to print.
-    , dOrganizations :: [O.Organization a]
+    , dOrganizations :: [O.Organization]
     , pageProperties :: PageProperties
     } deriving (Eq, Show)
       
-instance ConvertAttempt J.JsonObject a
-    => ConvertAttempt J.JsonObject (Document a) where
+instance ConvertAttempt J.JsonObject Document where
  convertAttempt j =
      do m  <- fromMapping j
         r  <- J.fromJsonScalar <$> lookupScalar (B.pack "revised") m
@@ -65,18 +64,16 @@ instance ConvertAttempt J.JsonObject a
         
         return $ Document r ox p
 
-instance (ConvertSuccess a J.JsonObject)
-    => ConvertSuccess (Document a) J.JsonObject where
+instance ConvertSuccess Document J.JsonObject where
   convertSuccess (Document r ox pp) =
       Mapping [ (B.pack "revised", Scalar $ J.toJsonScalar r)
               , (B.pack "organizations", Sequence $ map convertSuccess ox)
               , (B.pack "pageProperties", convertSuccess pp)]
 
--- Perform an operation on the name.  Is this an abuse of Functors?
-instance Functor Document where
-    f `fmap` d = d { dOrganizations = map (fmap f) $ dOrganizations d }
+toFirstSorted :: Document -> Document
+toFirstSorted d@(Document _ ox _) = d {dOrganizations = map O.toFirstSorted ox} 
 
-toCSVRecords :: Show a => Document (ContactInfo a) -> [Record]
+toCSVRecords :: Document -> [Record]
 toCSVRecords (Document _ ox _) = concatMap O.toCSV ox
 
 -- |Font used only for the title.
@@ -98,25 +95,23 @@ dateInset :: PageProperties -> PDFUnits
 dateInset p = asPDFUnits $ leftMargin p + Inches (1 / 16)
 
 -- |Convenient way to make a Document.
-mkDocument :: Document a
+mkDocument :: Document
 mkDocument = Document
     { dRevised = ""
     , dOrganizations = []
     , pageProperties = mkPageProperties }
 
 -- |Deep sort the document and all organizations that are a part of it.
-sortDoc :: (Ord a)
-  => Document a -- ^Document to deep sort
-  -> Document a -- ^An identical Document that has possibly been
-                -- rearranged.
+sortDoc :: Document -- ^Document to deep sort
+        -> Document -- ^An identical Document that has possibly been
+                    -- rearranged.
 sortDoc d =
     d { dOrganizations = map O.sortOrg $ sort (dOrganizations d) }
         
 -- | Draw a Document on its own page.
-renderDoc :: (Ord a, Show a)
-  => Document (ContactInfo a) -- ^Document to append a page for.
-  -> String     -- ^Subtitle
-  -> PDF()
+renderDoc :: Document -- ^Document to append a page for.
+          -> String   -- ^Subtitle
+          -> PDF()
 renderDoc d lbl= 
     let revised = toPDFString $ "Revised: " ++ dRevised d
         columns = flowCols (intercalate [Divider] . map O.toLineItems $ dOrganizations d) 4

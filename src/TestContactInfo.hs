@@ -21,7 +21,6 @@ import Control.Applicative
 import Test.QuickCheck
 
 import ContactInfo
-import Name (Name)
 
 import TestJSON
 import TestName ()
@@ -30,8 +29,8 @@ import TestPriority ()
 main :: IO ()
 main = do
     putStrLn "ContactInfo: Reflective JSON instance."
-    quickCheck (prop_reflective_json_instance :: ContactInfo Name -> Bool)
+    quickCheck (prop_reflective_json_instance :: ContactInfo -> Bool)
 
-instance (Arbitrary a) => Arbitrary (ContactInfo a) where
+instance Arbitrary ContactInfo where
   arbitrary = ContactInfo <$> arbitrary <*> arbitrary <*> arbitrary
   shrink (ContactInfo a b c) = ContactInfo <$> shrink a <*> shrink b <*> shrink c

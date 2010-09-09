@@ -24,6 +24,7 @@
 module ContactInfo
     ( ContactInfo (..)
     , toCSVRecord
+    , toFirstSorted
     , toLineItem
     ) where
 
@@ -33,34 +34,33 @@ import Data.ByteString.Char8
 import Data.Convertible.Base
 import Data.Object
 import qualified Data.Object.Json as J
-import Text.CSV (Record, Field)
+import Text.CSV (Record)
 
 import LineItem
+import qualified Name as N
 import Priority
 
 -- |Contact information for an individual or group.
-data ContactInfo a = ContactInfo
+data ContactInfo = ContactInfo
   { -- |for the purposes of sorting.  Higher numbers sort first.
     cPriority :: Priority
   , -- |Either a Name or FirstSortedName.  This ends up on the left
     -- side of each line item.
-    cName :: a
+    cName :: N.Name
     -- |A phone number.  This ends up on the right of each line item.
   , cPhone    :: String
   } deriving (Eq, Ord)
 
-instance forall a. (Show a) => Show (ContactInfo a) where
+instance Show ContactInfo where
     show = show . cName
 
--- Perform an operation on the name.  Is this an abuse of Functors?
-instance Functor ContactInfo where
-    f `fmap` x = x { cName = (f . cName) x }
+toFirstSorted :: ContactInfo -> ContactInfo
+toFirstSorted c@(ContactInfo _ n _) = c { cName = N.toFirstSorted n}
 
-toLineItem :: Show a => ContactInfo a -> LineItem
+toLineItem :: ContactInfo -> LineItem
 toLineItem ci = mkLabelValue (show $ cName ci) (cPhone ci)
 
-instance (ConvertAttempt J.JsonObject a)
-    => ConvertAttempt J.JsonObject (ContactInfo a) where
+instance ConvertAttempt J.JsonObject ContactInfo where
   convertAttempt j =
       do m <- fromMapping j
          pr <- lookupObject (pack "priority") m >>= convertAttempt
@@ -68,13 +68,12 @@ instance (ConvertAttempt J.JsonObject a)
          p  <- J.fromJsonScalar <$> lookupScalar (pack "phone") m
          return $ ContactInfo pr n p
 
-instance (ConvertSuccess a J.JsonObject)
-    => ConvertSuccess (ContactInfo a) J.JsonObject where
+instance ConvertSuccess ContactInfo J.JsonObject where
   convertSuccess (ContactInfo pr n p) =
       Mapping [ (pack "name", convertSuccess n)
               , (pack "phone", Scalar $ J.toJsonScalar p)
               , (pack "priority", convertSuccess pr)]
 
-toCSVRecord :: Show a => ContactInfo a -> Record
+toCSVRecord :: ContactInfo -> Record
 toCSVRecord (ContactInfo _ n p) = [show n, p]
 
