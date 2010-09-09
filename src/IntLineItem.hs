@@ -115,12 +115,6 @@ drawColumn colWidth p@(x :+ y) (Column lx) = do
   where
     x' = x + unPDFUnits colWidth
 
-truncateToMultipleOf :: PDFFloat -> PDFFloat -> PDFFloat
-truncateToMultipleOf multiple number = multiple * times
-  where
-    times :: PDFFloat
-    times = fromIntegral (truncate (number / multiple) :: Int)
-
 dashPattern :: PDFFloat -> PDFFloat -> PDFFloat -> PDFFloat -> Color -> Draw ()
 dashPattern x y w off c = do
     setDash $ DashPattern [2.0, 4.0] off
