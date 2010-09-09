@@ -16,13 +16,11 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE ViewPatterns #-}
 
 module Name
-    ( Name            ( FirstLast, SingleName)
+    ( Name (FirstLast, SingleName)
     , sur
     , given
     , mkName
