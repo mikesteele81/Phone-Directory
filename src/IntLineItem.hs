@@ -42,6 +42,7 @@ data LineItem
                left   :: PDFString
                -- |Right-justified text.
              , right  :: PDFString
+             , isDashed :: Bool
              }
   | Header
       { left :: PDFString
@@ -64,7 +65,7 @@ newtype Column = Column {unColumn :: [LineItem]}
 mkLabelValue :: String   -- ^Left
              -> String   -- ^Right
              -> LineItem
-mkLabelValue l r = LineItem (toPDFString l) (toPDFString r)
+mkLabelValue l r = LineItem (toPDFString l) (toPDFString r) True
 
 mkHeader :: String -> String -> LineItem
 mkHeader = Header `on` toPDFString
@@ -74,8 +75,8 @@ mkHeader = Header `on` toPDFString
 -- which is directly below this one.
 drawLineItem :: (PDFUnits, PDFUnits, Point) -> LineItem
   -> Draw (PDFUnits, PDFUnits, Point)
-drawLineItem (colWidth, widthRemaining, x :+ y) (LineItem l r) = do
-    when (wRight > 0.0) $
+drawLineItem (colWidth, widthRemaining, x :+ y) (LineItem l r d) = do
+    when (d && wRight > 0.0) $
         dashPattern dashStart (y' + dashHeight) dashWidth dashOffset black
     drawText $ do
         textStart (x + wPadding) y'
