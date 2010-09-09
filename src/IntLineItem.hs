@@ -18,7 +18,6 @@
 module IntLineItem where
 
 import Control.Monad
-import Data.Function (on)
 import Data.List
 import Graphics.PDF hiding (leading)
 
@@ -67,8 +66,13 @@ mkLabelValue :: String   -- ^Left
              -> LineItem
 mkLabelValue l r = LineItem (toPDFString l) (toPDFString r) True
 
+-- |mkLabelValue sets dashing enabled by default.  Use this to change it.
+setDashed :: Bool -> LineItem -> LineItem
+setDashed d (LineItem l r _) = LineItem l r d
+setDashed _ li = li
+
 mkHeader :: String -> String -> LineItem
-mkHeader = Header `on` toPDFString
+mkHeader l r = setDashed False $ mkLabelValue l r
 
 -- |Draw a LineItem at the given point.  The Reader monad supplies the width
 -- of the line item.  Return the suggested point to draw another LineItem,
@@ -155,7 +159,7 @@ dashPattern x y w off c = do
 
 -- |This gets prepended to every Column before being drawn.
 columnHeading :: [LineItem]
-columnHeading = [mkHeader "Name" "Phone Number", Divider]
+columnHeading = [Indent, mkHeader "Name" "Phone Number", Divider]
 
 -- | Flow a single column into multiple columns of equal height.  This
 -- certainly has bugs in it.
