@@ -130,8 +130,8 @@ flowCols :: [LineItem] -- ^Column to divide up
 flowCols lx n =
     map (padColumn len) . padColumns n $ cx'
   where
-    (cx, lx') = foldl (flow len) ([], []) lx
-    cx' = reverse $ Column (reverse lx') : cx
+    (cx, lx') = foldl (flow len) ([], Column []) lx
+    cx' = reverse $ reverseColumn lx' : cx
     len = let (d, m) = numLines (Column lx) `divMod` n in d + if m /= 0 then 1 else 0
 
 padColumns :: Int -> [Column] -> [Column]
@@ -140,18 +140,20 @@ padColumns n cx =
 
 padColumn :: Int -> Column -> Column
 padColumn n c = Column $ unColumn c ++ replicate (max 0 $ n - numLines c) Blank
-
-flow :: Int -> ([Column], [LineItem]) -> LineItem -> ([Column], [LineItem])
+flow :: Int -> ([Column], Column) -> LineItem -> ([Column], Column)
 -- no leading dividers
-flow _ r@(_, []) Divider = r
-flow _ r@(_, []) Blank   = r 
+flow _ r@(_, Column []) Divider = r
+flow _ r@(_, Column []) Blank   = r
 flow len (cx, lx) l
-    | len > numLines (Column lx) = (cx, l:lx)
-    | otherwise          = case l of
+    | len > numLines lx = (cx, Column $ l:unColumn lx)
+    | otherwise         = case l of
         -- no trailing dividers
-        Divider -> ((Column $ reverse lx) : cx, [])
-        Blank   -> ((Column $ reverse lx) : cx, [])
-        _       -> flow len ((Column $ reverse lx) : cx, []) l
+        Divider -> (reverseColumn lx : cx, Column [])
+        Blank   -> (reverseColumn lx : cx, Column [])
+        _       -> flow len (reverseColumn lx : cx, Column []) l
 
 numLines :: Column -> Int
 numLines (Column lx) = length . filter (/= Indent) $ lx
+
+reverseColumn :: Column -> Column
+reverseColumn = Column . reverse . unColumn
