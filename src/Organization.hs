@@ -70,7 +70,7 @@ sortOrg :: Organization -> Organization
 sortOrg o = o { oContacts = sort (oContacts o) }
 
 toCSV :: Organization -> CSV
-toCSV (Organization i []) = return $ C.toCSVRecord i ++ ["", ""]
+toCSV (Organization i []) = return $ C.toCSVRecord i ++ ["", "", "", "", "", ""]
 toCSV (Organization i cx) = map (\c -> ir ++ C.toCSVRecord c) cx
   where
     ir = C.toCSVRecord i
@@ -81,12 +81,14 @@ fromCSV = sequence . map fromCSVRecord
           . takeWhile (/=[""])
 
 fromCSVRecord :: Record -> Attempt Organization
-fromCSVRecord [orgN, op, cn, cp] = Success $
-    Organization (C.ContactInfo pr (mkName orgN "") op)
-    [C.ContactInfo pr (mkName cn "") cp]
-  where pr = mkPriority 2
+fromCSVRecord [ oFn, oLn, oPhone, oPriority, _, _
+              , cFn, cLn, cPhone, cPriority, _, _] = Success $
+    --read can fail here.
+    Organization (C.ContactInfo (mkPriority . read $ oPriority)
+        (mkName oFn oLn) oPhone)
+    [C.ContactInfo (mkPriority . read $ cPriority) (mkName cFn cLn) cPhone]
 fromCSVRecord r = Failure . StringException
-                  $ "Expected record of 4 fields: " ++ show r
+                  $ "Expected record of 12 fields: " ++ show r
 
 -- |Attempt to merge every member of the list together.
 mergeOrgs :: [Organization] -> [Organization]

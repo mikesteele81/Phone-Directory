@@ -72,5 +72,14 @@ instance ConvertSuccess ContactInfo J.JsonObject where
               , (pack "priority", convertSuccess pr)]
 
 toCSVRecord :: ContactInfo -> Record
-toCSVRecord (ContactInfo _ n p) = [show n, p]
-
+toCSVRecord (ContactInfo priority n phone) =
+    [ given
+    , sur
+    , phone
+    , show . toInt $ priority
+    , show . N.toFirstSorted $ n
+    , show . N.toLastSorted  $ n ]
+  where
+    (given, sur) = case n of
+      N.SingleName x -> (x, "")
+      _ -> (N.given n, N.sur n)

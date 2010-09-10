@@ -15,7 +15,6 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -23,6 +22,7 @@
 module Priority
     ( Priority ()
     , mkPriority
+    , toInt
     ) where
 
 import Control.Applicative
@@ -43,6 +43,9 @@ instance Bounded Priority where
 -- within range.
 mkPriority :: Int -> Priority
 mkPriority = min maxBound . max minBound . Priority
+
+toInt :: Priority -> Int
+toInt (Priority i) = i
 
 instance ConvertSuccess Priority JsonObject where
   convertSuccess (Priority p) = return . JsonNumber . convertSuccess $ p
