@@ -15,7 +15,6 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
@@ -60,7 +59,7 @@ instance ConvertSuccess Organization JsonObject where
               , (B.pack "contacts", Sequence $ map convertSuccess cx)]
 
 toFirstSorted :: Organization -> Organization
-toFirstSorted o@(Organization i cx) =
+toFirstSorted (Organization i cx) =
     Organization (C.toFirstSorted i) (map C.toFirstSorted cx)
 
 toLineItems :: Organization -> [LineItem]
