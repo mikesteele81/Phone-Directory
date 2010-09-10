@@ -20,7 +20,17 @@ Michael Steele <mikesteele81@gmail.com>
 Change Log
 ==========
 
+Version 0.6
+-----------
+* Better dash rendering
+* Exporting to CSV creates 12 fields per line rather than 4. The first 6
+  fields are for the organization and the last 6 are for the contact.
+  [first, last, phone, priority, 'first last', 'last, first']
+* Importing from CSV now faithfully recreates contacts.
+
 Version 0.5
+-----------
+
 * Exporting to CSV is now supported. Each line contains the organization name
   and number followed by the contact name and number.
 * Importing from CSV is now supported. Each imported contact will be
@@ -31,12 +41,15 @@ Version 0.5
 
 Version 0.4
 -----------
+
 * new page setup screen allows you to print horizontally or vertically and
   define page margins.
 * Updated versions of WxWidgets, GHC runtime etc.
 * BUG FIX: now using local time rather than UTC time to determine date.
 
 Version 0.3
+-----------
+
 * File association with *.pdir in the Windows binary.
 * Adjustments to formatting of generated .pdf file.
 * BUG FIX: Full names were not sorting with singular names correctly.
