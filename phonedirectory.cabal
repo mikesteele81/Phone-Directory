@@ -36,6 +36,7 @@ Executable pdirectory
     HPDF >= 1.4,
     mtl,
     safe >= 0.2,
+    safe-failure,
     time,
     wx,
     wxcore

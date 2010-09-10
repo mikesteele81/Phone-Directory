@@ -21,6 +21,7 @@
 module Organization where
 
 import qualified Data.ByteString.Char8 as B
+import Control.Monad (liftM)
 import Data.Attempt
 import Data.Convertible.Base
 import Data.Function(on)
@@ -28,6 +29,7 @@ import Data.List
 import Data.Maybe
 import Data.Object
 import Data.Object.Json
+import qualified Safe.Failure as S
 import Text.CSV
 
 import qualified ContactInfo as C
@@ -70,7 +72,7 @@ sortOrg :: Organization -> Organization
 sortOrg o = o { oContacts = sort (oContacts o) }
 
 toCSV :: Organization -> CSV
-toCSV (Organization i []) = return $ C.toCSVRecord i ++ ["", "", "", "", "", ""]
+toCSV (Organization i []) = return $ C.toCSVRecord i ++ ["", "", "", "1", "", ""]
 toCSV (Organization i cx) = map (\c -> ir ++ C.toCSVRecord c) cx
   where
     ir = C.toCSVRecord i
@@ -82,13 +84,15 @@ fromCSV = sequence . map fromCSVRecord
 
 fromCSVRecord :: Record -> Attempt Organization
 fromCSVRecord [ oFn, oLn, oPhone, oPriority, _, _
-              , cFn, cLn, cPhone, cPriority, _, _] = Success $
-    --read can fail here.
-    Organization (C.ContactInfo (mkPriority . read $ oPriority)
-        (mkName oFn oLn) oPhone)
-    [C.ContactInfo (mkPriority . read $ cPriority) (mkName cFn cLn) cPhone]
-fromCSVRecord r = Failure . StringException
-                  $ "Expected record of 12 fields: " ++ show r
+              , cFn, cLn, cPhone, cPriority, _, _] = do
+    oPriority' <- liftM mkPriority . S.read $ oPriority
+    cPriority' <- liftM mkPriority . S.read $ cPriority
+    return $
+        --read can fail here.
+        Organization (C.ContactInfo oPriority' (mkName oFn oLn) oPhone)
+        [C.ContactInfo cPriority' (mkName cFn cLn) cPhone]
+fromCSVRecord r =
+    failureString $ "Expected record of 12 fields: " ++ show r
 
 -- |Attempt to merge every member of the list together.
 mergeOrgs :: [Organization] -> [Organization]
