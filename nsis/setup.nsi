@@ -86,6 +86,8 @@ Section "-Main Program" SecMain
     CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
     CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Phone Directory.lnk" "$INSTDIR\pdirectory.exe"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\README.lnk" "$INSTDIR\README.txt"
+    CreateShortCut "$SMPROGRAMS\$StartMenuFolder\LICENSE.lnk" "$INSTDIR\LICENSE.txt"
   
   !insertmacro MUI_STARTMENU_WRITE_END
 
@@ -134,6 +136,8 @@ Section "Uninstall"
     
   Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
   Delete "$SMPROGRAMS\$StartMenuFolder\Phone Directory.lnk"
+  Delete "$SMPROGRAMS\$StartMenuFolder\README.lnk"
+  Delete "$SMPROGRAMS\$StartMenuFolder\LICENSE.lnk"
   RMDir "$SMPROGRAMS\$StartMenuFolder"
 
   DeleteRegKey /ifempty HKCU "Software\Phone Directory"
@@ -150,6 +154,6 @@ SectionEnd
   VIAddVersionKey /LANG=${LANG_ENGLISH} "Comments" "Create a nicely formatted directory of phone numbers"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "Michael Steele"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalTrademarks" ""
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Copyright (C) 2009 Michael Steele"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Copyright (C) 2010 Michael Steele"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "Phone Directory"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "1.0.0"
