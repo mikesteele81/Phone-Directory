@@ -16,8 +16,7 @@
 -}
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Priority
     ( Priority ()
@@ -26,18 +25,18 @@ module Priority
     ) where
 
 import Control.Applicative
-import Data.Attempt
-import Data.Convertible.Base
-import Data.Object
-import Data.Object.Json
+
+import qualified Data.Aeson as A
 
 newtype Priority = Priority Int
-    -- the Show instance is only for QC properties
-    deriving (Enum, Eq, Ord, Show)
+    deriving (Enum, Eq, Ord, A.ToJSON)
 
 instance Bounded Priority where
     minBound = Priority 0
     maxBound = Priority 5
+
+instance A.FromJSON Priority where
+  parseJSON v = mkPriority <$> A.parseJSON v
 
 -- |Makes a Priority from an int, automatically clipping the results to be
 -- within range.
@@ -46,11 +45,3 @@ mkPriority = min maxBound . max minBound . Priority
 
 toInt :: Priority -> Int
 toInt (Priority i) = i
-
-instance ConvertSuccess Priority JsonObject where
-  convertSuccess (Priority p) = return . JsonNumber . convertSuccess $ p
-
-instance ConvertAttempt JsonObject Priority where
-  convertAttempt (Scalar (JsonNumber r))  =
-      mkPriority <$> convertAttempt r
-  convertAttempt _ = failure NothingException

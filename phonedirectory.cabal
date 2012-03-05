@@ -1,6 +1,6 @@
 Name:           PhoneDirectory
-Version:        0.6
-Cabal-Version:  >=1.6
+Version:        0.7
+Cabal-Version:  >=1.14
 Build-Type:     Custom
 License:        GPL
 License-File:   LICENSE.txt
@@ -25,36 +25,36 @@ Flag test
 
 Executable pdirectory
   Build-Depends:
-    attempt >= 0.3,
-    base < 5,
-    bytestring >= 0.9,
-    convertible-text >= 0.3,
-    csv,
-    data-object >= 0.3,
-    data-object-json >= 0.3,
+    base         >= 4.5 && < 4.6,
+    aeson        >= 0.6 && < 0.7,
+    bytestring   >= 0.9 && < 0.10,
+    bytestring-csv >= 0.1 && < 0.2,
     filepath,
-    HPDF >= 1.4,
-    mtl,
-    safe >= 0.2,
-    safe-failure,
+    HPDF         >= 1.4,
+    safe         >= 0.3 && < 0.4,
+    text         >= 0.11 && < 0.12,
     time,
+    transformers >= 0.2 && < 0.3,
     wx,
     wxcore
+  Default-Language: Haskell2010
   Main-Is:        Main.hs
   hs-source-dirs: src
   if os(windows)
     ghc-options: -Wall -O2 -optl-mwindows
+    ld-options: src/icon.o
   else
     ghc-options: -Wall -O2
 
 Executable test
   if flag(test)
     build-depends:
-      base < 5,
+      base        >= 4.5 && < 4.6,
       regex-posix >= 0.94,
-      QuickCheck >= 2.1
+      QuickCheck  >= 2.4 && < 2.5
     hs-source-dirs: src
     buildable: True
   else
     buildable: False
+  Default-Language: Haskell2010
   main-is:        TestMain.hs

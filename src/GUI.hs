@@ -15,35 +15,43 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
+{-# LANGUAGE OverloadedStrings #-}
+
 module GUI
     ( mainWindow
     ) where
 
 import Control.Applicative
 import Control.Monad as M
-import Control.Monad.Error (catchError, throwError)
-import Data.Attempt
 import Data.Char
-import Data.Convertible.Text
 import qualified Data.Function as F (on)
 import Data.List
-import Data.Object.Json
 import Data.Time
+
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Error
+import qualified Data.Aeson as A
+import qualified Data.ByteString as S
+import qualified Data.ByteString.Lazy as L
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import Graphics.UI.WX as WX
 import Graphics.UI.WXCore hiding (Document)
 import System.FilePath
-import qualified Text.CSV as CSV
+import qualified Text.CSV.ByteString as CSV
 
-import ContactInfo
+import ContactInfo as CI
 import Document
 import Export
 import GUIConstants
-import Name
+import Name as N
 import qualified Organization as O
 import PageProperties (mkPageProperties, PageProperties)
 import PageSetupGUI
 import Priority
-import WXError
+
+type WXError a = ErrorT String IO a
 
 -- |The application only exports to .pdf.  I could see other formats like
 -- .html being useful to.
@@ -67,9 +75,9 @@ defaultFile :: String
 defaultFile = "untitled.pdir"
 
 -- |Text blurb that goes in the about box.
-aboutTxt :: String
+aboutTxt :: Text
 aboutTxt =
-    "PhoneDirectory 0.6\n\
+    "PhoneDirectory 0.7\n\
     \Copyright (C) 2009 Michael Steele\n\n\
     \This program comes with ABSOLUTELY NO WARRANTY; for\n\
     \details go to http://github.com/mikesteele81/Phone-Directory/.\n\n\
@@ -85,10 +93,8 @@ mainWindow filename = do
   properties <- varCreate mkPageProperties
 
   f  <- frame            []
-  sw <- splitterWindow f []
 
-  pLeft   <- panel    sw     []
-  pRight  <- panel    sw     []
+  pRight  <- panel    f     []
 
   mFile   <- menuPane        []
   iNew    <- menuItem mFile  []
@@ -105,13 +111,34 @@ mainWindow filename = do
   mHelp   <- menuHelp        []
   iAbout  <- menuAbout mHelp []
 
+  lFirst    <- staticText pRight
+      [ text := "First Name:"
+      , tooltip := "Enter the contact's first name.  If the contact \
+                   \only goes by a single name, enter it either \
+                   \here or in the last name field."]
   eFirst    <- entry pRight []
+  lLast     <- staticText pRight
+      [ text := "Last Name:"
+      , tooltip := "Enter the contact's last name.  If the contact \
+                   \only goes by a single name, enter it either \
+                   \here or in the first name field."]
   eLast     <- entry pRight []
+  lPhone    <- staticText pRight
+      [ text := "Phone Number:"
+      , tooltip := "Enter thecontact's phone number."]
   ePhone    <- entry pRight []
+  lPriority <- staticText pRight
+      [ text := "Priority:"
+      , tooltip := "Low values will sort before contacts with \
+                   \higher values."]
   ePriority <- spinCtrl pRight (fromEnum (minBound :: Priority))
                                (fromEnum (maxBound :: Priority)) []
 
-  tc <- treeCtrl pLeft []
+  tc <- treeCtrl f []
+
+  -- Use to determine scaling based on a standard 96dpi view.
+  Size xDpi yDpi <- bracket (clientDCCreate f) clientDCDelete
+                    dcGetPPI
 
   let
       onTreeEvent (TreeSelChanged itm' itm) | treeItemIsOk itm' =
@@ -120,10 +147,8 @@ mainWindow filename = do
               root <- liftIO $ treeCtrlGetRootItem tc
               M.when (root /= itm && treeItemIsOk itm) $ do
                   ci <- right2CI
-                  case show ci of
-                      "" -> liftIO $ treeCtrlDelete tc itm
-                      _  -> return ()
-
+                  M.when (T.null . CI.renderWith lastFirst $ ci)
+                      (liftIO $ treeCtrlDelete tc itm)
               if root == itm' then clearDisableDetails
                 else treeItem2CI tc itm' >>= updateDetails
 
@@ -146,7 +171,17 @@ mainWindow filename = do
             treeCtrlSelectItem tc itm'
             windowSetFocus eFirst
           KeyDelete -> unless (root == itm) $ do
+              n <- treeCtrlGetNextSibling tc itm
+              p <- treeCtrlGetPrevSibling tc itm
+              u <- treeCtrlGetParent tc itm
               treeCtrlDelete tc itm
+              if treeItemIsOk n
+                then treeCtrlSelectItem tc n
+                else if treeItemIsOk p
+                       then treeCtrlSelectItem tc p
+                       else if treeItemIsOk u
+                              then treeCtrlSelectItem tc u
+                              else treeCtrlSelectItem tc root
               setModified True
           _         -> return ()
         propagateEvent
@@ -168,7 +203,7 @@ mainWindow filename = do
             else op
         where
           caption = "Unsaved Changes"
-          msg = "You have unsaved changes.  Are you sure you want to continue?"
+          msg = "You have unsaved changes. Are you sure you want to continue?"
 
       right2CI :: WXError ContactInfo
       right2CI = liftIO $ do
@@ -177,21 +212,17 @@ mainWindow filename = do
           phone     <- get ePhone    WX.text
           priority  <- get ePriority WX.selection
           return ContactInfo
-              { cName     = mkName firstName lastName
-              , cPhone    = phone
+              { cName     = mkName (T.pack firstName) (T.pack lastName)
+              , cPhone    = T.pack phone
               , cPriority = mkPriority priority }
 
       updateDetails :: ContactInfo -> WXError ()
       updateDetails ci = liftIO $ do
-        case cName ci of
-          SingleName n -> do
-            set eFirst [ enabled := True, WX.text := n  ]
-            set eLast  [ enabled := True, WX.text := "" ]
-          n -> do
-            set eFirst [ enabled := True, WX.text := given n ]
-            set eLast  [ enabled := True, WX.text := sur n   ]
-        set ePhone     [ enabled := True, WX.text := cPhone ci ]
+        set eFirst [ enabled := True, WX.text := T.unpack . N.given $ n]
+        set eLast  [ enabled := True, WX.text := maybe "" T.unpack $ N.sur n]
+        set ePhone     [ enabled := True, WX.text := T.unpack (cPhone ci) ]
         set ePriority  [ enabled := True, WX.selection := fromEnum $ cPriority ci ]
+        where n = cName ci
 
       clearDisableDetails :: WXError ()
       clearDisableDetails = liftIO $ do
@@ -202,10 +233,8 @@ mainWindow filename = do
 
       trapError :: WXError a -> IO ()
       trapError x = do
-          x' <- wxerror x
-          case x' of
-              Left y -> errorDialog f "error" y
-              Right _ -> return ()
+          e <- runErrorT x
+          either (errorDialog f "error") (const $ return ()) e
 
       handleFocus :: Bool -> WXError ()
       -- lost focus
@@ -268,7 +297,7 @@ mainWindow filename = do
           props2Doc <- tree2Doc tc
           let
               doc  = props2Doc props
-              doc' = sortDoc doc
+              doc' = sortDoc lastFirst doc
           saveDoc fp doc'
           M.when (doc /= doc') $ do
               clearDisableDetails
@@ -332,55 +361,53 @@ mainWindow filename = do
                 let ext = drop (length name' - 3) (map toLower name')
                 if ext == "pdf"
                   then generate name' (op props)
-                  else M.when (ext == "csv") . liftIO $ writeFile name'
-                           (CSV.printCSV . toCSVRecords $ op props)
+                  else M.when (ext == "csv") . liftIO $ S.writeFile name'
+                           (T.encodeUtf8 . printCSV . toCSVRecords $ op props)
             Nothing -> return ()
       ]
 
   -- The 'closing' event handler checks for unsaved changes.
   set iQuit  [ on command := close f ]
-  set iAbout [ on command := infoDialog f "About Phone Directory" aboutTxt ]
+  set iAbout [ on command := infoDialog f "About Phone Directory" (T.unpack aboutTxt) ]
 
   set eFirst    [ processEnter := True
                 , on command   := trapError $ commitStringInput eFirst False
                 , on focus     := trapError . commitStringInput eFirst
-                , tooltip := "Enter the contact's first name.  If the contact \
-                             \only goes by a single name, enter it either \
-                             \here or in the last name field."]
+                ]
   set eLast     [ processEnter := True
                 , on command   := trapError $ commitStringInput eLast False
                 , on focus     := trapError . commitStringInput eLast
-                , tooltip := "Enter the contact's last name.  If the contact \
-                             \only goes by a single name, enter it either \
-                             \here or in the first name field."]
+                ]
   set ePhone    [ processEnter := True
                 , on command   := trapError $ commitStringInput ePhone False
                 , on focus     := trapError . commitStringInput ePhone
-                , tooltip := "Enter thecontact's phone number." ]
+                ]
   set ePriority [ on select := trapError $ commitPriorityInput ePriority False
                 , on focus  := trapError . commitPriorityInput ePriority
-                , tooltip := "Low values will sort before contacts with \
-                             \higher values." ]
+                ]
 
   set tc [ on treeEvent := onTreeEvent ]
 
-  set f [ on closing := trapError . checkConfirmUnsaved . liftIO
-            $ windowDestroy f >> return ()
-        , menuBar    := [mFile, mHelp]
-        , picture    := "data/images/pdirectory.ico"
-        , layout     := WX.fill $ margin winPadding $ vsplit sw winPadding 200
-                        (widget pLeft) (widget pRight)
-        , clientSize := sz 640 480
-        ]
+  set pRight [ layout := column (ctrlPadding yDpi)
+                 . map (column (lblPadding yDpi) . map WX.hfill)
+                 $ [ [widget lFirst, widget eFirst]
+                   , [widget lLast, widget eLast]
+                   , [widget lPhone, widget ePhone]
+                   , [widget lPriority, widget ePriority]
+                   ]
+             ]
 
-  set pLeft [ layout := WX.fill $ widget tc ]
-  set pRight
-      [ layout := column ctrlPadding
-          [ labeled "First Name:"   $ widget eFirst
-          , labeled "Last Name:"    $ widget eLast
-          , labeled "Phone Number:" $ widget ePhone
-          , labeled "Priority:"     $ widget ePriority ]
-      ]
+  -- f must have its layout defined last. Otherwise things don't layout
+  -- properly until the main application window is resized.
+  set f [ on closing := trapError . checkConfirmUnsaved . liftIO
+            $ void (windowDestroy f)
+        , menuBar    := [mFile, mHelp]
+        , picture    := T.unpack "data/images/pdirectory.ico"
+        , layout     := margin (winPadding xDpi) $ WX.fill
+            $ row (ctrlPadding xDpi)
+            [ WX.fill $ widget tc, WX.fill $ widget pRight ]
+        , clientSize := sz (scale 640 xDpi) (scale 480 yDpi)
+        ]
 
   --name has already been set.  make a new one in case opening a file fails.
   trapError new
@@ -407,7 +434,8 @@ populateTree tc doc =
             treeCtrlGetNextVisible tc root >>= treeCtrlSelectItem tc
   where
     addItem p itm = do
-        tc' <- treeCtrlAppendItem tc p (show itm) 0 0 objectNull
+        tc' <- treeCtrlAppendItem tc p
+            (T.unpack . CI.renderWith lastFirst $ itm) 0 0 objectNull
         treeCtrlSetItemClientData tc tc' (return ()) itm
         return tc'
     populateOrg p org = do
@@ -426,14 +454,14 @@ tree2Doc :: TreeCtrl a -> WXError (PageProperties -> Document)
 tree2Doc tc = do
     root <- liftIO $ treeCtrlGetRootItem tc
     orgs <- liftIO $ treeCtrlWithChildren tc root $ \itm ->
-        wxerror $ do
+        runErrorT $ do
             orgCI <- treeItem2CI tc itm
             contacts <- liftIO $ treeCtrlWithChildren tc itm
-                $ wxerror . treeItem2CI tc
-            fromEither $ O.Organization orgCI <$> sequence contacts
+                $ runErrorT . treeItem2CI tc
+            either throwError return $ O.Organization orgCI <$> sequence contacts
     (year, month, day) <- liftIO $ liftM
         (toGregorian . localDay . zonedTimeToLocalTime) getZonedTime
-    fromEither $ Document
+    either throwError return $ Document
         (show month ++ "/" ++ show day ++ "/" ++ show year)
         <$> sequence orgs
 
@@ -443,43 +471,36 @@ treeItem2CI :: TreeCtrl a -> TreeItem -> WXError ContactInfo
 treeItem2CI tc itm = do
     -- If this fails, it will probably raise a segmentation fault.
     ci <- liftIO $ unsafeTreeCtrlGetItemClientData tc itm
-    fromMaybe "Tree node does not contain contact information" ci
+    maybe (throwError "Tree node does not contain contact information") return ci
 
 -- |Save the supplied document to a file.
 saveDoc :: FilePath -> Document -> WXError ()
 saveDoc fp doc =
-    liftIO (encodeFile fp (convertSuccess doc :: JsonObject))
-    `catchError` (throwError . (msg ++))
+    (liftIO . L.writeFile fp . A.encode $ doc)
+    `catchError` (throwError . msg)
   where
-    msg = "Failed to save directory to " ++ fp ++ ":\n"
+    msg x = "Failed to save directory to " ++ fp ++ ": " ++ x
 
 -- |Attempt to load a document from the supplied file.
 loadDoc :: FilePath -> WXError Document
 loadDoc fp = ( do
-        json <- liftIO (decodeFile fp :: IO (Attempt JsonObject))
-        liftIO . fromAttempt $ json >>= convertAttempt
-    ) `catchError` (throwError . (msg ++))
+    s <- liftIO $ L.readFile fp
+    maybe (throwError msg) return $ A.decode s
+    ) `catchError` (throwError . (\e -> msg ++ ": " ++ e))
   where
-    msg = "Failed to load " ++ fp ++ ":\n"
+    msg = "Failed to load " ++ fp
 
 -- |Attempt to load a document from the supplied file.
 importCSV :: FilePath -> WXError Document
 importCSV fp = ( do
-        eCsv <- liftIO . CSV.parseCSVFromFile $ fp
-        case eCsv of
-          Left e    -> throwError . show $ e
-          Right csv -> do
-              orgs <- liftIO . fromAttempt . O.fromCSV $ csv
-              return $ mkDocument {dOrganizations = O.mergeOrgs orgs}
-    ) `catchError` (throwError . (msg ++))
+        bs <- liftIO . S.readFile $ fp
+        maybe (throwError "Error Parsing CSV file.") go $ CSV.parseCSV bs
+    ) `catchError` (throwError . msg)
   where
-    msg = "Failed to load " ++ fp ++ ":\n"
-
--- |Combinator that lays out the first argument directly over the second.
-labeled :: String -- ^Label to use.
-    -> Layout     -- ^Thing to get a label.
-    -> Layout
-labeled s l = column lblPadding [label s, l]
+    go csv = do
+      orgs <- either (throwError . T.unpack) return (O.fromCSV csv)
+      return $ mkDocument {dOrganizations = O.mergeOrgs orgs}
+    msg x = "Failed to load " ++ fp ++ ": " ++ x
 
 unpad :: String -> String
 unpad s = case tail . groupBy ((==) `F.on` isSpace) . (" " ++) . (++ " ") $ s of
@@ -496,4 +517,16 @@ updateNode tc itm ci = liftIO $ do
     root <- treeCtrlGetRootItem tc
     M.when (root /= itm && treeItemIsOk itm) $ do
         treeCtrlSetItemClientData tc itm (return ()) ci
-        treeCtrlSetItemText tc itm $ show ci
+        treeCtrlSetItemText tc itm
+            (T.unpack . CI.renderWith N.lastFirst $ ci)
+
+-- | Given an object of type CSV, generate a CSV formatted
+-- string. Always uses escaped fields.
+printCSV :: CSV.CSV -> Text
+printCSV records = unlines (printRecord `map` records) `T.append` "\n"
+    where printRecord = T.concat . intersperse "," . map printField
+          printField f = "\"" `T.append` T.concatMap escape (T.decodeUtf8 f)
+                         `T.append` "\""
+          escape '"' = "\"\""
+          escape x = T.singleton x
+          unlines = T.concat . intersperse "\n"

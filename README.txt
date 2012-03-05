@@ -20,6 +20,15 @@ Michael Steele <mikesteele81@gmail.com>
 Change Log
 ==========
 
+Version 0.7
+-----------
+* Proper support for display scaling in Windows Vista and above.
+* Compiled with GHC 7.4.1 instead of 7.0.4.
+* Upgrade of many underlying software libraries.
+* Monad transformer library changed from mtl to transformers.
+* JSON serialization library changed from data-object-json to aeson.
+* csv parsing library changed from csv to bytestring-csv.
+
 Version 0.6
 -----------
 * Better dash rendering
@@ -76,17 +85,12 @@ folder.
 Preparing an installer for Windows
 ----------------------------------
 
-Currently cabal has some limitations in what can be done, so there are a few
-manual steps that must be followed to create an installer.
-
-running 'cabal build' will compile the application, but doesn't know how to
-insert the icon resource into the executable:
+An extra object file for the embedded icon must be made available. I don't
+know how to do this within the cabal file yet.
 
     windres.exe "data/images/icon.rc" "src/icon.o"
-    cd src
-    ghc --make Main.hs icon.o -optl-mwindows
-    strip -s Main.exe
-    move Main.exe "../dist/build/pdirectory/pdirectory.exe"
+    cabal configure
+    cabal build
 
 Now that this is done, you can execute the NSIS installer script from the nsis
 folder.

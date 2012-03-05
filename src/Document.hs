@@ -15,9 +15,7 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Document
     ( Document (..)
@@ -25,20 +23,21 @@ module Document
     , renderDoc
     , sortDoc
     , toCSVRecords
-    , toFirstSorted
     ) where
 
 import Control.Applicative
-import Control.Monad (foldM_)
-import qualified Data.ByteString.Char8 as B
-import Data.Convertible.Base
-import Data.List (intercalate, sort)
-import Data.Object
-import qualified Data.Object.Json as J
+import Control.Monad (foldM_, mzero)
+import Data.Function
+import Data.List
+
+import Data.Aeson ((.=), (.:))
+import qualified Data.Aeson as A
 import Graphics.PDF
-import Text.CSV (Record)
+import Text.CSV.ByteString (Record)
 
 import LineItem
+import ContactInfo as C
+import Name
 import qualified Organization as O
 import PageProperties
 import UnitConversion
@@ -53,26 +52,21 @@ data Document
       -- |Organizations to print.
     , dOrganizations :: [O.Organization]
     , pageProperties :: PageProperties
-    } deriving (Eq, Show)
+    } deriving (Eq)
+
+instance A.ToJSON Document where
+  toJSON d = A.object
+      [ "revised" .= A.toJSON (dRevised d)
+      , "organizations" .= A.toJSON (dOrganizations d)
+      , "pageProperties" .= A.toJSON (pageProperties d)]
+
+instance A.FromJSON Document where
+  parseJSON (A.Object v) = Document
+      <$> v .: "revised"
+      <*> v .: "organizations"
+      <*> (v .: "pageProperties" <|> return mkPageProperties)
+  parseJSON _ = mzero
       
-instance ConvertAttempt J.JsonObject Document where
- convertAttempt j =
-     do m  <- fromMapping j
-        r  <- J.fromJsonScalar <$> lookupScalar (B.pack "revised") m
-        ox <- lookupSequence (B.pack "organizations") m >>= mapM convertAttempt
-        p  <- lookupObject (B.pack "pageProperties") m >>= convertAttempt
-        
-        return $ Document r ox p
-
-instance ConvertSuccess Document J.JsonObject where
-  convertSuccess (Document r ox pp) =
-      Mapping [ (B.pack "revised", Scalar $ J.toJsonScalar r)
-              , (B.pack "organizations", Sequence $ map convertSuccess ox)
-              , (B.pack "pageProperties", convertSuccess pp)]
-
-toFirstSorted :: Document -> Document
-toFirstSorted d@(Document _ ox _) = d {dOrganizations = map O.toFirstSorted ox} 
-
 toCSVRecords :: Document -> [Record]
 toCSVRecords (Document _ ox _) = concatMap O.toCSV ox
 
@@ -102,19 +96,22 @@ mkDocument = Document
     , pageProperties = mkPageProperties }
 
 -- |Deep sort the document and all organizations that are a part of it.
-sortDoc :: Document -- ^Document to deep sort
+sortDoc :: Strategy
+        -> Document -- ^Document to deep sort
         -> Document -- ^An identical Document that has possibly been
                     -- rearranged.
-sortDoc d =
-    d { dOrganizations = map O.sortOrg $ sort (dOrganizations d) }
+sortDoc ns d =
+    d { dOrganizations = sortBy (C.compareCI ns `on` O.oInfo)
+        $ map (O.sortOrg ns) (dOrganizations d) }
         
 -- | Draw a Document on its own page.
-renderDoc :: Document -- ^Document to append a page for.
+renderDoc :: Strategy
+          -> Document -- ^Document to append a page for.
           -> String   -- ^Subtitle
           -> PDF()
-renderDoc d lbl= 
+renderDoc s d lbl= 
     let revised = toPDFString $ "Revised: " ++ dRevised d
-        columns = flowCols (intercalate [Divider] . map O.toLineItems $ dOrganizations d) 4
+        columns = flowCols (intercalate [Divider] . map (O.toLineItems s) $ dOrganizations d) 4
         dateRise = titleRise - (PDFUnits $ getHeight fontSubtitle)
             - asPDFUnits sixteenthInch
         gridRise = dateRise - asPDFUnits sixteenthInch
@@ -138,4 +135,4 @@ renderDoc d lbl=
              (unPDFUnits dateRise) lbl'
          foldM_ (drawColumn colWidth)
              ((unPDFUnits . asPDFUnits . leftMargin $ prop)
-             :+ (unPDFUnits gridRise)) columns
+             :+ unPDFUnits gridRise) columns

@@ -15,22 +15,24 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Organization where
 
-import qualified Data.ByteString.Char8 as B
-import Control.Monad (liftM)
-import Data.Attempt
-import Data.Convertible.Base
+import Control.Applicative
+import Control.Monad (mzero)
 import Data.Function(on)
 import Data.List
 import Data.Maybe
-import Data.Object
-import Data.Object.Json
-import qualified Safe.Failure as S
-import Text.CSV
+
+import Data.Aeson ((.=), (.:))
+import qualified Data.Aeson as A
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.Encoding.Error as T
+import qualified Data.Text.Read as T
+import Text.CSV.ByteString
 
 import qualified ContactInfo as C
 import LineItem
@@ -42,57 +44,60 @@ import Priority
 data Organization = Organization
   { -- |Contact information for the organization itself.  This gets
     -- turned into a non-indented line item.
-    oInfo :: C.ContactInfo
+    oInfo :: !C.ContactInfo
     -- |Contacts that make up the organization.  These all get turned
     -- into indented line items on the contact sheet.
   , oContacts :: [C.ContactInfo]
-  } deriving (Eq, Ord, Show)
+  } deriving (Eq)
 
-instance ConvertAttempt JsonObject Organization where
-  convertAttempt j =
-      do m <- fromMapping j
-         i <- lookupObject (B.pack "info") m >>= convertAttempt
-         cx <- lookupSequence (B.pack "contacts") m >>= mapM convertAttempt
-         return $ Organization i cx
+toLineItems :: Strategy -> Organization -> [LineItem]
+toLineItems s (Organization o cx) = intersperse Indent . map (C.toLineItem s)
+    $ o : cx
 
-instance ConvertSuccess Organization JsonObject where
-  convertSuccess (Organization i cx) =
-      Mapping [ (B.pack "info", convertSuccess i)
-              , (B.pack "contacts", Sequence $ map convertSuccess cx)]
+instance A.ToJSON Organization where
+  toJSON o = A.object
+      [ "info" .= A.toJSON (oInfo o)
+      , "contacts" .= A.toJSON (oContacts o)]
 
-toFirstSorted :: Organization -> Organization
-toFirstSorted (Organization i cx) =
-    Organization (C.toFirstSorted i) (map C.toFirstSorted cx)
-
-toLineItems :: Organization -> [LineItem]
-toLineItems (Organization o cx) = intersperse Indent . map C.toLineItem $ o : cx
+instance A.FromJSON Organization where
+  parseJSON (A.Object v) = Organization
+      <$> v .: "info"
+      <*> v .: "contacts"
+  parseJSON _ = mzero
 
 -- |Sort all the contacts.
-sortOrg :: Organization -> Organization
-sortOrg o = o { oContacts = sort (oContacts o) }
+sortOrg :: Strategy -> Organization -> Organization
+sortOrg ns o = o { oContacts = sortBy (C.compareCI ns) (oContacts o) }
 
 toCSV :: Organization -> CSV
-toCSV (Organization i []) = return $ C.toCSVRecord i ++ ["", "", "", "1", "", ""]
+toCSV (Organization i []) = return $ C.toCSVRecord i ++ ["", "", "", "1"]
 toCSV (Organization i cx) = map (\c -> ir ++ C.toCSVRecord c) cx
   where
     ir = C.toCSVRecord i
 
-fromCSV :: CSV -> Attempt [Organization]
-fromCSV = sequence . map fromCSVRecord
-          -- the 'csv' package parses an empty line as a blank record.
-          . takeWhile (/=[""])
+fromCSV :: CSV -> Either Text [Organization]
+fromCSV = mapM fromCSVRecord
 
-fromCSVRecord :: Record -> Attempt Organization
-fromCSVRecord [ oFn, oLn, oPhone, oPriority, _, _
-              , cFn, cLn, cPhone, cPriority, _, _] = do
-    oPriority' <- liftM mkPriority . S.read $ oPriority
-    cPriority' <- liftM mkPriority . S.read $ cPriority
-    return $
-        --read can fail here.
-        Organization (C.ContactInfo oPriority' (mkName oFn oLn) oPhone)
-        [C.ContactInfo cPriority' (mkName cFn cLn) cPhone]
-fromCSVRecord r =
-    failureString $ "Expected record of 12 fields: " ++ show r
+toTextRecord :: Record -> Either T.UnicodeException [Text]
+toTextRecord = mapM T.decodeUtf8'
+
+fromCSVRecord :: Record -> Either Text Organization
+fromCSVRecord fs = do
+    (oFs, cFs) <- either (\e -> Left $ "Unable to decode field: "
+                         `T.append` T.pack (show e))
+                  (Right . splitAt 4) $ toTextRecord fs
+    o <- fieldsToContactInfo oFs
+    c <- fieldsToContactInfo cFs
+    return $ Organization o [c]
+
+fieldsToContactInfo :: [Text] -> Either Text C.ContactInfo
+fieldsToContactInfo [f, l, p, pr] = do
+    pr' <- either (\e -> Left $ "Unable to decode priority field: "
+                         `T.append` T.pack (show e))
+           (Right . mkPriority . fst) $ T.decimal pr
+    return $ C.ContactInfo pr' (mkName f l) p
+fieldsToContactInfo _
+    = Left "Expected 4 fields to construct contact information with."
 
 -- |Attempt to merge every member of the list together.
 mergeOrgs :: [Organization] -> [Organization]

@@ -2,8 +2,8 @@
 import qualified Distribution.PackageDescription as P
 import Distribution.Simple
 import qualified Distribution.Simple.LocalBuildInfo as L
-import System
 import System.FilePath
+import System.Process
 
 main :: IO ()
 main = defaultMainWithHooks

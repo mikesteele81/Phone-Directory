@@ -60,13 +60,15 @@ Section "-Main Program" SecMain
 
   SetOutPath "$INSTDIR"
 
-  !system 'upx303w\upx.exe --best "..\dist\build\pdirectory\pdirectory.exe" -opdirectory.exe'
+  !system 'copy /Y ..\dist\build\pdirectory\pdirectory.exe pdirectory.exe'
+  !system '..\tools\mt.exe -manifest ..\data\DeclareDPIAware.manifest -out:merged.manifest'
+  !system '..\tools\strip.exe -s pdirectory.exe'
+  !system '..\tools\mt.exe -outputresource:pdirectory.exe;#1 -manifest merged.manifest'
 
   File "pdirectory.exe"
   File "..\LICENSE.txt"
   File "..\README.txt"
-  File "dlls\wxmsw28u_gcc_custom.dll"
-  File "dlls\mingwm10.dll"
+  File "dlls\wxmsw28u_gcc.dll"
 
   SetOutPath "$INSTDIR\data\images\"
 
@@ -120,8 +122,7 @@ Section "Uninstall"
   Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\README.txt"
   Delete "$INSTDIR\Uninstall.exe"
-  Delete "$INSTDIR\wxmsw28u_gcc_custom.dll"
-  Delete "$INSTDIR\mingwm10.dll"
+  Delete "$INSTDIR\wxmsw28u_gcc.dll"
 
   Delete "$INSTDIR\data\images\pdirectory.ico"
 
@@ -154,6 +155,6 @@ SectionEnd
   VIAddVersionKey /LANG=${LANG_ENGLISH} "Comments" "Create a nicely formatted directory of phone numbers"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "Michael Steele"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalTrademarks" ""
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Copyright (C) 2010 Michael Steele"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Copyright (C) 2012 Michael Steele"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "Phone Directory"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "1.0.0"

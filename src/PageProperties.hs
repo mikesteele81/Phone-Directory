@@ -15,20 +15,18 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module PageProperties
     ( PageProperties (..)
     , mkPageProperties
     ) where
 
-import Data.Attempt
-import qualified Data.ByteString.Char8 as B
-import Data.Convertible.Base
-import Data.Object
-import qualified Data.Object.Json as J
+import Control.Applicative
+import Control.Monad (mzero)
+
+import Data.Aeson ((.=), (.:))
+import qualified Data.Aeson as A
 
 import UnitConversion
 
@@ -39,33 +37,27 @@ data PageProperties = PageProperties
     , rightMargin  :: Inches
     , topMargin    :: Inches
     , bottomMargin :: Inches }
-    deriving (Eq, Show)
+    deriving (Eq)
 
-instance ConvertAttempt J.JsonObject PageProperties where
-  convertAttempt j =
-      do m <- fromMapping j
-         pw <- attempt (\_ -> return $ Inches 8.5) convertAttempt 
-               (lookupScalar (B.pack "pageWidth") m)
-         ph <- attempt (\_ -> return $ Inches 11.0) convertAttempt
-               (lookupScalar (B.pack "pageHeight") m)
-         lm <- attempt (\_ -> return quarterInch) convertAttempt
-               (lookupScalar (B.pack "leftMargin") m)
-         rm <- attempt (\_ -> return quarterInch) convertAttempt
-               (lookupScalar (B.pack "rightMargin") m)
-         tm <- attempt (\_ -> return quarterInch) convertAttempt
-               (lookupScalar (B.pack "topMargin") m)
-         bm <- attempt (\_ -> return quarterInch) convertAttempt
-               (lookupScalar (B.pack "bottomMargin") m)
-         return $ PageProperties pw ph lm rm tm bm
+instance A.ToJSON PageProperties where
+  toJSON pp = A.object
+      [ "pageWidth"    .= A.toJSON (pageWidth pp)
+      , "pageHeight"   .= A.toJSON (pageHeight pp)
+      , "leftMargin"   .= A.toJSON (leftMargin pp)
+      , "rightMargin"  .= A.toJSON (rightMargin pp)
+      , "topMargin"    .= A.toJSON (topMargin pp)
+      , "bottomMargin" .= A.toJSON (bottomMargin pp)]
 
-instance ConvertSuccess PageProperties J.JsonObject where
-  convertSuccess (PageProperties pw ph lm rm tm bm) =
-      Mapping $ [ (B.pack "pageWidth"   , Scalar $ convertSuccess pw)
-                , (B.pack "pageHeight"  , Scalar $ convertSuccess ph)
-                , (B.pack "leftMargin"  , Scalar $ convertSuccess lm)
-                , (B.pack "rightMargin" , Scalar $ convertSuccess rm)
-                , (B.pack "topMargin"   , Scalar $ convertSuccess tm)
-                , (B.pack "bottomMargin", Scalar $ convertSuccess bm)]
+instance A.FromJSON PageProperties where
+  parseJSON (A.Object v) = do
+        pw <- v .: "pageWidth"    <|> (return . Inches) 8.5
+        ph <- v .: "pageHeight"   <|> (return . Inches) 11.0
+        lm <- v .: "leftMargin"   <|> return quarterInch
+        rm <- v .: "rightMargin"  <|> return quarterInch
+        tm <- v .: "topMargin"    <|> return quarterInch
+        bm <- v .: "bottomMargin" <|> return quarterInch
+        return $ PageProperties pw ph lm rm tm bm
+  parseJSON _ = mzero
 
 mkPageProperties :: PageProperties
 mkPageProperties = PageProperties

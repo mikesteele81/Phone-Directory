@@ -15,18 +15,29 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-module GUIConstants where
+module GUIConstants
+    ( ctrlPadding
+    , lblPadding
+    , winPadding
+    , scale
+    ) where
+
+type DPI = Int
+type RelPix = Int
+type AbsPix = Int
 
 -- |The number of pixels between controls that are grouped together.
-ctrlPadding :: Int
-ctrlPadding = 4
+ctrlPadding :: DPI -> AbsPix
+ctrlPadding = scale 4
 
 -- |The number of pixels between controls and their labels.
-lblPadding :: Int
-lblPadding = 3
+lblPadding :: DPI -> AbsPix
+lblPadding = scale 3
 
 -- |The number of pixels between the window border or vertical/horizontal
 -- spacers and internal controls.
-winPadding :: Int
-winPadding = 7
+winPadding :: DPI -> AbsPix
+winPadding = scale 7
 
+scale :: RelPix -> DPI -> AbsPix
+scale rel dpi = rel * dpi `div` 96

@@ -15,27 +15,26 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 module UnitConversion where
 
 import Control.Applicative
+
+import qualified Data.Aeson as A
 import Graphics.PDF (PDFFloat)
-import Data.Attempt
-import Data.Convertible.Base
-import Data.Object.Json
 
 newtype Inches = Inches { unInches :: Double }
-    deriving (Eq, Fractional, Num, Ord, Show)
+    deriving (Eq, Fractional, Num, Ord, A.ToJSON)
 newtype PDFUnits = PDFUnits { unPDFUnits :: PDFFloat }
-    deriving (Eq, Fractional, Num, Ord, Show)
+    deriving (Eq, Fractional, Num)
 
 sixteenthInch :: Inches
 sixteenthInch = Inches $ 1 / 16.0
 
+instance A.FromJSON Inches where
+  parseJSON v = Inches <$> A.parseJSON v
+  
 class CInches a where
     asInches :: a -> Inches
 class CPDFUnits a where
@@ -49,17 +48,3 @@ instance CPDFUnits Inches where
 
 instance CInches PDFUnits where
     asInches (PDFUnits v) = Inches $ v / 72.0
-
-instance ConvertSuccess Inches JsonScalar where
-  convertSuccess (Inches i) = JsonNumber (convertSuccess i)
-
-instance ConvertAttempt JsonScalar Inches where
-  convertAttempt (JsonNumber i)  = Inches <$> convertAttempt i
-  convertAttempt _ = failure NothingException
-
-instance ConvertSuccess PDFUnits JsonScalar where
-  convertSuccess (PDFUnits i) = JsonNumber (convertSuccess i)
-
-instance ConvertAttempt JsonScalar PDFUnits where
-  convertAttempt (JsonNumber i)  = PDFUnits <$> convertAttempt i
-  convertAttempt _ = failure NothingException

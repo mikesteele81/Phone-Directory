@@ -15,71 +15,73 @@
    along with PhoneDirectory.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module ContactInfo
     ( ContactInfo (..)
+    , compareCI
+    , renderWith
     , toCSVRecord
-    , toFirstSorted
     , toLineItem
     ) where
 
 import Control.Applicative
-import Data.Attempt ()
-import Data.ByteString.Char8
-import Data.Convertible.Base
-import Data.Object
-import qualified Data.Object.Json as J
-import Text.CSV (Record)
+import Data.Function
+import Data.Maybe (fromMaybe)
+import Control.Monad (mzero)
+import Data.Monoid
+
+import Data.Aeson ((.=), (.:))
+import qualified Data.Aeson as A
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import Text.CSV.ByteString (Record)
 
 import LineItem
-import qualified Name as N
+import Name as N
 import Priority
 
 -- |Contact information for an individual or group.
 data ContactInfo = ContactInfo
   { -- |for the purposes of sorting.  Higher numbers sort first.
-    cPriority :: Priority
+    cPriority :: {-# UNPACK #-} !Priority
   , -- |Either a Name or FirstSortedName.  This ends up on the left
     -- side of each line item.
-    cName :: N.Name
+    cName :: !N.Name
     -- |A phone number.  This ends up on the right of each line item.
-  , cPhone    :: String
-  } deriving (Eq, Ord)
+  , cPhone    :: {-# UNPACK #-} !Text
+  } deriving (Eq)
 
-instance Show ContactInfo where
-    show = show . cName
+compareCI :: N.Strategy
+    -> ContactInfo -> ContactInfo -> Ordering
+compareCI ns l r = cPriority l `compare` cPriority r
+    <> (N._compare ns `on` cName) l r
+    <> cPhone l `compare` cPhone r
 
-toFirstSorted :: ContactInfo -> ContactInfo
-toFirstSorted c@(ContactInfo _ n _) = c { cName = N.toFirstSorted n}
+renderWith :: N.Strategy -> ContactInfo -> Text
+renderWith ns = N.render ns . cName
 
-toLineItem :: ContactInfo -> LineItem
-toLineItem ci = mkLabelValue (show $ cName ci) (cPhone ci)
+instance A.ToJSON ContactInfo where
+  toJSON ci = A.object
+      [ "name"     .= A.toJSON (cName ci)
+      , "phone"    .= A.toJSON (cPhone ci)
+      , "priority" .= A.toJSON (cPriority ci)]
 
-instance ConvertAttempt J.JsonObject ContactInfo where
-  convertAttempt j =
-      do m <- fromMapping j
-         pr <- lookupObject (pack "priority") m >>= convertAttempt
-         n  <- lookupObject (pack "name")     m >>= convertAttempt
-         p  <- J.fromJsonScalar <$> lookupScalar (pack "phone") m
-         return $ ContactInfo pr n p
+instance A.FromJSON ContactInfo where
+  parseJSON (A.Object v) = ContactInfo
+      <$> v .: "priority"
+      <*> v .: "name"
+      <*> v .: "phone"
+  parseJSON _ = mzero
 
-instance ConvertSuccess ContactInfo J.JsonObject where
-  convertSuccess (ContactInfo pr n p) =
-      Mapping [ (pack "name", convertSuccess n)
-              , (pack "phone", Scalar $ J.toJsonScalar p)
-              , (pack "priority", convertSuccess pr)]
+toLineItem :: N.Strategy -> ContactInfo -> LineItem
+toLineItem s ci = mkLabelValue (T.unpack . renderWith s $ ci)
+    (T.unpack . cPhone $ ci)
 
 toCSVRecord :: ContactInfo -> Record
-toCSVRecord (ContactInfo priority n phone) =
-    [ given
-    , sur
+toCSVRecord (ContactInfo priority n phone) = map T.encodeUtf8
+    [ N.given n
+    , fromMaybe "" $ N.sur n
     , phone
-    , show . toInt $ priority
-    , show . N.toFirstSorted $ n
-    , show . N.toLastSorted  $ n ]
-  where
-    (given, sur) = case n of
-      N.SingleName x -> (x, "")
-      _ -> (N.given n, N.sur n)
+    , T.pack . show . toInt $ priority ]

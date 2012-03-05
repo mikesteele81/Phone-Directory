@@ -20,26 +20,28 @@ module Export
     ( generate
     ) where
 
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Error
 import Graphics.PDF
 
 import Document
+import Name
 import PageProperties
 import UnitConversion
-import WXError
 
 -- |Create a 2-page .pdf file.  The first page sorts by last name and
 -- the second sorts by first name.
 generate
   :: FilePath -- ^Filename to save to.
   -> Document -- ^Document to print.  It will be automatically resorted.
-  -> WXError ()
+  -> ErrorT String IO ()
 generate file doc =
     liftIO $ runPdf file standardDocInfo
     (PDFRect 0 0 (floor . unPDFUnits . asPDFUnits . pageWidth  . pageProperties $ doc)
                  (floor . unPDFUnits . asPDFUnits . pageHeight . pageProperties $ doc))
     $ do
-        renderDoc page1 "(Sorted by Location and then Last Name)"
-        renderDoc page2 "(Sorted by Location and then First Name)"
+        renderDoc lastFirst page1 "(Sorted by Location and then Last Name)"
+        renderDoc firstLast page2 "(Sorted by Location and then First Name)"
   where
-    page1 = sortDoc doc
-    page2 = sortDoc . toFirstSorted $ doc
+    page1 = sortDoc lastFirst doc
+    page2 = sortDoc firstLast doc

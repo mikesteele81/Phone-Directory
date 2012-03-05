@@ -38,17 +38,19 @@ col_padding = asPDFUnits . Inches $ 1 / 16
 -- | A single line making up part of a column.
 data LineItem
   -- | Contact or column heading. LineItem left right isDashed
-  = LineItem PDFString PDFString Bool
+  = LineItem {-# UNPACK #-} !PDFString
+             {-# UNPACK #-} !PDFString
+             !Bool
   -- | Horizontal line
   | Divider
   -- | Empty area.  This is used at the end to force columns to be of
   -- equal length.
   | Indent
   | Blank
-  deriving (Eq, Show)
+  deriving (Eq)
 
 -- |Each page contains 4 columns of equal length.
-newtype Column = Column { unColumn :: [LineItem]} deriving (Show)
+newtype Column = Column { unColumn :: [LineItem]}
 
 -- |Use this to conveniently create LineItems without having to import
 -- Graphics.PDF. Dashes are set if the right-hand string exists.
