@@ -150,11 +150,11 @@ SectionEnd
 ;--------------------------------
 ;Version Information
 
-  VIProductVersion "1.0.0.0"
+  VIProductVersion "0.7.0.0"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "Phone Directory"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "Comments" "Create a nicely formatted directory of phone numbers"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "Michael Steele"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalTrademarks" ""
   VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Copyright (C) 2012 Michael Steele"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "Phone Directory"
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "1.0.0"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "1.0.0.0"

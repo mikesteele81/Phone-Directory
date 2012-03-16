@@ -23,6 +23,8 @@ Change Log
 Version 0.7
 -----------
 * Proper support for display scaling in Windows Vista and above.
+* Better handling of keyboard presses
+* Fix for GUI artifacts when resizing windows.
 * Compiled with GHC 7.4.1 instead of 7.0.4.
 * Upgrade of many underlying software libraries.
 * Monad transformer library changed from mtl to transformers.
